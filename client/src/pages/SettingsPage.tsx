@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
+import { useToast } from '../context/ToastContext';
+import { request } from '../api';
 
 // ─── Toggle Node ────────────────────────────────────────────
 function ToggleNode({
@@ -67,8 +69,9 @@ function SettingsSection({ title, icon, children }: { title: string; icon: strin
 
 // ─── Main Page ──────────────────────────────────────────────
 export function SettingsPage() {
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { showToast } = useToast();
   const navigate = useNavigate();
 
   const [name, setName]   = useState(user?.name || 'Builder');
@@ -88,9 +91,56 @@ export function SettingsPage() {
   const [kineticTrack, setKinetic]  = useState(false);
   const [audioState, setAudio]      = useState(true);
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  useEffect(() => {
+    if (user?.preferences) {
+      try {
+        const prefs = JSON.parse(user.preferences);
+        if (prefs.ambientOrbs !== undefined) setAmbientOrbs(prefs.ambientOrbs);
+        if (prefs.pageTransitions !== undefined) setPageTransitions(prefs.pageTransitions);
+        if (prefs.habitGlows !== undefined) setHabitGlows(prefs.habitGlows);
+        if (prefs.timerTick !== undefined) setTimerTick(prefs.timerTick);
+        if (prefs.waveforms !== undefined) setWaveforms(prefs.waveforms);
+        if (prefs.chronosSync !== undefined) setChronos(prefs.chronosSync);
+        if (prefs.bioMetrics !== undefined) setBioMetrics(prefs.bioMetrics);
+        if (prefs.kineticTrack !== undefined) setKinetic(prefs.kineticTrack);
+        if (prefs.audioState !== undefined) setAudio(prefs.audioState);
+      } catch (err) {
+        console.error('Failed to parse preferences:', err);
+      }
+    }
+  }, [user]);
+
+  const handleSave = async () => {
+    const prefsObj = {
+      ambientOrbs,
+      pageTransitions,
+      habitGlows,
+      timerTick,
+      waveforms,
+      chronosSync,
+      bioMetrics,
+      kineticTrack,
+      audioState,
+    };
+
+    try {
+      const updatedUser = await request<any>('http://localhost:8081/api/me', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          name,
+          email,
+          preferences: JSON.stringify(prefsObj),
+        }),
+      });
+
+      updateUser(updatedUser);
+      setSaved(true);
+      showToast('Settings saved successfully!', 'success');
+      setTimeout(() => setSaved(false), 2000);
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to save settings.', 'error');
+    }
   };
 
   return (

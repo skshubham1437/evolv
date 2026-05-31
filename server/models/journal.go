@@ -9,8 +9,8 @@ import (
 // JournalEntry represents a daily journal/reflection entry.
 type JournalEntry struct {
 	ID        uint           `gorm:"primaryKey" json:"id"`
-	UserID    uint           `gorm:"not null;index" json:"user_id"`
-	Date      string         `gorm:"not null;index" json:"date"` // YYYY-MM-DD
+	UserID    uint           `gorm:"not null;uniqueIndex:idx_journal_user_date" json:"user_id"`
+	Date      string         `gorm:"not null;uniqueIndex:idx_journal_user_date" json:"date"` // YYYY-MM-DD
 	Content   string         `gorm:"type:text" json:"content"`
 	Mood       int            `gorm:"default:3" json:"mood"`   // 1-5 scale
 	Energy     int            `gorm:"default:3" json:"energy"` // 1-5 scale

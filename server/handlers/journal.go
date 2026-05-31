@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"evolv-server/database"
-	"evolv-server/middleware"
 	"evolv-server/models"
 	"evolv-server/services"
 )
@@ -122,7 +121,3 @@ func UpdateJournalEntry(w http.ResponseWriter, r *http.Request) {
 	respond(w, entry)
 }
 
-// getUserIDFromCtx is a helper that delegates to the middleware package.
-func getUserIDFromCtx(r *http.Request) uint {
-	return middleware.GetUserID(r)
-}

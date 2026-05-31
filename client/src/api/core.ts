@@ -3,7 +3,7 @@
  * Handles auth headers, 401 redirects, and JSON parsing.
  */
 
-export const API_BASE = 'http://localhost:8081/api';
+export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8081/api';
 const TOKEN_KEY = 'evolv_token';
 
 export function authHeaders(): Record<string, string> {

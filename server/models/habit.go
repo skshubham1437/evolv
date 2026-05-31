@@ -28,6 +28,6 @@ type Habit struct {
 // HabitLog represents a single completion instance of a Habit.
 type HabitLog struct {
 	ID          uint      `gorm:"primaryKey" json:"id"`
-	HabitID     uint      `gorm:"not null" json:"habit_id"`
-	CompletedAt time.Time `gorm:"not null" json:"completed_at"`
+	HabitID     uint      `gorm:"not null;index:idx_habitlog_habit_completed" json:"habit_id"`
+	CompletedAt time.Time `gorm:"not null;index:idx_habitlog_habit_completed" json:"completed_at"`
 }

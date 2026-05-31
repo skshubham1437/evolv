@@ -107,18 +107,48 @@ You need to start both the backend API server and the frontend dev server.
 
 ```
 evolv/
-├── client/          # React + TypeScript frontend
-│   ├── src/         # UI components, pages, hooks, state
-│   ├── public/      # Static assets
-│   └── package.json # Frontend scripts and dependencies
-├── server/          # Go backend API
-│   ├── database/    # DB connection & migrations
-│   ├── handlers/    # HTTP handlers / controller logic
-│   ├── middleware/  # JWT Auth & CORS middleware
-│   ├── models/      # GORM database schemas
-│   ├── services/    # AI Service integration (Gemini)
-│   ├── main.go      # Entry point
-│   └── go.mod       # Go module definitions
-├── CONTEXT.md       # Ubiquitous domain glossary
-└── requirement.md   # Detailed product specifications
+├── client/                 # React + TypeScript frontend
+│   ├── src/
+│   │   ├── api/            # Modular API client (core, tasks, habits, goals, etc.)
+│   │   ├── components/     # Reusable UI components
+│   │   │   ├── layout/     # Layout, Sidebar, ProtectedRoute
+│   │   │   └── ui/         # Badge, Button, Card, Input, Modal, Skeleton
+│   │   ├── context/        # React contexts (Auth, Theme, AI, Toast)
+│   │   └── pages/          # Page-level components (15 pages + auth/)
+│   ├── .env.example        # Frontend env template
+│   └── package.json        # Frontend scripts and dependencies
+├── server/                 # Go backend API
+│   ├── database/           # DB connection (db.go)
+│   ├── handlers/           # HTTP handlers (split by domain)
+│   │   ├── helpers.go      # Shared types (HabitWithStatus) and utilities
+│   │   ├── tasks.go        # Task CRUD + rescheduling
+│   │   ├── habits.go       # Habit CRUD, streaks, heatmap, dashboard
+│   │   ├── auth.go         # Register, Login, JWT generation
+│   │   ├── goals.go        # Goals, Key Results, Milestones
+│   │   ├── journal.go      # Journal CRUD + AI analysis
+│   │   ├── weekly.go       # Weekly plans, time blocks
+│   │   ├── quarterly.go    # Quarterly objectives
+│   │   ├── monthly.go      # Monthly plans
+│   │   ├── analytics.go    # Analytics summary endpoint
+│   │   ├── ai.go           # AI chat, briefs, reviews
+│   │   ├── burnout.go      # Burnout risk assessment
+│   │   ├── vision.go       # Vision, focus areas, bucket list
+│   │   ├── project.go      # Project CRUD
+│   │   └── onboarding.go   # Onboarding completion
+│   ├── middleware/         # JWT Auth middleware
+│   ├── models/             # GORM database schemas
+│   ├── services/           # AI Service integration (Gemini)
+│   ├── .env.example        # Backend env template
+│   ├── main.go             # Entry point + CORS + rate limiter
+│   ├── routes.go           # Route registration
+│   └── go.mod              # Go module definitions
+├── docs/                   # Documentation
+│   ├── adr/                # Architecture Decision Records (ADR-0001 → 0007)
+│   └── evolv_implementation_plan.md
+├── CONTEXT.md              # Ubiquitous domain glossary
+├── CONTRIBUTING.md         # Contribution guidelines
+├── CHANGELOG.md            # Release changelog
+├── LICENSE                 # MIT License
+└── requirement.md          # Detailed product specifications
 ```
+

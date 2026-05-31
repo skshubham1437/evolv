@@ -10,106 +10,37 @@ import (
 	"evolv-server/models"
 )
 
-// --- TASK HELPER ---
-func rescheduleOverdueTasks(userID uint) {
-	startOfToday := time.Now().Truncate(24 * time.Hour)
-	database.DB.Model(&models.Task{}).
-		Where("user_id = ? AND is_completed = ? AND due_date IS NOT NULL AND due_date < ?", userID, false, startOfToday).
-		Update("due_date", startOfToday)
-}
-
-// RescheduleOverdue moves all overdue incomplete tasks to today.
-// Called on login to keep the task list current without user action.
-func RescheduleOverdue(w http.ResponseWriter, r *http.Request) {
-	userID := getUserIDFromCtx(r)
-	rescheduleOverdueTasks(userID)
-	respond(w, map[string]string{"status": "ok"})
-}
-
-// --- TASK HANDLERS ---
-
-func GetTasks(w http.ResponseWriter, r *http.Request) {
-	userID := getUserIDFromCtx(r)
-	rescheduleOverdueTasks(userID)
-	var tasks []models.Task
-	database.DB.Where("user_id = ? AND is_completed = ?", userID, false).Order("position asc, created_at desc").Find(&tasks)
-	respond(w, tasks)
-}
-
-func CreateTask(w http.ResponseWriter, r *http.Request) {
-	userID := getUserIDFromCtx(r)
-	var task models.Task
-	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
-		http.Error(w, "Invalid body", http.StatusBadRequest)
-		return
-	}
-	if task.Title == "" {
-		http.Error(w, "Title is required", http.StatusBadRequest)
-		return
-	}
-	if task.Priority == "" {
-		task.Priority = "medium"
-	}
-	task.UserID = userID
-	database.DB.Create(&task)
-	w.WriteHeader(http.StatusCreated)
-	respond(w, task)
-}
-
-func UpdateTask(w http.ResponseWriter, r *http.Request) {
-	userID := getUserIDFromCtx(r)
-	id, _ := strconv.Atoi(r.PathValue("id"))
-	var task models.Task
-	if err := database.DB.Where("id = ? AND user_id = ?", id, userID).First(&task).Error; err != nil {
-		http.Error(w, "Task not found", http.StatusNotFound)
-		return
-	}
-	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
-		http.Error(w, "Invalid body", http.StatusBadRequest)
-		return
-	}
-	task.UserID = userID // prevent user_id override
-	database.DB.Save(&task)
-	respond(w, task)
-}
-
-func CompleteTask(w http.ResponseWriter, r *http.Request) {
-	userID := getUserIDFromCtx(r)
-	id, _ := strconv.Atoi(r.PathValue("id"))
-	var task models.Task
-	if err := database.DB.Where("id = ? AND user_id = ?", id, userID).First(&task).Error; err != nil {
-		http.Error(w, "Task not found", http.StatusNotFound)
-		return
-	}
-	database.DB.Model(&task).Update("is_completed", true)
-	respond(w, task)
-}
-
-func DeleteTask(w http.ResponseWriter, r *http.Request) {
-	userID := getUserIDFromCtx(r)
-	id, _ := strconv.Atoi(r.PathValue("id"))
-	database.DB.Where("id = ? AND user_id = ?", id, userID).Delete(&models.Task{})
-	w.WriteHeader(http.StatusNoContent)
-}
-
 // --- HABIT HANDLERS ---
 
 func GetHabits(w http.ResponseWriter, r *http.Request) {
 	userID := getUserIDFromCtx(r)
+	validateHabitStreaks(userID)
 	var habits []models.Habit
 	database.DB.Where("user_id = ?", userID).Order("created_at desc").Find(&habits)
-	
+
 	startOfDay := time.Now().Truncate(24 * time.Hour)
-	type HabitWithStatus struct {
-		models.Habit
-		CompletedToday bool `json:"completed_today"`
+
+	// Batch query: fetch all of today's logs in one query instead of N+1
+	habitIDs := make([]uint, len(habits))
+	for i, h := range habits {
+		habitIDs[i] = h.ID
+	}
+
+	completedMap := make(map[uint]bool)
+	if len(habitIDs) > 0 {
+		var todayLogs []models.HabitLog
+		database.DB.Where("habit_id IN ? AND completed_at >= ?", habitIDs, startOfDay).Find(&todayLogs)
+		for _, log := range todayLogs {
+			completedMap[log.HabitID] = true
+		}
 	}
 
 	habitsWithStatus := make([]HabitWithStatus, 0, len(habits))
 	for _, h := range habits {
-		var log models.HabitLog
-		completedToday := database.DB.Where("habit_id = ? AND completed_at >= ?", h.ID, startOfDay).First(&log).Error == nil
-		habitsWithStatus = append(habitsWithStatus, HabitWithStatus{Habit: h, CompletedToday: completedToday})
+		habitsWithStatus = append(habitsWithStatus, HabitWithStatus{
+			Habit:          h,
+			CompletedToday: completedMap[h.ID],
+		})
 	}
 
 	respond(w, habitsWithStatus)
@@ -245,7 +176,7 @@ func GetHabitStats(w http.ResponseWriter, r *http.Request) {
 	var logs []models.HabitLog
 	thirtyDaysAgo := time.Now().AddDate(0, 0, -30)
 	database.DB.Where("habit_id = ? AND completed_at >= ?", id, thirtyDaysAgo).Order("completed_at asc").Find(&logs)
-	
+
 	totalDays := 30
 	completedDays := len(logs)
 	consistencyPct := 0
@@ -255,8 +186,89 @@ func GetHabitStats(w http.ResponseWriter, r *http.Request) {
 
 	respond(w, map[string]interface{}{
 		"consistency_pct": consistencyPct,
-		"logs": logs,
+		"logs":            logs,
 	})
+}
+
+func GetHabitsHeatmap(w http.ResponseWriter, r *http.Request) {
+	userID := getUserIDFromCtx(r)
+
+	// Fetch all habits for this user
+	var habits []models.Habit
+	database.DB.Where("user_id = ?", userID).Find(&habits)
+
+	type HeatmapDay struct {
+		Date      string `json:"date"`
+		Completed int    `json:"completed"`
+		Total     int    `json:"total"`
+		Active    bool   `json:"active"`
+		Percent   int    `json:"percent"`
+	}
+
+	days := make([]HeatmapDay, 30)
+	now := time.Now()
+
+	if len(habits) == 0 {
+		// Return 30 empty days
+		for i := 0; i < 30; i++ {
+			d := now.AddDate(0, 0, -29+i)
+			days[i] = HeatmapDay{
+				Date:      d.Format("2006-01-02"),
+				Completed: 0,
+				Total:     0,
+				Active:    false,
+				Percent:   0,
+			}
+		}
+		respond(w, days)
+		return
+	}
+
+	habitIDs := make([]uint, len(habits))
+	for i, h := range habits {
+		habitIDs[i] = h.ID
+	}
+
+	// Fetch all logs in the last 30 days (from 30 days ago at 00:00 to now)
+	thirtyDaysAgoStart := now.AddDate(0, 0, -29).Truncate(24 * time.Hour)
+	var logs []models.HabitLog
+	database.DB.Where("habit_id IN ? AND completed_at >= ?", habitIDs, thirtyDaysAgoStart).Find(&logs)
+
+	// Map to keep track of completed habit IDs per day string
+	logsPerDay := make(map[string]map[uint]bool)
+	for _, log := range logs {
+		dayStr := log.CompletedAt.Format("2006-01-02")
+		if _, exists := logsPerDay[dayStr]; !exists {
+			logsPerDay[dayStr] = make(map[uint]bool)
+		}
+		logsPerDay[dayStr][log.HabitID] = true
+	}
+
+	for i := 0; i < 30; i++ {
+		d := now.AddDate(0, 0, -29+i)
+		dayStr := d.Format("2006-01-02")
+
+		completedCount := 0
+		if completedHabits, exists := logsPerDay[dayStr]; exists {
+			completedCount = len(completedHabits)
+		}
+
+		totalCount := len(habits)
+		percent := 0
+		if totalCount > 0 {
+			percent = int((float64(completedCount) / float64(totalCount)) * 100)
+		}
+
+		days[i] = HeatmapDay{
+			Date:      dayStr,
+			Completed: completedCount,
+			Total:     totalCount,
+			Active:    completedCount > 0,
+			Percent:   percent,
+		}
+	}
+
+	respond(w, days)
 }
 
 func GetRoutines(w http.ResponseWriter, r *http.Request) {
@@ -264,21 +276,89 @@ func GetRoutines(w http.ResponseWriter, r *http.Request) {
 	routineType := r.PathValue("type")
 	var habits []models.Habit
 	database.DB.Where("user_id = ? AND routine_type = ?", userID, routineType).Order("position asc").Find(&habits)
-	
+
 	startOfDay := time.Now().Truncate(24 * time.Hour)
-	type HabitWithStatus struct {
-		models.Habit
-		CompletedToday bool `json:"completed_today"`
+
+	// Batch query instead of N+1
+	habitIDs := make([]uint, len(habits))
+	for i, h := range habits {
+		habitIDs[i] = h.ID
+	}
+
+	completedMap := make(map[uint]bool)
+	if len(habitIDs) > 0 {
+		var todayLogs []models.HabitLog
+		database.DB.Where("habit_id IN ? AND completed_at >= ?", habitIDs, startOfDay).Find(&todayLogs)
+		for _, log := range todayLogs {
+			completedMap[log.HabitID] = true
+		}
 	}
 
 	habitsWithStatus := make([]HabitWithStatus, 0, len(habits))
 	for _, h := range habits {
-		var log models.HabitLog
-		completedToday := database.DB.Where("habit_id = ? AND completed_at >= ?", h.ID, startOfDay).First(&log).Error == nil
-		habitsWithStatus = append(habitsWithStatus, HabitWithStatus{Habit: h, CompletedToday: completedToday})
+		habitsWithStatus = append(habitsWithStatus, HabitWithStatus{
+			Habit:          h,
+			CompletedToday: completedMap[h.ID],
+		})
 	}
 
 	respond(w, habitsWithStatus)
+}
+
+// validateHabitStreaks checks all habit streaks for the given user and resets
+// any that have been broken (no log yesterday and no shield available).
+func validateHabitStreaks(userID uint) {
+	var userHabits []models.Habit
+	database.DB.Where("user_id = ?", userID).Find(&userHabits)
+
+	startOfToday := time.Now().Truncate(24 * time.Hour)
+	startOfYesterday := startOfToday.AddDate(0, 0, -1)
+
+	for _, h := range userHabits {
+		var lastLog models.HabitLog
+		err := database.DB.Where("habit_id = ?", h.ID).Order("completed_at desc").First(&lastLog).Error
+		if err != nil {
+			if h.Streak > 0 {
+				database.DB.Model(&h).Update("streak", 0)
+			}
+			continue
+		}
+
+		lastLogDay := lastLog.CompletedAt.Truncate(24 * time.Hour)
+
+		if lastLogDay.Before(startOfYesterday) {
+			daysMissed := int(startOfYesterday.Sub(lastLogDay).Hours() / 24)
+
+			shieldsUsed := 0
+			if h.StreakShieldActive && h.StreakShieldsRemaining > 0 {
+				if h.StreakShieldsRemaining >= daysMissed {
+					shieldsUsed = daysMissed
+				} else {
+					shieldsUsed = h.StreakShieldsRemaining
+				}
+			}
+
+			remainingMissed := daysMissed - shieldsUsed
+
+			if remainingMissed > 0 {
+				database.DB.Model(&h).Updates(map[string]interface{}{
+					"streak":                    0,
+					"streak_shields_remaining": h.StreakShieldsRemaining - shieldsUsed,
+				})
+			} else if shieldsUsed > 0 {
+				for i := 1; i <= shieldsUsed; i++ {
+					protectedDay := lastLogDay.AddDate(0, 0, i)
+					database.DB.Create(&models.HabitLog{
+						HabitID:     h.ID,
+						CompletedAt: protectedDay.Add(12 * time.Hour),
+					})
+				}
+				database.DB.Model(&h).Updates(map[string]interface{}{
+					"streak_shields_remaining": h.StreakShieldsRemaining - shieldsUsed,
+				})
+			}
+		}
+	}
 }
 
 // --- DAILY DASHBOARD HANDLER ---
@@ -286,34 +366,42 @@ func GetRoutines(w http.ResponseWriter, r *http.Request) {
 func GetDailyDashboard(w http.ResponseWriter, r *http.Request) {
 	userID := getUserIDFromCtx(r)
 	rescheduleOverdueTasks(userID)
+	validateHabitStreaks(userID)
 	var tasks []models.Task
 	var habits []models.Habit
 
-	database.DB.Where("user_id = ? AND is_completed = ?", userID, false).Order("priority desc, created_at asc").Find(&tasks)
+	todayStart := time.Now().Truncate(24 * time.Hour)
+	todayEnd := todayStart.Add(24 * time.Hour)
+	database.DB.Where("user_id = ? AND is_completed = ? AND (due_date IS NULL OR (due_date >= ? AND due_date < ?))", userID, false, todayStart, todayEnd).Order("priority desc, created_at asc").Find(&tasks)
 	database.DB.Where("user_id = ?", userID).Order("streak desc").Find(&habits)
 
 	startOfDay := time.Now().Truncate(24 * time.Hour)
-	type HabitWithStatus struct {
-		models.Habit
-		CompletedToday bool `json:"completed_today"`
+
+	// Batch query instead of N+1
+	habitIDs := make([]uint, len(habits))
+	for i, h := range habits {
+		habitIDs[i] = h.ID
+	}
+
+	completedMap := make(map[uint]bool)
+	if len(habitIDs) > 0 {
+		var todayLogs []models.HabitLog
+		database.DB.Where("habit_id IN ? AND completed_at >= ?", habitIDs, startOfDay).Find(&todayLogs)
+		for _, log := range todayLogs {
+			completedMap[log.HabitID] = true
+		}
 	}
 
 	habitsWithStatus := make([]HabitWithStatus, 0, len(habits))
 	for _, h := range habits {
-		var log models.HabitLog
-		completedToday := database.DB.Where("habit_id = ? AND completed_at >= ?", h.ID, startOfDay).First(&log).Error == nil
-		habitsWithStatus = append(habitsWithStatus, HabitWithStatus{Habit: h, CompletedToday: completedToday})
+		habitsWithStatus = append(habitsWithStatus, HabitWithStatus{
+			Habit:          h,
+			CompletedToday: completedMap[h.ID],
+		})
 	}
 
 	respond(w, map[string]interface{}{
 		"tasks":  tasks,
 		"habits": habitsWithStatus,
 	})
-}
-
-// --- HELPER ---
-
-func respond(w http.ResponseWriter, data interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(data)
 }

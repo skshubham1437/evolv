@@ -8,6 +8,7 @@ import (
 
 func registerUserRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/me", handlers.GetMe)
+	mux.HandleFunc("PATCH /api/me", handlers.UpdateMe)
 }
 
 func registerDashboardRoutes(mux *http.ServeMux) {
@@ -30,6 +31,7 @@ func registerHabitRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/habits/{id}/log", handlers.LogHabit)
 	mux.HandleFunc("DELETE /api/habits/{id}", handlers.DeleteHabit)
 	mux.HandleFunc("GET /api/habits/{id}/stats", handlers.GetHabitStats)
+	mux.HandleFunc("GET /api/habits/heatmap", handlers.GetHabitsHeatmap)
 	mux.HandleFunc("GET /api/routines/{type}", handlers.GetRoutines)
 }
 
@@ -107,8 +109,8 @@ func registerPublicRoutes(mux *http.ServeMux) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"status":"ok","app":"evolv"}`))
 	})
-	mux.HandleFunc("POST /api/auth/register", handlers.Register)
-	mux.HandleFunc("POST /api/auth/login", handlers.Login)
+	mux.HandleFunc("POST /api/auth/register", RateLimitAuth(handlers.Register))
+	mux.HandleFunc("POST /api/auth/login", RateLimitAuth(handlers.Login))
 }
 
 func registerProjectRoutes(mux *http.ServeMux) {

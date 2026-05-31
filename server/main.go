@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"sync"
+	"time"
 
 	"evolv-server/database"
 	"evolv-server/middleware"
@@ -69,7 +72,7 @@ func main() {
 	// --- Combine ---
 	rootMux := http.NewServeMux()
 
-	// Public routes
+	// Public routes (rate-limited)
 	registerPublicRoutes(rootMux)
 
 	// Protected routes (everything under /api/ except auth)
@@ -85,12 +88,18 @@ func main() {
 	}
 }
 
-// corsMiddleware allows requests from the React client
+// corsMiddleware allows requests from a configurable origin (ALLOWED_ORIGIN env var).
 func corsMiddleware(next http.Handler) http.Handler {
+	origin := os.Getenv("ALLOWED_ORIGIN")
+	if origin == "" {
+		origin = "http://localhost:5173"
+	}
+
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Origin", origin)
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
 
 		if r.Method == "OPTIONS" {
 			w.WriteHeader(http.StatusOK)
@@ -99,4 +108,70 @@ func corsMiddleware(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r)
 	})
+}
+
+// --- Simple IP-based rate limiter for auth endpoints ---
+
+type ipRateLimiter struct {
+	mu       sync.Mutex
+	visitors map[string]*visitor
+}
+
+type visitor struct {
+	tokens   float64
+	lastSeen time.Time
+}
+
+var authLimiter = &ipRateLimiter{visitors: make(map[string]*visitor)}
+
+const (
+	rateLimitBurst   = 10  // max burst
+	rateLimitPerSec  = 2.0 // sustained rate
+)
+
+// RateLimitAuth wraps a handler with IP-based rate limiting.
+func RateLimitAuth(next http.HandlerFunc) http.HandlerFunc {
+	// Background cleanup of stale visitors every 5 minutes
+	go func() {
+		for {
+			time.Sleep(5 * time.Minute)
+			authLimiter.mu.Lock()
+			for ip, v := range authLimiter.visitors {
+				if time.Since(v.lastSeen) > 10*time.Minute {
+					delete(authLimiter.visitors, ip)
+				}
+			}
+			authLimiter.mu.Unlock()
+		}
+	}()
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		ip := r.RemoteAddr
+
+		authLimiter.mu.Lock()
+		v, exists := authLimiter.visitors[ip]
+		if !exists {
+			v = &visitor{tokens: rateLimitBurst, lastSeen: time.Now()}
+			authLimiter.visitors[ip] = v
+		}
+
+		// Refill tokens based on elapsed time
+		elapsed := time.Since(v.lastSeen).Seconds()
+		v.tokens += elapsed * rateLimitPerSec
+		if v.tokens > rateLimitBurst {
+			v.tokens = rateLimitBurst
+		}
+		v.lastSeen = time.Now()
+
+		if v.tokens < 1 {
+			authLimiter.mu.Unlock()
+			http.Error(w, `{"error":"too many requests, please try again later"}`, http.StatusTooManyRequests)
+			return
+		}
+
+		v.tokens--
+		authLimiter.mu.Unlock()
+
+		next.ServeHTTP(w, r)
+	}
 }

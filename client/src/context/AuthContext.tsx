@@ -1,10 +1,12 @@
 import { createContext, useContext, useState, useEffect, type ReactNode, useCallback } from 'react';
+import { API_BASE } from '../api/core';
 
 interface User {
   id: number;
   email: string;
   name: string;
   is_onboarded: boolean;
+  preferences?: string;
 }
 
 interface AuthContextType {
@@ -20,7 +22,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const API = 'http://localhost:8081/api';
+const API = API_BASE;
 const TOKEN_KEY = 'evolv_token';
 const USER_KEY = 'evolv_user';
 

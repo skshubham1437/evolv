@@ -49,10 +49,11 @@ export function createTask(
   parent_task_id?: number | null,
   tags = '',
   dependencies = '',
+  due_date?: string,
 ): Promise<Task> {
   return request(`${API}/tasks`, {
     method: 'POST',
-    body: JSON.stringify({ title, priority, project_id, parent_task_id, tags, dependencies }),
+    body: JSON.stringify({ title, priority, project_id, parent_task_id, tags, dependencies, due_date }),
   });
 }
 

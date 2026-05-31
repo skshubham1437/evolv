@@ -1,4 +1,7 @@
-# Evolv — Master Implementation Plan
+# [ARCHIVED] Evolv — Master Implementation Plan
+
+> [!NOTE]
+> This master implementation plan has been archived as of May 2026. The current forward-looking roadmap is defined in `detailed_product_audit_report.md`.
 
 > **"Turn life goals into executable systems."**
 >

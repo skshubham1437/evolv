@@ -275,7 +275,11 @@ export function TasksPage() {
   const [newTags, setNewTags]                     = useState('');
   const [newDependencyId, setNewDependencyId]     = useState<number | null>(null);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    window.addEventListener('task-added-globally', load);
+    return () => window.removeEventListener('task-added-globally', load);
+  }, []);
 
   const load = async () => {
     try {

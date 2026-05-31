@@ -53,5 +53,46 @@
 [Quarterly Objective] --informs--> [Monthly Reset]
 [Monthly Reset] --drives--> [Weekly Priority]
 [Weekly Priority] --executed via--> [Task]
+[Task] --grouped by--> [Project]
+[Task] --scheduled in--> [Time Block]
 [Habit] --supports--> [Vision Layer]
+[Habit] --protected by--> [Streak Shield]
 [Reflection] --analyzed by--> [AI Life Coach]
+[Focus Mode] --tracks--> [Deep Work Session]
+[Shutdown Ritual] --produces--> [Reflection]
+[Yearly Goal] --measured by--> [Key Result]
+[Yearly Goal] --tracked via--> [Milestone]
+
+## Additional Concepts
+
+### Project
+**Definition**: A container that groups related tasks together, providing organizational context and color-coded visual identity.
+
+### Key Result
+**Definition**: A boolean objective linked to a Goal. When all key results are completed, the goal's progress reaches 100%.
+
+### Milestone
+**Definition**: A checkpoint on the roadmap to achieving a goal, with a target date and status (upcoming, active, done).
+
+### Time Block
+**Definition**: A scheduled block of time for a specific day, used in the Weekly Planner to allocate focused work periods.
+**Types**: deep_work, meeting, break, personal, admin
+
+### Focus Mode
+**Definition**: A distraction-free timer session with ambient audio synthesis, waveform visualization, and deep work scoring.
+**Also known as**: Pomodoro, Deep Work Session
+
+### Shutdown Ritual
+**Definition**: A guided end-of-day reflection wizard that walks the user through reviewing wins, lessons, and gratitude before closing out the day.
+**Also known as**: EOD Shutdown, Evening Reflection
+
+### Streak Shield
+**Definition**: A protective mechanism that preserves a habit streak when the user misses a day. Shields are earned through consistency (1 per 7-day streak, max 3).
+
+### Monthly Life Score
+**Definition**: A quantitative assessment across different life categories to measure overall balance and progress.
+**Categories**: productivity, health, consistency, learning, happiness, social connection, focus
+
+### Bucket List Item
+**Definition**: An aspirational life experience or achievement the user wants to accomplish, categorized and tracked on the Vision Board.
+

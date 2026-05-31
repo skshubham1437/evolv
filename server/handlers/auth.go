@@ -124,6 +124,45 @@ func GetMe(w http.ResponseWriter, r *http.Request) {
 	respond(w, user)
 }
 
+func UpdateMe(w http.ResponseWriter, r *http.Request) {
+	userID := getUserIDFromCtx(r)
+	var user models.User
+	if err := database.DB.First(&user, userID).Error; err != nil {
+		http.Error(w, `{"error":"user not found"}`, http.StatusNotFound)
+		return
+	}
+
+	type UpdateRequest struct {
+		Name        *string `json:"name"`
+		Email       *string `json:"email"`
+		Preferences *string `json:"preferences"`
+	}
+
+	var req UpdateRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid body", http.StatusBadRequest)
+		return
+	}
+
+	if req.Name != nil {
+		user.Name = *req.Name
+	}
+	if req.Email != nil {
+		user.Email = *req.Email
+	}
+	if req.Preferences != nil {
+		user.Preferences = *req.Preferences
+	}
+
+	if err := database.DB.Save(&user).Error; err != nil {
+		http.Error(w, "Failed to update profile", http.StatusInternalServerError)
+		return
+	}
+
+	respond(w, user)
+}
+
+
 func generateJWT(userID uint) (string, error) {
 	secret := os.Getenv("JWT_SECRET")
 	if secret == "" {

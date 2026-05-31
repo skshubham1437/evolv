@@ -20,6 +20,25 @@ import { SessionSummaryPage } from './pages/SessionSummaryPage';
 import { LoginPage } from './pages/auth/LoginPage';
 import { RegisterPage } from './pages/auth/RegisterPage';
 import { OnboardingPage } from './pages/auth/OnboardingPage';
+import { ShutdownPage } from './pages/ShutdownPage';
+import { LandingPage } from './pages/LandingPage';
+import { useAuth } from './context/AuthContext';
+
+function HomeRoute() {
+  const { isAuthenticated } = useAuth();
+
+  if (isAuthenticated) {
+    return (
+      <ProtectedRoute>
+        <Layout>
+          <DashboardPage />
+        </Layout>
+      </ProtectedRoute>
+    );
+  }
+
+  return <LandingPage />;
+}
 
 export default function App() {
   return (
@@ -27,6 +46,9 @@ export default function App() {
       <AIProvider>
         <div className="w-full h-screen bg-[var(--color-background)] overflow-hidden font-body-md text-[var(--color-on-background)] selection:bg-[var(--color-primary)]/30">
           <Routes>
+            {/* Dynamic path routing on root / */}
+            <Route path="/" element={<HomeRoute />} />
+
             {/* Public auth routes — no Layout wrapper */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
@@ -45,7 +67,6 @@ export default function App() {
                 <ProtectedRoute>
                   <Layout>
                     <Routes>
-                      <Route path="/"          element={<DashboardPage />} />
                       <Route path="/vision"    element={<VisionPage />} />
                       <Route path="/goals"     element={<GoalsPage />} />
                       <Route path="/quarterly" element={<QuarterlyPage />} />
@@ -58,6 +79,7 @@ export default function App() {
                       <Route path="/settings"  element={<SettingsPage />} />
                       <Route path="/focus"     element={<FocusModePage />} />
                       <Route path="/summary"   element={<SessionSummaryPage />} />
+                      <Route path="/shutdown"  element={<ShutdownPage />} />
                     </Routes>
                   </Layout>
                 </ProtectedRoute>

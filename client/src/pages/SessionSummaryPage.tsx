@@ -1,7 +1,38 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { fetchHabits, type Habit } from '../api';
 
 export function SessionSummaryPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const state = location.state as { elapsedSeconds?: number; totalSecs?: number } | null;
+
+  const [completedHabits, setCompletedHabits] = useState<Habit[]>([]);
+  const [loadingHabits, setLoadingHabits] = useState(true);
+
+  useEffect(() => {
+    async function loadHabits() {
+      try {
+        const habits = await fetchHabits();
+        setCompletedHabits((habits || []).filter(h => h.completed_today));
+      } catch (err) {
+        console.error('Failed to load habits for focus summary:', err);
+      } finally {
+        setLoadingHabits(false);
+      }
+    }
+    loadHabits();
+  }, []);
+
+  const elapsedSeconds = state?.elapsedSeconds ?? 45 * 60; // fallback to 45 mins
+  const minutesFocused = Math.round(elapsedSeconds / 60) || 1; // minimum 1 min if elapsed > 0
+  const targetSecs = state?.totalSecs ?? 45 * 60;
+  
+  // Calculate real deep work score
+  // Scales with completion rate, with a base score for focused time
+  const completionRate = targetSecs > 0 ? (elapsedSeconds / targetSecs) : 1;
+  const deepWorkScore = Math.max(10, Math.min(100, Math.round(30 + completionRate * 70)));
+
   return (
     <div className="flex-1 w-full flex flex-col items-center justify-center p-4">
       {/* Main Container */}
@@ -28,7 +59,7 @@ export function SessionSummaryPage() {
               <span className="material-symbols-outlined text-[var(--color-primary)] text-xl">timer</span>
             </div>
             <div className="flex items-baseline gap-2">
-              <span className="font-display-lg text-display-lg text-[var(--color-primary)]">45</span>
+              <span className="font-display-lg text-display-lg text-[var(--color-primary)]">{minutesFocused}</span>
               <span className="font-body-md text-body-md text-[var(--color-on-surface-variant)]">min</span>
             </div>
           </div>
@@ -37,24 +68,32 @@ export function SessionSummaryPage() {
           <div className="glass-panel rounded-xl p-5 flex flex-col justify-between">
             <span className="font-label-sm text-label-sm text-[var(--color-on-surface-variant)] uppercase tracking-widest mb-2 block">Deep Work Score</span>
             <div className="flex items-end gap-2 mt-auto">
-              <span className="font-headline-lg text-headline-lg text-[var(--color-secondary)]">92</span>
+              <span className="font-headline-lg text-headline-lg text-[var(--color-secondary)]">{deepWorkScore}</span>
               <span className="font-body-md text-body-md text-[var(--color-on-surface-variant)] pb-1">/100</span>
             </div>
           </div>
           
           {/* Habits Progress */}
-          <div className="glass-panel rounded-xl p-5 flex flex-col justify-between">
-            <span className="font-label-sm text-label-sm text-[var(--color-on-surface-variant)] uppercase tracking-widest mb-2 block">Habits Progress</span>
-            <div className="mt-auto space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="font-body-md text-body-md text-[var(--color-secondary)]">Read 20 pages</span>
-                <span className="material-symbols-outlined text-[var(--color-secondary)] text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-              </div>
+          <div className="glass-panel rounded-xl p-5 flex flex-col justify-between min-h-[120px]">
+            <span className="font-label-sm text-label-sm text-[var(--color-on-surface-variant)] uppercase tracking-widest mb-2 block">Habits Done Today</span>
+            <div className="mt-auto space-y-2 overflow-y-auto max-h-[80px] no-scrollbar">
+              {loadingHabits ? (
+                <span className="font-body-md text-[13px] text-[var(--color-outline)] animate-pulse">Loading...</span>
+              ) : completedHabits.length > 0 ? (
+                completedHabits.slice(0, 3).map(h => (
+                  <div key={h.id} className="flex justify-between items-center gap-1">
+                    <span className="font-body-md text-[13px] text-[var(--color-secondary)] truncate max-w-[100px]" title={h.title}>{h.title}</span>
+                    <span className="material-symbols-outlined text-[var(--color-secondary)] text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                  </div>
+                ))
+              ) : (
+                <span className="font-body-md text-[12px] text-[var(--color-outline)] italic">None logged yet</span>
+              )}
             </div>
           </div>
         </section>
 
-        {/* Daily Momentum Chart Placeholder */}
+        {/* Daily Momentum Chart */}
         <section className="glass-panel rounded-xl p-6">
           <div className="flex items-center justify-between mb-6">
             <span className="font-label-sm text-label-sm text-[var(--color-on-surface-variant)] uppercase tracking-widest">Daily Momentum</span>
@@ -62,11 +101,11 @@ export function SessionSummaryPage() {
           </div>
           {/* Simplified abstract representation of a chart */}
           <div className="h-32 flex items-end gap-2 justify-between px-2">
-            <div className="w-1/6 bg-[var(--color-surface-variant)] rounded-t-sm h-1/4"></div>
-            <div className="w-1/6 bg-[var(--color-surface-variant)] rounded-t-sm h-2/4"></div>
-            <div className="w-1/6 bg-[var(--color-surface-variant)] rounded-t-sm h-1/3"></div>
-            <div className="w-1/6 bg-[var(--color-surface-variant)] rounded-t-sm h-3/4"></div>
-            <div className="w-1/6 bg-[var(--color-primary)] rounded-t-sm h-full shadow-[0_0_15px_rgba(210,187,255,0.4)] relative">
+            <div className="w-1/6 bg-[var(--color-surface-variant)] rounded-t-sm h-[20%]"></div>
+            <div className="w-1/6 bg-[var(--color-surface-variant)] rounded-t-sm h-[40%]"></div>
+            <div className="w-1/6 bg-[var(--color-surface-variant)] rounded-t-sm h-[30%]"></div>
+            <div className="w-1/6 bg-[var(--color-surface-variant)] rounded-t-sm h-[60%]"></div>
+            <div className="w-1/6 bg-[var(--color-primary)] rounded-t-sm h-[85%] shadow-[0_0_15px_rgba(210,187,255,0.4)] relative">
               <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 font-label-sm text-label-sm text-[var(--color-primary)]">NOW</div>
             </div>
           </div>

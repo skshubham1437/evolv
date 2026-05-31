@@ -40,10 +40,11 @@ export function createHabit(
   category = 'Health',
   routine_type = 'none',
   streak_shield_active = false,
+  stack_after_id?: number | null,
 ): Promise<Habit> {
   return request(`${API}/habits`, {
     method: 'POST',
-    body: JSON.stringify({ title, category, routine_type, frequency: 'daily', streak_shield_active }),
+    body: JSON.stringify({ title, category, routine_type, frequency: 'daily', streak_shield_active, stack_after_id }),
   });
 }
 
@@ -61,3 +62,16 @@ export function logHabit(id: number): Promise<Habit> {
 export function deleteHabit(id: number): Promise<void> {
   return request(`${API}/habits/${id}`, { method: 'DELETE' });
 }
+
+export interface HeatmapDay {
+  date: string;
+  completed: number;
+  total: number;
+  active: boolean;
+  percent: number;
+}
+
+export function fetchHabitsHeatmap(): Promise<HeatmapDay[]> {
+  return request(`${API}/habits/heatmap`);
+}
+

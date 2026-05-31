@@ -177,7 +177,7 @@ export function VisionPage() {
   if (isLoading) return <div className="p-8 text-[var(--color-outline)]">Loading Vision Sequence...</div>;
 
   return (
-    <div className="flex-1 overflow-y-auto pb-32 md:pb-12 hide-scrollbar page-enter relative">
+    <div className="flex-1 overflow-y-auto pb-32 md:pb-12 no-scrollbar page-enter relative">
       <div className="absolute top-[15%] left-[10%] w-96 h-96 bg-[var(--color-primary)]/10 rounded-full blur-[140px] pointer-events-none -z-10 animate-pulse"></div>
       <div className="absolute bottom-[30%] right-[15%] w-[600px] h-[600px] bg-[var(--color-secondary)]/5 rounded-full blur-[160px] pointer-events-none -z-10"></div>
       

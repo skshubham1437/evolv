@@ -1,26 +1,43 @@
 import { useEffect, useState, useMemo, type FormEvent } from 'react';
-import { fetchHabits, createHabit, logHabit, updateHabit, deleteHabit, type Habit } from '../api';
+import { fetchHabits, createHabit, logHabit, updateHabit, deleteHabit, fetchHabitsHeatmap, type Habit, type HeatmapDay } from '../api';
 import { Modal } from '../components/ui/Modal';
 
-// ── Stable random seed (prevents flicker on re-render) ─────
-function seededRandom(seed: number) {
-  const x = Math.sin(seed + 1) * 10000;
-  return x - Math.floor(x);
-}
-
 // ── Heatmap ────────────────────────────────────────────────
-function ConsistencyHeatmap({ habits }: { habits: Habit[] }) {
+function ConsistencyHeatmap({ heatmapData }: { heatmapData: HeatmapDay[] }) {
   const DAYS = 30;
-  // stable per-bar pattern based on habit count + position
-  const bars = useMemo(() =>
-    Array.from({ length: DAYS }, (_, i) => ({
-      active: seededRandom(i * 7 + habits.length) > 0.28,
-      height: 30 + Math.round(seededRandom(i * 3 + habits.length) * 70),
-    })),
-    [habits.length]
-  );
 
-  const consistency = Math.round(bars.filter(b => b.active).length / DAYS * 100);
+  const bars = useMemo(() => {
+    if (!heatmapData || heatmapData.length === 0) {
+      return Array.from({ length: DAYS }, () => ({
+        active: false,
+        height: 20,
+        titleText: 'No habits logged'
+      }));
+    }
+
+    return heatmapData.map(day => {
+      const active = day.active;
+      const height = active ? Math.max(30, Math.min(100, 30 + Math.round(day.percent * 0.7))) : 20;
+      
+      const dateObj = new Date(day.date);
+      const formattedDate = dateObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+      const titleText = active 
+        ? `${day.completed}/${day.total} habits completed on ${formattedDate} (${day.percent}%)`
+        : `0/${day.total} habits completed on ${formattedDate}`;
+
+      return {
+        active,
+        height,
+        titleText
+      };
+    });
+  }, [heatmapData]);
+
+  const consistency = useMemo(() => {
+    if (!heatmapData || heatmapData.length === 0) return 0;
+    const activeDays = heatmapData.filter(d => d.active).length;
+    return Math.round((activeDays / heatmapData.length) * 100);
+  }, [heatmapData]);
 
   return (
     <section className="lg:col-span-2 bg-[var(--color-surface-container-low)]/50 backdrop-blur-md border border-[var(--color-outline-variant)]/15 rounded-2xl p-6 flex flex-col relative overflow-hidden group">
@@ -45,7 +62,7 @@ function ConsistencyHeatmap({ habits }: { habits: Habit[] }) {
                   : 'bg-[var(--color-surface-variant)]/40'
               }`}
               style={{ height: bar.active ? `${bar.height}%` : '20%' }}
-              title={bar.active ? 'Completed' : 'Missed'}
+              title={bar.titleText}
             />
           ))}
         </div>
@@ -58,11 +75,60 @@ function ConsistencyHeatmap({ habits }: { habits: Habit[] }) {
   );
 }
 
+
+// ── Stack Sorting Helper ────────────────────────────────────
+function sortHabitsByStack(habitsList: Habit[]): Habit[] {
+  const childrenMap: Record<number, Habit[]> = {};
+  const roots: Habit[] = [];
+  
+  const habitsMap = new Map(habitsList.map(h => [h.id, h]));
+  
+  habitsList.forEach(h => {
+    if (h.stack_after_id && habitsMap.has(h.stack_after_id)) {
+      if (h.stack_after_id === h.id) {
+        roots.push(h);
+      } else {
+        if (!childrenMap[h.stack_after_id]) {
+          childrenMap[h.stack_after_id] = [];
+        }
+        childrenMap[h.stack_after_id].push(h);
+      }
+    } else {
+      roots.push(h);
+    }
+  });
+  
+  const result: Habit[] = [];
+  const visited = new Set<number>();
+  
+  function visit(habit: Habit) {
+    if (visited.has(habit.id)) return;
+    visited.add(habit.id);
+    result.push(habit);
+    const children = childrenMap[habit.id] || [];
+    children.forEach(child => {
+      visit(child);
+    });
+  }
+  
+  roots.forEach(root => visit(root));
+  
+  // Fallback for circular dependencies or disconnected nodes
+  habitsList.forEach(h => {
+    if (!visited.has(h.id)) {
+      visit(h);
+    }
+  });
+  
+  return result;
+}
+
 // ── Routine section ────────────────────────────────────────
 function RoutineSection({
   title,
   icon,
   habits,
+  allHabits,
   onLog,
   onMove,
   onDelete,
@@ -73,6 +139,7 @@ function RoutineSection({
   title: string;
   icon: string;
   habits: Habit[];
+  allHabits: Habit[];
   onLog: (id: number) => void;
   onMove: (id: number, r: 'morning' | 'night' | 'none') => void;
   onDelete: (id: number) => void;
@@ -81,6 +148,8 @@ function RoutineSection({
   badgeLabel?: string;
 }) {
   if (habits.length === 0) return null;
+
+  const sortedHabits = useMemo(() => sortHabitsByStack(habits), [habits]);
 
   return (
     <section>
@@ -93,11 +162,12 @@ function RoutineSection({
       </div>
 
       <div className="flex flex-col gap-3">
-        {habits.map((habit, idx) => (
+        {sortedHabits.map((habit, idx) => (
           <HabitCard
             key={habit.id}
             habit={habit}
             idx={idx}
+            allHabits={allHabits}
             onLog={onLog}
             onMove={onMove}
             onDelete={onDelete}
@@ -114,6 +184,7 @@ function RoutineSection({
 function HabitCard({
   habit,
   idx,
+  allHabits,
   onLog,
   onMove,
   onDelete,
@@ -122,6 +193,7 @@ function HabitCard({
 }: {
   habit: Habit;
   idx: number;
+  allHabits: Habit[];
   onLog: (id: number) => void;
   onMove: (id: number, r: 'morning' | 'night' | 'none') => void;
   onDelete: (id: number) => void;
@@ -137,7 +209,10 @@ function HabitCard({
     onLog(habit.id);
   };
 
-  return (
+  const isStacked = !!habit.stack_after_id && allHabits.some(h => h.id === habit.stack_after_id);
+  const parentHabit = isStacked ? allHabits.find(h => h.id === habit.stack_after_id) : null;
+
+  const cardContent = (
     <div
       className={`group flex items-center gap-4 bg-[var(--color-surface-container-low)]/70 backdrop-blur-xl border border-[var(--color-outline-variant)]/20 rounded-2xl p-4 relative z-10 transition-all duration-300 hover:border-[var(--color-primary)]/25 hover:shadow-sm anim-fade-up ${justDone ? 'anim-glow-burst' : ''}`}
       style={{ animationDelay: `${idx * 50}ms` }}
@@ -191,6 +266,13 @@ function HabitCard({
           </span>
           <span className="font-body-md text-[11px] text-[var(--color-outline)] uppercase tracking-widest">{habit.category}</span>
           
+          {isStacked && parentHabit && (
+            <span className="flex items-center gap-1 px-2 py-0.5 rounded-md border border-[var(--color-primary)]/25 bg-[var(--color-primary)]/8 text-[9px] font-bold uppercase tracking-wider text-[var(--color-primary)]">
+              <span className="material-symbols-outlined text-[12px] font-bold">link</span>
+              <span>After: {parentHabit.title}</span>
+            </span>
+          )}
+
           {habit.streak_shield_active && (
             <span 
               className={`flex items-center gap-0.5 px-2 py-0.5 rounded-md border text-[9px] font-bold uppercase tracking-wider ${
@@ -244,16 +326,32 @@ function HabitCard({
       </div>
     </div>
   );
+
+  if (isStacked) {
+    return (
+      <div className="relative pl-8">
+        {/* Elegant vertical solid connection line */}
+        <div className="absolute left-3.5 top-[-16px] bottom-1/2 w-0.5 bg-[var(--color-primary)]/25" />
+        {/* Elegant horizontal branch line */}
+        <div className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-0.5 bg-[var(--color-primary)]/25" />
+        {cardContent}
+      </div>
+    );
+  }
+
+  return cardContent;
 }
 
 // ── Main Page ──────────────────────────────────────────────
 export function HabitsPage() {
   const [habits, setHabits]       = useState<Habit[]>([]);
+  const [heatmapData, setHeatmapData] = useState<HeatmapDay[]>([]);
   const [isModalOpen, setModal]   = useState(false);
   const [newTitle, setNewTitle]   = useState('');
   const [newCategory, setNewCategory] = useState('Health');
   const [newRoutine, setNewRoutine]   = useState<'morning' | 'night' | 'none'>('none');
   const [newStreakShieldActive, setNewStreakShieldActive] = useState(false);
+  const [newStackAfterId, setNewStackAfterId] = useState<number | null>(null);
   const [loading, setLoading]     = useState(true);
 
   useEffect(() => { load(); }, []);
@@ -262,6 +360,8 @@ export function HabitsPage() {
     try {
       const data = await fetchHabits();
       setHabits(data || []);
+      const heatmap = await fetchHabitsHeatmap();
+      setHeatmapData(heatmap || []);
     } finally {
       setLoading(false);
     }
@@ -270,17 +370,26 @@ export function HabitsPage() {
   const handleCreate = async (e: FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
-    const h = await createHabit(newTitle.trim(), newCategory, newRoutine, newStreakShieldActive);
+    const h = await createHabit(newTitle.trim(), newCategory, newRoutine, newStreakShieldActive, newStackAfterId);
     setHabits(p => [...p, h]);
     setNewTitle('');
     setNewStreakShieldActive(false);
+    setNewStackAfterId(null);
     setModal(false);
+    try {
+      const heatmap = await fetchHabitsHeatmap();
+      setHeatmapData(heatmap || []);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleLog = async (id: number) => {
     try {
       const updated = await logHabit(id);
       setHabits(p => p.map(h => h.id === id ? { ...h, completed_today: true, streak: updated.streak, streak_shields_remaining: updated.streak_shields_remaining } : h));
+      const heatmap = await fetchHabitsHeatmap();
+      setHeatmapData(heatmap || []);
     } catch { /* already logged */ }
   };
 
@@ -297,6 +406,12 @@ export function HabitsPage() {
   const handleDelete = async (id: number) => {
     await deleteHabit(id);
     setHabits(p => p.filter(h => h.id !== id));
+    try {
+      const heatmap = await fetchHabitsHeatmap();
+      setHeatmapData(heatmap || []);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const morning  = habits.filter(h => h.routine_type === 'morning');
@@ -334,7 +449,7 @@ export function HabitsPage() {
         {/* ── Top stats grid ─────────────────────────────── */}
         {!loading && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-            <ConsistencyHeatmap habits={habits} />
+            <ConsistencyHeatmap heatmapData={heatmapData} />
 
             {/* Weekly summary */}
             <section className="bg-[var(--color-surface-container-low)]/50 backdrop-blur-md border border-[var(--color-outline-variant)]/15 rounded-2xl p-6">
@@ -394,11 +509,11 @@ export function HabitsPage() {
         {/* ── Routine sections ───────────────────────────── */}
         {!loading && (
           <div className="flex flex-col gap-10">
-            <RoutineSection title="Morning Sequence" icon="wb_twilight" habits={morning} onLog={handleLog} onMove={handleMove} onDelete={handleDelete} onToggleShield={handleToggleShield}
+            <RoutineSection title="Morning Sequence" icon="wb_twilight" habits={morning} allHabits={habits} onLog={handleLog} onMove={handleMove} onDelete={handleDelete} onToggleShield={handleToggleShield}
               colorClass="text-[var(--color-primary)] bg-[var(--color-primary)]/10" badgeLabel="Morning" />
-            <RoutineSection title="Night Sequence" icon="bedtime" habits={night} onLog={handleLog} onMove={handleMove} onDelete={handleDelete} onToggleShield={handleToggleShield}
+            <RoutineSection title="Night Sequence" icon="bedtime" habits={night} allHabits={habits} onLog={handleLog} onMove={handleMove} onDelete={handleDelete} onToggleShield={handleToggleShield}
               colorClass="text-[var(--color-tertiary)] bg-[var(--color-tertiary)]/10" badgeLabel="Night" />
-            <RoutineSection title="Anytime" icon="all_inclusive" habits={anytime} onLog={handleLog} onMove={handleMove} onDelete={handleDelete} onToggleShield={handleToggleShield}
+            <RoutineSection title="Anytime" icon="all_inclusive" habits={anytime} allHabits={habits} onLog={handleLog} onMove={handleMove} onDelete={handleDelete} onToggleShield={handleToggleShield}
               colorClass="text-[var(--color-secondary)] bg-[var(--color-secondary)]/10" badgeLabel="Flexible" />
 
             {habits.length === 0 && (
@@ -458,6 +573,23 @@ export function HabitsPage() {
                 <option value="night">Night</option>
               </select>
             </div>
+          </div>
+
+          {/* Stack After dropdown */}
+          <div>
+            <label className="font-label-sm text-[11px] text-[var(--color-on-surface-variant)] uppercase tracking-widest block mb-2">Stack After (Habit Stacking)</label>
+            <select
+              value={newStackAfterId || ''}
+              onChange={e => setNewStackAfterId(e.target.value ? Number(e.target.value) : null)}
+              className="w-full bg-[var(--color-surface-container-high)]/50 border border-[var(--color-outline-variant)]/40 rounded-xl px-4 py-3 text-[var(--color-on-surface)] outline-none focus:border-[var(--color-primary)] transition-colors"
+            >
+              <option value="">-- Independent (No Stack) --</option>
+              {habits.map(h => (
+                <option key={h.id} value={h.id}>
+                  {h.title} ({h.routine_type !== 'none' ? h.routine_type : 'Anytime'})
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Streak Shield Toggle */}

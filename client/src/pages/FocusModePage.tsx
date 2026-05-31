@@ -244,6 +244,10 @@ export function FocusModePage() {
 
   const handleToggle = () => { if (!finished) setRunning(r => !r); };
   const handleReset  = () => { setRunning(false); setFinished(false); setRemaining(totalSecs); };
+  const handleEndSession = () => {
+    const elapsedSeconds = totalSecs - remaining;
+    navigate('/summary', { state: { elapsedSeconds, totalSecs } });
+  };
 
   return (
     <div className="flex-1 w-full flex flex-col relative z-10 min-h-screen overflow-hidden page-enter">
@@ -328,7 +332,7 @@ export function FocusModePage() {
               </button>
             )}
 
-            <button onClick={() => navigate('/summary')} title="End Session"
+            <button onClick={handleEndSession} title="End Session"
               className="w-12 h-12 rounded-full border border-[var(--color-outline-variant)]/40 flex items-center justify-center text-[var(--color-on-surface-variant)] hover:text-[var(--color-error)] hover:border-[var(--color-error)]/40 transition-all press-scale">
               <span className="material-symbols-outlined text-[22px]">stop_circle</span>
             </button>

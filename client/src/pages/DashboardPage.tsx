@@ -18,6 +18,7 @@ interface BlueprintItem {
   streak?: number;
   routineType?: string;
   category?: string;
+  stackAfterId?: number | null;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -40,6 +41,52 @@ function getPriorityColor(priority?: string) {
   if (priority === 'high') return 'var(--color-error)';
   if (priority === 'medium') return 'var(--color-secondary)';
   return 'var(--color-outline)';
+}
+
+function sortBlueprintHabitsByStack(items: BlueprintItem[]): BlueprintItem[] {
+  const childrenMap: Record<number, BlueprintItem[]> = {};
+  const roots: BlueprintItem[] = [];
+  
+  const itemsMap = new Map(items.map(i => [i.refId, i]));
+  
+  items.forEach(i => {
+    if (i.stackAfterId && itemsMap.has(i.stackAfterId)) {
+      if (i.stackAfterId === i.refId) {
+        roots.push(i);
+      } else {
+        if (!childrenMap[i.stackAfterId]) {
+          childrenMap[i.stackAfterId] = [];
+        }
+        childrenMap[i.stackAfterId].push(i);
+      }
+    } else {
+      roots.push(i);
+    }
+  });
+  
+  const result: BlueprintItem[] = [];
+  const visited = new Set<number>();
+  
+  function visit(item: BlueprintItem) {
+    if (visited.has(item.refId)) return;
+    visited.add(item.refId);
+    result.push(item);
+    const children = childrenMap[item.refId] || [];
+    children.forEach(child => {
+      visit(child);
+    });
+  }
+  
+  roots.forEach(root => visit(root));
+  
+  // Fallback for circular dependencies or disconnected nodes
+  items.forEach(i => {
+    if (!visited.has(i.refId)) {
+      visit(i);
+    }
+  });
+  
+  return result;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -70,10 +117,12 @@ function BlueprintRow({
   item,
   onComplete,
   isNew = false,
+  allHabits = [],
 }: {
   item: BlueprintItem;
   onComplete: (item: BlueprintItem) => void;
   isNew?: boolean;
+  allHabits?: Habit[];
 }) {
   const [animating, setAnimating] = useState(false);
 
@@ -89,7 +138,10 @@ function BlueprintRow({
   const iconName = item.type === 'habit' ? getRoutineIcon(item.routineType) : 'task_alt';
   const accentColor = item.type === 'habit' ? 'var(--color-secondary)' : getPriorityColor(item.priority);
 
-  return (
+  const isStacked = item.type === 'habit' && !!item.stackAfterId && allHabits.some(h => h.id === item.stackAfterId);
+  const parentHabit = isStacked ? allHabits.find(h => h.id === item.stackAfterId) : null;
+
+  const rowContent = (
     <div
       className={`group flex items-center gap-4 px-4 py-3.5 rounded-2xl border transition-all duration-300 press-scale
         ${item.done
@@ -135,7 +187,7 @@ function BlueprintRow({
         >
           {item.title}
         </p>
-        <div className="flex items-center gap-2 mt-0.5">
+        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
           <span
             className="font-label-sm text-[10px] uppercase tracking-widest font-bold px-2 py-0.5 rounded-md"
             style={{
@@ -149,6 +201,13 @@ function BlueprintRow({
             <span className="font-label-sm text-[10px] text-[var(--color-outline)] flex items-center gap-1">
               <span className="material-symbols-outlined text-[12px]" style={{ color: '#f97316' }}>local_fire_department</span>
               {item.streak}d
+            </span>
+          )}
+
+          {isStacked && parentHabit && (
+            <span className="font-label-sm text-[9px] font-bold uppercase tracking-wider text-[var(--color-primary)] bg-[var(--color-primary)]/10 px-2 py-0.5 rounded-md border border-[var(--color-primary)]/20 flex items-center gap-1">
+              <span className="material-symbols-outlined text-[11px] font-bold">link</span>
+              <span>After: {parentHabit.title}</span>
             </span>
           )}
         </div>
@@ -168,6 +227,20 @@ function BlueprintRow({
       )}
     </div>
   );
+
+  if (isStacked) {
+    return (
+      <div className="relative pl-8">
+        {/* Elegant vertical solid connection line */}
+        <div className="absolute left-3.5 top-[-14px] bottom-1/2 w-0.5 bg-[var(--color-primary)]/25" />
+        {/* Elegant horizontal branch line */}
+        <div className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-0.5 bg-[var(--color-primary)]/25" />
+        {rowContent}
+      </div>
+    );
+  }
+
+  return rowContent;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -231,7 +304,11 @@ export function DashboardPage() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+    window.addEventListener('task-added-globally', load);
+    return () => window.removeEventListener('task-added-globally', load);
+  }, []);
 
   // ── Build unified blueprint ──────────────────────────────────
   const blueprintItems = useMemo<BlueprintItem[]>(() => {
@@ -244,6 +321,7 @@ export function DashboardPage() {
       streak: h.streak,
       routineType: h.routine_type,
       category: h.category,
+      stackAfterId: h.stack_after_id,
     }));
 
     const taskItems: BlueprintItem[] = tasks.map(t => ({
@@ -260,7 +338,11 @@ export function DashboardPage() {
     const evening = habitItems.filter(i => i.routineType === 'night');
     const anytime = habitItems.filter(i => i.routineType !== 'morning' && i.routineType !== 'night');
 
-    return [...morning, ...taskItems, ...anytime, ...evening];
+    const sortedMorning = sortBlueprintHabitsByStack(morning);
+    const sortedEvening = sortBlueprintHabitsByStack(evening);
+    const sortedAnytime = sortBlueprintHabitsByStack(anytime);
+
+    return [...sortedMorning, ...taskItems, ...sortedAnytime, ...sortedEvening];
   }, [tasks, habits]);
 
   const doneCount = blueprintItems.filter(i => i.done).length;
@@ -322,6 +404,31 @@ export function DashboardPage() {
             <span className="font-label-sm text-label-sm text-[var(--color-secondary)] uppercase tracking-widest">System Active</span>
           </div>
         </section>
+
+        {/* ── EVENING SHUTDOWN TRANSITION BANNER ───────────────── */}
+        {new Date().getHours() >= 20 && (
+          <div className="glass-panel rounded-2xl p-6 relative overflow-hidden border border-[var(--color-secondary)]/20 bg-gradient-to-br from-[var(--color-secondary)]/5 to-transparent hover:border-[var(--color-secondary)]/40 transition-all duration-300 anim-fade-up flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="flex gap-4">
+              <div className="w-12 h-12 rounded-xl bg-[var(--color-secondary)]/10 text-[var(--color-secondary)] flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-[24px]">power_settings_new</span>
+              </div>
+              <div>
+                <h3 className="font-title-md text-[16px] text-[var(--color-on-surface)] font-bold flex items-center gap-2">
+                  System Transition Imminent
+                </h3>
+                <p className="font-body-md text-[13px] text-[var(--color-on-surface-variant)] mt-1 opacity-80 leading-relaxed">
+                  It's past 8 PM. Clear your mind, reflect on your wins, and schedule tomorrow's MITs with the **End-of-Day Shutdown Ritual**.
+                </p>
+              </div>
+            </div>
+            <Link
+              to="/shutdown"
+              className="w-full md:w-auto px-5 py-3 bg-[var(--color-secondary)] hover:bg-[var(--color-secondary)]/90 text-[#000000] font-label-sm text-label-sm uppercase tracking-widest rounded-xl text-center shadow-[0_0_15px_color-mix(in_srgb,var(--color-secondary)_25%,transparent)] hover:shadow-[0_0_25px_color-mix(in_srgb,var(--color-secondary)_45%,transparent)] transition-all shrink-0 font-bold"
+            >
+              Start Shutdown
+            </Link>
+          </div>
+        )}
 
         {/* ── AI MORNING BRIEFING ──────────────────────────────── */}
         {briefLoading ? (
@@ -524,6 +631,7 @@ export function DashboardPage() {
                   item={item}
                   onComplete={handleComplete}
                   isNew={item.id === justAddedId}
+                  allHabits={habits}
                 />
               ))}
 
@@ -536,7 +644,7 @@ export function DashboardPage() {
                   </summary>
                   <div className="flex flex-col gap-2 mt-2">
                     {doneItems.map(item => (
-                      <BlueprintRow key={item.id} item={item} onComplete={handleComplete} />
+                      <BlueprintRow key={item.id} item={item} onComplete={handleComplete} allHabits={habits} />
                     ))}
                   </div>
                 </details>
@@ -552,6 +660,18 @@ export function DashboardPage() {
                   <p className="font-body-md text-[13px] text-[var(--color-on-surface-variant)] mt-1">Outstanding execution. All items checked off.</p>
                 </div>
               )}
+            </div>
+          )}
+
+          {totalCount > 0 && (
+            <div className="flex justify-center pt-2">
+              <Link
+                to="/daily"
+                className="font-label-sm text-label-sm text-[var(--color-primary)] hover:text-[var(--color-primary)]/80 flex items-center gap-1 bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/20 px-4 py-2 rounded-full transition-all press-scale hover:shadow-md"
+              >
+                <span>View Full Task Queue</span>
+                <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+              </Link>
             </div>
           )}
         </section>

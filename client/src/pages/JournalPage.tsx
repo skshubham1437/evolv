@@ -5,6 +5,7 @@ import {
   type JournalEntry,
 } from '../api';
 import { useToast } from '../context/ToastContext';
+import { useAI } from '../context/AIContext';
 
 // ── Controlled chip list (gratitude / wins / lessons) ─────
 function ChipList({
@@ -264,6 +265,8 @@ function HistoryView({ entries }: { entries: JournalEntry[] }) {
 // ── Main Page ──────────────────────────────────────────────
 export function JournalPage() {
   const { showToast } = useToast();
+  const { openPanel } = useAI();
+  const [aiQuery, setAiQuery] = useState('');
   const [entry, setEntry]       = useState<JournalEntry | null>(null);
   const [content, setContent]   = useState('');
   const [mood, setMood]         = useState(3);
@@ -282,6 +285,24 @@ export function JournalPage() {
   const todayStr   = new Date().toISOString().split('T')[0];
 
   useEffect(() => { loadToday(); loadHistory(); }, []);
+
+  const handleAskAI = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!aiQuery.trim()) return;
+
+    const ctx = `Journal Entry for ${todayStr}:
+Content: ${content || 'No text written yet.'}
+Gratitude: ${gratitude.length > 0 ? JSON.stringify(gratitude) : 'None listed'}
+Wins: ${wins.length > 0 ? JSON.stringify(wins) : 'None listed'}
+Lessons: ${lessons.length > 0 ? JSON.stringify(lessons) : 'None listed'}
+Mood: ${mood} (1-5 scale)
+Energy: ${energy}%
+Stress: ${stress}/5
+Confidence: ${confidence}/5`;
+
+    openPanel(aiQuery, ctx);
+    setAiQuery('');
+  };
 
   const loadToday = async () => {
     try {
@@ -388,12 +409,27 @@ export function JournalPage() {
           </div>
           <div className="flex items-center gap-3">
             {/* Save status */}
-            <div className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[var(--color-surface-container-low)] rounded-full border border-[var(--color-outline-variant)]/20 shadow-sm transition-all duration-300">
               {saving ? (
-                <><div className="w-2 h-2 rounded-full border border-[var(--color-secondary)] border-t-transparent animate-spin" />Saving</>
+                <>
+                  <div className="w-2.5 h-2.5 rounded-full border-2 border-[var(--color-secondary)] border-t-transparent animate-spin" />
+                  <span className="font-label-sm text-[10px] text-[var(--color-on-surface-variant)] uppercase tracking-widest">Saving...</span>
+                </>
               ) : lastSaved ? (
-                <><span className="w-1.5 h-1.5 rounded-full bg-[var(--color-secondary)]" />{lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</>
-              ) : null}
+                <>
+                  <span className="material-symbols-outlined text-[14px] text-[var(--color-secondary)] font-bold" style={{ fontVariationSettings: "'FILL' 1" }}>
+                    check_circle
+                  </span>
+                  <span className="font-label-sm text-[10px] text-[var(--color-secondary)] uppercase tracking-widest font-bold">
+                    Saved {lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-outline)] animate-pulse" />
+                  <span className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest">Draft</span>
+                </>
+              )}
             </div>
 
             {/* View toggle */}
@@ -588,19 +624,21 @@ export function JournalPage() {
             </section>
 
             {/* AI Coach bar */}
-            <section className="bg-[var(--color-surface-container)]/60 backdrop-blur-xl border border-[var(--color-secondary)]/15 rounded-2xl p-2 flex items-center gap-3 focus-within:border-[var(--color-secondary)]/35 transition-all duration-300">
+            <form onSubmit={handleAskAI} className="bg-[var(--color-surface-container)]/60 backdrop-blur-xl border border-[var(--color-secondary)]/15 rounded-2xl p-2 flex items-center gap-3 focus-within:border-[var(--color-secondary)]/35 transition-all duration-300">
               <div className="w-10 h-10 rounded-full bg-[var(--color-secondary)]/10 flex items-center justify-center shrink-0 ml-1">
                 <span className="material-symbols-outlined text-[var(--color-secondary)]" style={{ fontVariationSettings: "'FILL' 1" }}>robot_2</span>
               </div>
               <input
+                value={aiQuery}
+                onChange={e => setAiQuery(e.target.value)}
                 className="flex-1 bg-transparent outline-none font-body-md text-body-md text-[var(--color-on-surface)] placeholder:text-[var(--color-on-surface-variant)]/40 px-2"
-                placeholder="Ask Evolv Coach to analyze your entry…"
+                placeholder="Ask Evolv Coach to analyze your entry..."
                 type="text"
               />
-              <button className="w-10 h-10 rounded-full bg-[var(--color-secondary)] text-[var(--color-on-secondary)] flex items-center justify-center hover:scale-105 transition-transform shrink-0 shadow-[0_0_12px_rgba(90,218,206,0.3)]">
+              <button type="submit" disabled={!aiQuery.trim()} className="w-10 h-10 rounded-full bg-[var(--color-secondary)] text-[var(--color-on-secondary)] flex items-center justify-center hover:scale-105 transition-transform shrink-0 shadow-[0_0_12px_rgba(90,218,206,0.3)] disabled:opacity-50 disabled:hover:scale-100">
                 <span className="material-symbols-outlined text-[20px]">arrow_upward</span>
               </button>
-            </section>
+            </form>
           </>
         )}
 
