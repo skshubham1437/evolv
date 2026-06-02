@@ -129,8 +129,6 @@ export function MonthlyPage() {
 
   return (
     <div className="flex-1 overflow-y-auto w-full no-scrollbar relative z-10 page-enter pb-24 md:pb-0">
-      <div className="absolute top-[10%] right-[20%] w-[400px] h-[400px] bg-[var(--color-secondary)]/10 rounded-full blur-[140px] pointer-events-none -z-10 animate-pulse" />
-      <div className="absolute bottom-[10%] left-[10%] w-[300px] h-[300px] bg-[var(--color-primary)]/10 rounded-full blur-[120px] pointer-events-none -z-10" />
 
       <div className="max-w-[var(--spacing-container-max)] mx-auto px-[var(--spacing-margin-mobile)] md:px-[var(--spacing-margin-desktop)] pt-6 md:pt-12 pb-12 flex flex-col gap-8">
         
@@ -145,7 +143,7 @@ export function MonthlyPage() {
             </p>
           </div>
           
-          <div className="flex items-center gap-4 bg-[var(--color-surface-container-low)] p-2 rounded-xl border border-[var(--color-outline-variant)]/20">
+          <div className="flex items-center gap-4 bg-[var(--color-surface-container-low)] p-2 border border-[var(--color-outline-variant)]/20">
             <button 
               onClick={() => {
                 if (month === 1) { setYear(y => y - 1); setMonth(12); }
@@ -170,8 +168,8 @@ export function MonthlyPage() {
 
         {loading ? (
           <div className="animate-pulse flex flex-col gap-6">
-            <div className="h-32 bg-[var(--color-surface-container-low)] rounded-2xl" />
-            <div className="h-64 bg-[var(--color-surface-container-low)] rounded-2xl" />
+            <div className="h-32 bg-[var(--color-surface-container-low)]" />
+            <div className="h-64 bg-[var(--color-surface-container-low)]" />
           </div>
         ) : (
           <>
@@ -180,7 +178,7 @@ export function MonthlyPage() {
             {/* Theme & Focus */}
             <div className="md:col-span-8 flex flex-col gap-6">
               
-              <section className="glass-panel p-6 md:p-8 rounded-2xl flex flex-col gap-4 border border-[var(--color-secondary)]/20 hover:border-[var(--color-secondary)]/40 transition-colors">
+              <section className="glass-panel p-6 md:p-8 flex flex-col gap-4 border border-[var(--color-secondary)]/20 hover:border-[var(--color-secondary)]/40 transition-colors">
                 <h3 className="font-title-md text-[18px] text-[var(--color-secondary)] flex items-center gap-2">
                   <span className="material-symbols-outlined">auto_awesome</span> Focus Theme
                 </h3>
@@ -191,11 +189,11 @@ export function MonthlyPage() {
                   value={theme}
                   onChange={e => setTheme(e.target.value)}
                   placeholder="e.g. Deep Work & Delivery"
-                  className="bg-[var(--color-surface-container-high)] text-[var(--color-on-surface)] px-4 py-4 rounded-xl border border-[var(--color-outline-variant)]/20 focus:border-[var(--color-secondary)]/60 outline-none font-display-lg text-[24px] w-full"
+                  className="bg-[var(--color-surface-container-high)] text-[var(--color-on-surface)] px-4 py-4 border border-[var(--color-outline-variant)]/20 focus:border-[var(--color-secondary)]/60 outline-none font-display-lg text-[24px] w-full"
                 />
               </section>
 
-              <section className="glass-panel p-6 md:p-8 rounded-2xl flex flex-col gap-4 border border-[var(--color-primary)]/20 hover:border-[var(--color-primary)]/40 transition-colors">
+              <section className="glass-panel p-6 md:p-8 flex flex-col gap-4 border border-[var(--color-primary)]/20 hover:border-[var(--color-primary)]/40 transition-colors">
                 <h3 className="font-title-md text-[18px] text-[var(--color-primary)] flex items-center gap-2">
                   <span className="material-symbols-outlined">rocket_launch</span> Goal Targeting
                 </h3>
@@ -213,7 +211,7 @@ export function MonthlyPage() {
                         <div 
                           key={goal.id} 
                           onClick={() => toggleGoal(gid)}
-                          className={`flex items-center justify-between p-4 rounded-xl cursor-pointer transition-all border ${
+                          className={`flex items-center justify-between p-4 cursor-pointer transition-all border ${
                             isSelected 
                               ? 'bg-[var(--color-primary)]/10 border-[var(--color-primary)]/40' 
                               : 'bg-[var(--color-surface-container)] border-transparent hover:border-[var(--color-outline-variant)]/20'
@@ -238,7 +236,7 @@ export function MonthlyPage() {
 
             {/* Radar Chart Snapshot */}
             <div className="md:col-span-4 flex flex-col">
-              <section className="glass-panel p-6 rounded-2xl flex flex-col h-full items-center">
+              <section className="glass-panel p-6 flex flex-col h-full items-center">
                 <h3 className="font-title-md text-[18px] text-[var(--color-on-surface)] self-start mb-6">Life Score Snapshot</h3>
                 <div className="w-full aspect-square max-w-[250px] relative">
                   <svg className="w-full h-full drop-shadow-[0_0_15px_rgba(90,218,206,0.3)]" viewBox="0 0 200 200">
@@ -283,8 +281,7 @@ export function MonthlyPage() {
   </div>
 
   {/* Monthly Reset & AI Retrospective */}
-  <section className="glass-panel p-6 md:p-8 rounded-2xl flex flex-col gap-6 border border-t-[var(--color-secondary)]/30 border-[var(--color-outline-variant)]/20 relative overflow-hidden group mt-6">
-    <div className="absolute right-[-10%] top-[-10%] w-64 h-64 bg-[var(--color-secondary)]/5 rounded-full blur-[80px] pointer-events-none" />
+  <section className="glass-panel p-6 md:p-8 flex flex-col gap-6 border border-t-[var(--color-secondary)]/30 border-[var(--color-outline-variant)]/20 relative overflow-hidden group mt-6">
     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
       <div className="flex items-center gap-3">
         <span className="material-symbols-outlined text-[var(--color-secondary)] text-[28px] text-glow-secondary animate-pulse">psychology</span>
@@ -334,7 +331,7 @@ export function MonthlyPage() {
 )}
 
         {/* Floating Save Bar */}
-        <div className="fixed bottom-6 md:bottom-12 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-[var(--color-surface)]/90 backdrop-blur-xl border border-[var(--color-outline-variant)]/20 px-6 py-4 rounded-full shadow-2xl z-50">
+        <div className="fixed bottom-6 md:bottom-12 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-[var(--color-surface)]/90 border border-[var(--color-outline-variant)]/20 px-6 py-4 rounded-full z-50">
           <span className="font-body-md text-[14px] text-[var(--color-on-surface-variant)] whitespace-nowrap">
             {saving ? 'Saving changes...' : 'Unsaved changes?'}
           </span>

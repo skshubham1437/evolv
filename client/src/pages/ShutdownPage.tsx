@@ -68,12 +68,10 @@ export function ShutdownPage() {
   useEffect(() => {
     async function loadData() {
       try {
-        // 1. Fetch dashboard to see today's blueprint stats
         const dashboard = await fetchDashboard();
         setTasks(dashboard.tasks ?? []);
         setHabits(dashboard.habits ?? []);
 
-        // 2. Fetch existing journal entry for today
         try {
           const entry = await fetchJournalByDate(localDates.todayStr);
           if (entry) {
@@ -89,7 +87,6 @@ export function ShutdownPage() {
           // Doesn't exist, which is fine
         }
 
-        // 3. Fetch all tasks scheduled for tomorrow
         const tomorrowRes = await fetchDashboard(); // Fetch tasks and filter for tomorrow
         const tomTasks = (tomorrowRes.tasks ?? []).filter(t => t.due_date === localDates.tomorrowStr);
         setTomorrowTasks(tomTasks);
@@ -103,7 +100,6 @@ export function ShutdownPage() {
     loadData();
   }, [localDates]);
 
-  // Statistics calculations
   const tasksCompleted = tasks.filter(t => t.is_completed).length;
   const habitsCompleted = habits.filter(h => (h as any).completed_today).length;
   
@@ -114,7 +110,6 @@ export function ShutdownPage() {
     return Math.round((completed / total) * 100);
   }, [tasks, habits, tasksCompleted, habitsCompleted]);
 
-  // Win additions
   const addWin = () => {
     if (!newWin.trim()) return;
     setWins([...wins, newWin.trim()]);
@@ -125,7 +120,6 @@ export function ShutdownPage() {
     setWins(wins.filter((_, i) => i !== index));
   };
 
-  // Gratitude additions
   const addGratitude = () => {
     if (!newGratitude.trim()) return;
     setGratitude([...gratitude, newGratitude.trim()]);
@@ -136,7 +130,6 @@ export function ShutdownPage() {
     setGratitude(gratitude.filter((_, i) => i !== index));
   };
 
-  // Step 1 navigation (Save reflection)
   const saveReflection = async () => {
     try {
       const payload = {
@@ -164,7 +157,6 @@ export function ShutdownPage() {
     }
   };
 
-  // Add Task for Tomorrow
   const handleAddTomorrowTask = async (e: FormEvent) => {
     e.preventDefault();
     if (!newTomorrowTaskTitle.trim()) return;
@@ -182,7 +174,6 @@ export function ShutdownPage() {
     }
   };
 
-  // Complete Shutdown Ritual
   const handleCompleteShutdown = () => {
     setStep(3);
   };
@@ -194,331 +185,314 @@ export function ShutdownPage() {
 
   if (loading) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-6 bg-[var(--color-background)]">
-        <span className="material-symbols-outlined text-[var(--color-primary)] text-5xl animate-spin mb-4">sync</span>
-        <p className="font-title-md text-title-md text-[var(--color-outline)]">Initiating EOD Shutdown Sequence...</p>
+      <div className="flex-1 flex flex-col items-center justify-center p-6 bg-[var(--color-surface-container-lowest)] text-[var(--color-outline)] font-label-sm uppercase tracking-widest font-bold">
+        Initializing Shutdown Sequence...
       </div>
     );
   }
 
   return (
-    <div className="flex-1 overflow-y-auto no-scrollbar w-full relative z-10 py-8 px-4 md:px-8 max-w-[var(--spacing-container-max)] mx-auto page-enter">
-      
-      {/* Ambient glass orbs */}
-      <div className="fixed top-[10%] right-[10%] w-[350px] h-[350px] bg-[var(--color-primary)]/5 rounded-full blur-[140px] pointer-events-none -z-10 animate-pulse" />
-      <div className="fixed bottom-[15%] left-[5%] w-[400px] h-[400px] bg-[var(--color-secondary)]/4 rounded-full blur-[150px] pointer-events-none -z-10" />
+    <div className="flex flex-col h-full w-full bg-[var(--color-surface-container-lowest)] text-[var(--color-on-surface)] items-center overflow-hidden">
+      <div className="flex flex-col h-full w-full max-w-[var(--spacing-container-max)] border-x border-[var(--color-outline-variant)] relative">
 
-      <main className="w-full max-w-xl mx-auto space-y-8 pt-4 pb-20">
-        
-        {/* Header */}
-        <header className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/20 mb-1 shadow-inner">
-            <span className="material-symbols-outlined text-[var(--color-primary)] text-[28px] animate-pulse">power_settings_new</span>
+        {/* ── Header ─────────────────────────────────────── */}
+        <header className="flex flex-col md:flex-row md:items-end justify-between px-8 py-6 border-b border-[var(--color-outline-variant)] shrink-0 bg-[var(--color-surface-container-lowest)] gap-4">
+          <div>
+            <h2 className="font-title-md text-[32px] font-medium tracking-tight text-[var(--color-primary-fixed)]">
+              EOD Shutdown
+            </h2>
+            <p className="font-label-sm text-[11px] text-[var(--color-outline)] uppercase tracking-widest mt-1 font-bold">
+              SYSTEM HIBERNATION PROTOCOL
+            </p>
           </div>
-          <h1 className="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-[var(--color-on-surface)] leading-tight">
-            EOD Shutdown Ritual
-          </h1>
-          <p className="font-body-md text-body-md text-[var(--color-on-surface-variant)] opacity-70">
-            Disconnect intentionally, reflect on today, and clear your mind for tomorrow.
-          </p>
 
-          {/* Progress Indicators */}
-          <div className="flex justify-center items-center gap-3 pt-4">
-            <div className={`w-8 h-1 rounded-full transition-colors duration-300 ${step >= 1 ? 'bg-[var(--color-primary)]' : 'bg-[var(--color-surface-container-highest)]'}`} />
-            <div className={`w-8 h-1 rounded-full transition-colors duration-300 ${step >= 2 ? 'bg-[var(--color-primary)]' : 'bg-[var(--color-surface-container-highest)]'}`} />
-            <div className={`w-8 h-1 rounded-full transition-colors duration-300 ${step >= 3 ? 'bg-[var(--color-primary)]' : 'bg-[var(--color-surface-container-highest)]'}`} />
+          <div className="flex items-center gap-2">
+            {[1, 2, 3].map((s) => (
+              <div 
+                key={s}
+                className={`h-2 transition-colors ${
+                  step >= s ? 'bg-[var(--color-primary)] w-8' : 'bg-[var(--color-surface-variant)] w-4'
+                }`}
+              />
+            ))}
           </div>
         </header>
 
-        {/* STEP 1: Reflect on Today */}
-        {step === 1 && (
-          <section className="space-y-6 animate-fade-in">
-            <div className="glass-panel rounded-2xl p-6 border border-[var(--color-outline-variant)]/15">
-              <h2 className="font-title-md text-title-md text-[var(--color-on-surface)] flex items-center gap-2 mb-4">
-                <span className="material-symbols-outlined text-[var(--color-primary)]">query_stats</span>
-                Today's Accomplishment Summary
-              </h2>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-[var(--color-surface-container-low)]/50 p-4 rounded-xl border border-[var(--color-outline-variant)]/10 text-center">
-                  <span className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-wider block mb-1">Tasks Done</span>
-                  <span className="font-display-lg text-[28px] font-bold text-[var(--color-primary)]">
-                    {tasksCompleted}<span className="text-[16px] font-normal text-[var(--color-outline)]">/{tasks.length}</span>
-                  </span>
-                </div>
-                <div className="bg-[var(--color-surface-container-low)]/50 p-4 rounded-xl border border-[var(--color-outline-variant)]/10 text-center">
-                  <span className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-wider block mb-1">Habits Hit</span>
-                  <span className="font-display-lg text-[28px] font-bold text-[var(--color-secondary)]">
-                    {habitsCompleted}<span className="text-[16px] font-normal text-[var(--color-outline)]">/{habits.length}</span>
-                  </span>
-                </div>
-                <div className="col-span-2 bg-[var(--color-primary)]/5 p-4 rounded-xl border border-[var(--color-primary)]/15 flex items-center justify-between">
-                  <span className="font-body-md text-[13px] text-[var(--color-on-surface-variant)]">Daily Execution Rate</span>
-                  <span className="font-label-sm text-[14px] font-bold text-[var(--color-primary)] bg-[var(--color-primary)]/12 px-3 py-1 rounded-full">{completionRate}%</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Mood & Energy */}
-            <div className="glass-panel rounded-2xl p-6 border border-[var(--color-outline-variant)]/15 space-y-6">
-              <div>
-                <h3 className="font-title-md text-[14px] text-[var(--color-on-surface)] font-bold mb-3 flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[var(--color-secondary)]">sentiment_satisfied</span>
-                  Rate Your Today's Mood
-                </h3>
-                <div className="grid grid-cols-5 gap-2">
-                  {MOODS.map(m => {
-                    const isSelected = mood === m.val;
-                    return (
-                      <button
-                        key={m.val}
-                        onClick={() => setMood(m.val)}
-                        type="button"
-                        className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all duration-300 press-scale
-                          ${isSelected 
-                            ? 'bg-[var(--color-primary)]/12 border-[var(--color-primary)] text-[var(--color-primary)] shadow-sm'
-                            : 'bg-[var(--color-surface-container-high)]/40 border-[var(--color-outline-variant)]/15 text-[var(--color-on-surface-variant)] opacity-60 hover:opacity-100'
-                          }
-                        `}
-                      >
-                        <span className="material-symbols-outlined text-[20px]">{m.icon}</span>
-                        <span className="font-label-sm text-[10px] uppercase font-bold tracking-wider">{m.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <h3 className="font-title-md text-[14px] text-[var(--color-on-surface)] font-bold flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[var(--color-secondary)]">bolt</span>
-                    Rate Today's Energy Level
-                  </h3>
-                  <span className="font-label-sm text-label-sm text-[var(--color-secondary)] font-bold">{energy}/5</span>
-                </div>
-                <input
-                  type="range"
-                  min="1"
-                  max="5"
-                  value={energy}
-                  onChange={e => setEnergy(Number(e.target.value))}
-                  className="w-full h-2 bg-[var(--color-surface-container-highest)] rounded-full outline-none appearance-none cursor-pointer accent-[var(--color-secondary)]"
-                />
-                <div className="flex justify-between mt-1 font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-wider">
-                  <span>Exhausted</span>
-                  <span>Supercharged</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Wins & Gratitude chips */}
-            <div className="glass-panel rounded-2xl p-6 border border-[var(--color-outline-variant)]/15 space-y-6">
-              
-              {/* Wins list */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[var(--color-primary)] text-[18px]">workspace_premium</span>
-                  <p className="font-label-sm text-[11px] uppercase tracking-widest font-bold text-[var(--color-primary)]">Today's Wins & Triumphs</p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {wins.map((win, i) => (
-                    <div key={i} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full font-body-md text-[13px] border border-[var(--color-primary)]/20 bg-[var(--color-primary)]/8 text-[var(--color-primary)] group">
-                      <span>{win}</span>
-                      <button onClick={() => removeWin(i)} className="opacity-60 hover:opacity-100 transition-opacity">
-                        <span className="material-symbols-outlined text-[13px]">close</span>
-                      </button>
-                    </div>
-                  ))}
-                </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    value={newWin}
-                    onChange={e => setNewWin(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addWin(); } }}
-                    placeholder="e.g. Cleared my inbox, launched stacked habits UI"
-                    className="flex-1 bg-[var(--color-surface-container-high)]/50 border border-[var(--color-outline-variant)]/30 rounded-xl px-4 py-2.5 text-[13px] text-[var(--color-on-surface)] outline-none focus:border-[var(--color-primary)]/50 transition-colors placeholder:text-[var(--color-outline)]"
-                  />
-                  <button onClick={addWin} className="w-9 h-9 rounded-xl flex items-center justify-center bg-[var(--color-primary)]/10 text-[var(--color-primary)] border border-[var(--color-primary)]/25 press-scale shrink-0">
-                    <span className="material-symbols-outlined text-[16px]">add</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Gratitudes list */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[var(--color-secondary)] text-[18px]">favorite</span>
-                  <p className="font-label-sm text-[11px] uppercase tracking-widest font-bold text-[var(--color-secondary)]">Things I'm Grateful For</p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {gratitude.map((g, i) => (
-                    <div key={i} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full font-body-md text-[13px] border border-[var(--color-secondary)]/20 bg-[var(--color-secondary)]/8 text-[var(--color-secondary)] group">
-                      <span>{g}</span>
-                      <button onClick={() => removeGratitude(i)} className="opacity-60 hover:opacity-100 transition-opacity">
-                        <span className="material-symbols-outlined text-[13px]">close</span>
-                      </button>
-                    </div>
-                  ))}
-                </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    value={newGratitude}
-                    onChange={e => setNewGratitude(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addGratitude(); } }}
-                    placeholder="e.g. Had a peaceful cup of tea, sunny afternoon run"
-                    className="flex-1 bg-[var(--color-surface-container-high)]/50 border border-[var(--color-outline-variant)]/30 rounded-xl px-4 py-2.5 text-[13px] text-[var(--color-on-surface)] outline-none focus:border-[var(--color-secondary)]/50 transition-colors placeholder:text-[var(--color-outline)]"
-                  />
-                  <button onClick={addGratitude} className="w-9 h-9 rounded-xl flex items-center justify-center bg-[var(--color-secondary)]/10 text-[var(--color-secondary)] border border-[var(--color-secondary)]/25 press-scale shrink-0">
-                    <span className="material-symbols-outlined text-[16px]">add</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Evening Reflections */}
-            <div className="glass-panel rounded-2xl p-6 border border-[var(--color-outline-variant)]/15 space-y-3">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-[var(--color-primary)] text-[18px]">menu_book</span>
-                <p className="font-label-sm text-[11px] uppercase tracking-widest font-bold text-[var(--color-primary)]">Free-form Evening Reflections</p>
-              </div>
-              <textarea
-                value={journalText}
-                onChange={e => setJournalText(e.target.value)}
-                placeholder="How was today conceptually? Any interesting thoughts or patterns observed?"
-                rows={3}
-                className="w-full bg-[var(--color-surface-container-high)]/40 border border-[var(--color-outline-variant)]/30 rounded-xl p-4 text-[13px] text-[var(--color-on-surface)] outline-none focus:border-[var(--color-primary)]/50 transition-colors placeholder:text-[var(--color-outline)] resize-none"
-              />
-            </div>
-
-            {/* Bottom Actions */}
-            <div className="pt-2">
-              <button
-                onClick={saveReflection}
-                className="w-full py-4 rounded-xl bg-[var(--color-primary)] text-[#000000] font-title-md text-title-md shadow-[0_0_20px_color-mix(in_srgb,var(--color-primary)_25%,transparent)] hover:shadow-[0_0_30px_color-mix(in_srgb,var(--color-primary)_45%,transparent)] transition-all duration-300 press-scale flex items-center justify-center gap-2"
-              >
-                <span>Save Reflection & Plan Tomorrow</span>
-                <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
-              </button>
-            </div>
-          </section>
-        )}
-
-        {/* STEP 2: Plan Tomorrow */}
-        {step === 2 && (
-          <section className="space-y-6 animate-fade-in">
-            <div className="glass-panel rounded-2xl p-6 border border-[var(--color-outline-variant)]/15 space-y-4">
-              <h2 className="font-title-md text-title-md text-[var(--color-on-surface)] flex items-center gap-2.5">
-                <span className="material-symbols-outlined text-[var(--color-secondary)]">next_week</span>
-                Tomorrow's Scheduled Missions
-              </h2>
-
-              <div className="space-y-2">
-                {tomorrowTasks.length === 0 ? (
-                  <p className="text-[var(--color-outline)] text-[13px] italic text-center py-4 bg-[var(--color-surface-container)]/30 rounded-xl">
-                    No tasks scheduled for tomorrow yet. Add some below!
-                  </p>
-                ) : (
-                  tomorrowTasks.map(t => (
-                    <div key={t.id} className="flex items-center gap-3 px-4 py-3 bg-[var(--color-surface-container-low)]/80 border border-[var(--color-outline-variant)]/10 rounded-xl">
-                      <span className="material-symbols-outlined text-[var(--color-outline-variant)] text-[18px]">radio_button_unchecked</span>
-                      <span className="font-body-md text-[14px] text-[var(--color-on-surface)] truncate">{t.title}</span>
-                      <span className="font-label-sm text-[9px] uppercase tracking-widest px-2 py-0.5 rounded bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-bold ml-auto border border-[var(--color-primary)]/20">
-                        Tomorrow
-                      </span>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-
-            {/* Quick Add for Tomorrow */}
-            <div className="glass-panel rounded-2xl p-6 border border-[var(--color-outline-variant)]/15 space-y-3">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-[var(--color-primary)] text-[18px]">add_task</span>
-                <p className="font-label-sm text-[11px] uppercase tracking-widest font-bold text-[var(--color-primary)]">Schedule Tomorrow's MIT</p>
-              </div>
-              <form onSubmit={handleAddTomorrowTask} className="flex gap-2">
-                <input
-                  required
-                  value={newTomorrowTaskTitle}
-                  onChange={e => setNewTomorrowTaskTitle(e.target.value)}
-                  placeholder="e.g. Finalize presentation slides tomorrow morning"
-                  className="flex-1 bg-[var(--color-surface-container-high)]/50 border border-[var(--color-outline-variant)]/30 rounded-xl px-4 py-3 text-[13px] text-[var(--color-on-surface)] outline-none focus:border-[var(--color-primary)]/50 transition-colors placeholder:text-[var(--color-outline)]"
-                />
-                <button
-                  type="submit"
-                  disabled={submittingTomorrowTask || !newTomorrowTaskTitle.trim()}
-                  className="px-5 py-3 rounded-xl bg-[var(--color-primary)] text-[#000000] font-label-sm text-label-sm uppercase tracking-widest press-scale disabled:opacity-40 shrink-0 font-bold"
-                >
-                  Schedule
-                </button>
-              </form>
-            </div>
-
-            {/* Bottom Actions */}
-            <div className="flex gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setStep(1)}
-                className="flex-1 py-4 rounded-xl border border-[var(--color-outline-variant)]/40 text-[var(--color-on-surface-variant)] font-title-md text-title-md hover:border-[var(--color-outline-variant)] transition-colors text-center"
-              >
-                Back
-              </button>
-              <button
-                type="button"
-                onClick={handleCompleteShutdown}
-                className="flex-1 py-4 rounded-xl bg-[var(--color-secondary)] text-[#000000] font-title-md text-title-md shadow-[0_0_20px_color-mix(in_srgb,var(--color-secondary)_25%,transparent)] hover:shadow-[0_0_30px_color-mix(in_srgb,var(--color-secondary)_45%,transparent)] transition-all duration-300 press-scale flex items-center justify-center gap-2"
-              >
-                <span>Initiate System Offline</span>
-                <span className="material-symbols-outlined text-[20px]">power_settings_new</span>
-              </button>
-            </div>
-          </section>
-        )}
-
-        {/* STEP 3: Complete Shutdown */}
-        {step === 3 && (
-          <section className="text-center space-y-8 animate-fade-in py-8">
-            <div className="flex flex-col items-center justify-center space-y-6">
-              
-              {/* Spinning/pulsating radial offline core */}
-              <div className="relative w-36 h-36 flex items-center justify-center">
-                {/* Breathing glow rings */}
-                <div className="absolute inset-0 rounded-full bg-[var(--color-primary)]/10 animate-ping duration-1000 opacity-60" />
-                <div className="absolute inset-2 rounded-full bg-[var(--color-secondary)]/5 border border-[var(--color-secondary)]/25 animate-pulse" />
-                <div className="absolute inset-6 rounded-full bg-gradient-to-tr from-[var(--color-primary)] to-[var(--color-secondary)] rounded-full blur-sm opacity-25" />
+        <div className="flex-1 overflow-y-auto no-scrollbar bg-[var(--color-surface-container-low)] pb-32">
+          <main className="w-full max-w-3xl mx-auto p-8 flex flex-col gap-8">
+            
+            {/* STEP 1: Reflect on Today */}
+            {step === 1 && (
+              <div className="flex flex-col gap-8 animate-fade-in">
                 
-                {/* Center circle */}
-                <div className="relative w-20 h-20 rounded-full bg-[var(--color-surface-container-high)] border border-[var(--color-outline-variant)]/35 shadow-2xl flex items-center justify-center">
-                  <span className="material-symbols-outlined text-[var(--color-primary)] text-4xl font-bold">power_settings_new</span>
+                {/* Stats */}
+                <section className="bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] p-6">
+                  <h3 className="font-label-sm text-[11px] font-bold uppercase tracking-widest text-[var(--color-on-surface)] flex items-center gap-2 mb-6 border-b border-[var(--color-surface-variant)] pb-2">
+                    <span className="material-symbols-outlined text-[16px] text-[var(--color-primary)]">query_stats</span>
+                    Today's Accomplishment Summary
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-[var(--color-surface-container-low)] border border-[var(--color-outline-variant)] p-4 flex flex-col items-center">
+                      <span className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest font-bold mb-1">Tasks Executed</span>
+                      <span className="font-title-md text-[28px] text-[var(--color-primary)] leading-none">{tasksCompleted}<span className="text-[16px] text-[var(--color-outline)] opacity-50">/{tasks.length}</span></span>
+                    </div>
+                    <div className="bg-[var(--color-surface-container-low)] border border-[var(--color-outline-variant)] p-4 flex flex-col items-center">
+                      <span className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest font-bold mb-1">Habits Hit</span>
+                      <span className="font-title-md text-[28px] text-[var(--color-secondary)] leading-none">{habitsCompleted}<span className="text-[16px] text-[var(--color-outline)] opacity-50">/{habits.length}</span></span>
+                    </div>
+                    <div className="col-span-2 bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/30 p-4 flex items-center justify-between">
+                      <span className="font-label-sm text-[11px] font-bold uppercase tracking-widest text-[var(--color-primary)]">Execution Rate</span>
+                      <span className="font-title-md text-[24px] text-[var(--color-primary)]">{completionRate}%</span>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Mood & Energy */}
+                <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] p-6 flex flex-col gap-6">
+                    <h3 className="font-label-sm text-[11px] font-bold uppercase tracking-widest text-[var(--color-on-surface)] flex items-center gap-2 border-b border-[var(--color-surface-variant)] pb-2">
+                      <span className="material-symbols-outlined text-[16px] text-[var(--color-secondary)]">sentiment_satisfied</span>
+                      State of Mind
+                    </h3>
+                    <div className="grid grid-cols-5 gap-2">
+                      {MOODS.map(m => {
+                        const isSelected = mood === m.val;
+                        return (
+                          <button
+                            key={m.val}
+                            onClick={() => setMood(m.val)}
+                            className={`flex flex-col items-center gap-2 p-3 border transition-colors ${
+                              isSelected 
+                                ? 'bg-[var(--color-primary)] border-[var(--color-primary)] text-black'
+                                : 'bg-[var(--color-surface-container-low)] border-[var(--color-outline-variant)] text-[var(--color-outline)] hover:text-[var(--color-on-surface)] hover:bg-[var(--color-surface-container-high)]'
+                            }`}
+                          >
+                            <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: isSelected ? "'FILL' 1" : "'FILL' 0" }}>{m.icon}</span>
+                            <span className="font-label-sm text-[9px] uppercase font-bold tracking-widest">{m.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] p-6 flex flex-col justify-center gap-6">
+                    <div className="flex justify-between items-center border-b border-[var(--color-surface-variant)] pb-2">
+                      <h3 className="font-label-sm text-[11px] font-bold uppercase tracking-widest text-[var(--color-on-surface)] flex items-center gap-2">
+                        <span className="material-symbols-outlined text-[16px] text-[var(--color-secondary)]">bolt</span>
+                        Energy Level
+                      </h3>
+                      <span className="font-label-sm text-[13px] text-[var(--color-secondary)] font-bold">{energy}/5</span>
+                    </div>
+                    <div className="relative h-6 flex items-center group cursor-pointer border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-lowest)] p-1">
+                      <div className="w-full h-full relative flex">
+                        {[1, 2, 3, 4, 5].map(v => (
+                          <div key={v} className="flex-1 border-r border-[var(--color-surface-container)] last:border-r-0 h-full relative">
+                            {energy >= v && <div className="absolute inset-0 bg-[var(--color-secondary)] opacity-80" />}
+                          </div>
+                        ))}
+                        <input
+                          type="range" min="1" max="5" value={energy}
+                          onChange={e => setEnergy(Number(e.target.value))}
+                          className="absolute inset-0 opacity-0 cursor-pointer w-full"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex justify-between font-label-sm text-[10px] text-[var(--color-outline)] font-bold uppercase tracking-widest">
+                      <span>Exhausted</span>
+                      <span>Supercharged</span>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Wins & Gratitude */}
+                <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] p-6 flex flex-col gap-4">
+                    <h3 className="font-label-sm text-[11px] font-bold uppercase tracking-widest text-[var(--color-primary)] flex items-center gap-2 border-b border-[var(--color-surface-variant)] pb-2">
+                      <span className="material-symbols-outlined text-[16px]">workspace_premium</span>
+                      Today's Wins
+                    </h3>
+                    <div className="flex flex-col gap-2">
+                      {wins.map((win, i) => (
+                        <div key={i} className="flex items-start justify-between gap-3 p-2 border border-[var(--color-primary)]/30 bg-[var(--color-surface-container-low)] transition-colors group">
+                          <span className="font-body-md text-[13px] text-[var(--color-on-surface)] leading-snug">{win}</span>
+                          <button onClick={() => removeWin(i)} className="opacity-0 group-hover:opacity-100 transition-opacity text-[var(--color-primary)] shrink-0">
+                            <span className="material-symbols-outlined text-[16px]">close</span>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex items-center border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-low)]">
+                      <input
+                        value={newWin}
+                        onChange={e => setNewWin(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addWin(); } }}
+                        placeholder="Log a triumph..."
+                        className="flex-1 bg-transparent px-3 py-2 text-[13px] text-[var(--color-on-surface)] outline-none placeholder:text-[var(--color-outline)]"
+                      />
+                      <button onClick={addWin} className="w-8 h-8 flex items-center justify-center bg-[var(--color-primary)]/10 text-[var(--color-primary)] border-l border-[var(--color-outline-variant)] transition-colors hover:bg-[var(--color-primary)] hover:text-black">
+                        <span className="material-symbols-outlined text-[16px]">add</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] p-6 flex flex-col gap-4">
+                    <h3 className="font-label-sm text-[11px] font-bold uppercase tracking-widest text-[var(--color-secondary)] flex items-center gap-2 border-b border-[var(--color-surface-variant)] pb-2">
+                      <span className="material-symbols-outlined text-[16px]">favorite</span>
+                      Gratitude
+                    </h3>
+                    <div className="flex flex-col gap-2">
+                      {gratitude.map((g, i) => (
+                        <div key={i} className="flex items-start justify-between gap-3 p-2 border border-[var(--color-secondary)]/30 bg-[var(--color-surface-container-low)] transition-colors group">
+                          <span className="font-body-md text-[13px] text-[var(--color-on-surface)] leading-snug">{g}</span>
+                          <button onClick={() => removeGratitude(i)} className="opacity-0 group-hover:opacity-100 transition-opacity text-[var(--color-secondary)] shrink-0">
+                            <span className="material-symbols-outlined text-[16px]">close</span>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex items-center border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-low)]">
+                      <input
+                        value={newGratitude}
+                        onChange={e => setNewGratitude(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addGratitude(); } }}
+                        placeholder="Log gratitude..."
+                        className="flex-1 bg-transparent px-3 py-2 text-[13px] text-[var(--color-on-surface)] outline-none placeholder:text-[var(--color-outline)]"
+                      />
+                      <button onClick={addGratitude} className="w-8 h-8 flex items-center justify-center bg-[var(--color-secondary)]/10 text-[var(--color-secondary)] border-l border-[var(--color-outline-variant)] transition-colors hover:bg-[var(--color-secondary)] hover:text-black">
+                        <span className="material-symbols-outlined text-[16px]">add</span>
+                      </button>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Freeform Journaling */}
+                <section className="bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] p-6 flex flex-col gap-4 focus-within:border-[var(--color-primary)] transition-colors">
+                  <h3 className="font-label-sm text-[11px] font-bold uppercase tracking-widest text-[var(--color-primary)] flex items-center gap-2 border-b border-[var(--color-surface-variant)] pb-2">
+                    <span className="material-symbols-outlined text-[16px]">menu_book</span>
+                    Evening Log
+                  </h3>
+                  <textarea
+                    value={journalText}
+                    onChange={e => setJournalText(e.target.value)}
+                    placeholder="Log final thoughts before hibernation..."
+                    rows={4}
+                    className="w-full bg-transparent text-[13px] text-[var(--color-on-surface)] outline-none placeholder:text-[var(--color-outline)] resize-none font-mono"
+                  />
+                </section>
+
+                <button
+                  onClick={saveReflection}
+                  className="w-full py-4 bg-[var(--color-primary)] text-black font-label-sm text-[12px] font-bold uppercase tracking-widest hover:bg-[var(--color-primary-fixed)] transition-colors flex items-center justify-center gap-2"
+                >
+                  Commit Log & Proceed
+                  <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                </button>
+              </div>
+            )}
+
+            {/* STEP 2: Plan Tomorrow */}
+            {step === 2 && (
+              <div className="flex flex-col gap-8 animate-fade-in">
+                <section className="bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] p-6 flex flex-col gap-6">
+                  <h3 className="font-label-sm text-[11px] font-bold uppercase tracking-widest text-[var(--color-on-surface)] flex items-center gap-2 border-b border-[var(--color-surface-variant)] pb-2">
+                    <span className="material-symbols-outlined text-[16px] text-[var(--color-secondary)]">next_week</span>
+                    Tomorrow's Itinerary
+                  </h3>
+
+                  <div className="flex flex-col gap-2">
+                    {tomorrowTasks.length === 0 ? (
+                      <p className="text-[var(--color-outline)] font-label-sm text-[10px] font-bold uppercase tracking-widest text-center py-6 border border-dashed border-[var(--color-outline-variant)]">
+                        No operations scheduled for tomorrow.
+                      </p>
+                    ) : (
+                      tomorrowTasks.map(t => (
+                        <div key={t.id} className="flex items-center gap-3 px-4 py-3 bg-[var(--color-surface-container-low)] border border-[var(--color-outline-variant)]">
+                          <span className="material-symbols-outlined text-[var(--color-outline)] text-[18px]">radio_button_unchecked</span>
+                          <span className="font-body-md text-[14px] text-[var(--color-on-surface)] truncate">{t.title}</span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </section>
+
+                <section className="bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] p-6 flex flex-col gap-4">
+                  <h3 className="font-label-sm text-[11px] font-bold uppercase tracking-widest text-[var(--color-primary)] flex items-center gap-2 border-b border-[var(--color-surface-variant)] pb-2">
+                    <span className="material-symbols-outlined text-[16px]">add_task</span>
+                    Schedule New Operation
+                  </h3>
+                  <form onSubmit={handleAddTomorrowTask} className="flex gap-2">
+                    <input
+                      required
+                      value={newTomorrowTaskTitle}
+                      onChange={e => setNewTomorrowTaskTitle(e.target.value)}
+                      placeholder="e.g. Finalize architecture review"
+                      className="flex-1 bg-[var(--color-surface-container-low)] border border-[var(--color-outline-variant)] px-4 py-3 text-[13px] text-[var(--color-on-surface)] outline-none focus:border-[var(--color-primary)] transition-colors placeholder:text-[var(--color-outline)]"
+                    />
+                    <button
+                      type="submit"
+                      disabled={submittingTomorrowTask || !newTomorrowTaskTitle.trim()}
+                      className="px-6 py-3 bg-[var(--color-primary)] text-black font-label-sm text-[11px] font-bold uppercase tracking-widest hover:bg-[var(--color-primary-fixed)] transition-colors disabled:opacity-50 shrink-0"
+                    >
+                      Add
+                    </button>
+                  </form>
+                </section>
+
+                <div className="flex gap-4 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setStep(1)}
+                    className="flex-1 py-4 bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] text-[var(--color-outline)] hover:text-[var(--color-on-surface)] hover:bg-[var(--color-surface-container-high)] transition-colors font-label-sm text-[11px] font-bold uppercase tracking-widest text-center"
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCompleteShutdown}
+                    className="flex-[2] py-4 bg-[var(--color-secondary)] text-black font-label-sm text-[11px] font-bold uppercase tracking-widest hover:bg-[var(--color-secondary-fixed)] transition-colors flex items-center justify-center gap-2"
+                  >
+                    Initiate Hibernation
+                    <span className="material-symbols-outlined text-[18px]">power_settings_new</span>
+                  </button>
                 </div>
               </div>
+            )}
 
-              <div className="space-y-3 max-w-sm mx-auto">
-                <h2 className="font-headline-sm text-[20px] text-[var(--color-on-surface)] font-bold uppercase tracking-widest">
-                  System Offline
-                </h2>
-                <div className="h-0.5 w-12 bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)] mx-auto" />
-                <p className="font-body-lg text-[15px] leading-relaxed text-[var(--color-on-surface-variant)] italic opacity-90">
-                  "Evening brief parsed. Reflection saved. Tomorrow's blueprint loaded. Evolv core state: hibernating. Rest well, {user?.name || 'Builder'}."
-                </p>
+            {/* STEP 3: Complete Shutdown */}
+            {step === 3 && (
+              <div className="flex flex-col items-center justify-center gap-12 animate-fade-in py-16">
+                
+                {/* Offline visual */}
+                <div className="relative w-32 h-32 flex items-center justify-center">
+                  <div className="absolute inset-0 bg-[var(--color-surface-container-high)] border-2 border-[var(--color-primary)]/50 rotate-45" />
+                  <span className="material-symbols-outlined text-[var(--color-primary)] text-[48px] relative z-10 animate-pulse">power_settings_new</span>
+                </div>
+
+                <div className="flex flex-col items-center text-center gap-4 max-w-sm">
+                  <h2 className="font-title-md text-[24px] text-[var(--color-on-surface)] tracking-tight">
+                    System Offline
+                  </h2>
+                  <div className="h-px w-16 bg-[var(--color-primary)]" />
+                  <p className="font-mono text-[12px] text-[var(--color-outline)] uppercase leading-relaxed mt-2">
+                    EVENING LOG PARSED. TOMORROW'S ARCHITECTURE COMPILED. CORE HIBERNATION ACTIVE.
+                  </p>
+                  <p className="font-label-sm text-[11px] text-[var(--color-primary)] font-bold uppercase tracking-widest mt-2">
+                    Rest well, {user?.name || 'Operator'}.
+                  </p>
+                </div>
+
+                <button
+                  onClick={handleReturnToDashboard}
+                  className="mt-8 px-8 py-4 bg-[var(--color-surface-container)] border border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-black transition-colors font-label-sm text-[11px] font-bold uppercase tracking-widest flex items-center gap-2"
+                >
+                  Confirm & Disconnect
+                  <span className="material-symbols-outlined text-[16px]">lock</span>
+                </button>
               </div>
-            </div>
-
-            <div className="pt-4 max-w-sm mx-auto">
-              <button
-                onClick={handleReturnToDashboard}
-                className="w-full py-4 rounded-xl bg-[var(--color-surface-container)] hover:bg-[var(--color-surface-container-high)] text-[var(--color-primary)] border border-[var(--color-primary)]/20 font-title-md text-title-md transition-all duration-300 press-scale flex items-center justify-center gap-2"
-              >
-                <span>End Ritual & Lock Screen</span>
-                <span className="material-symbols-outlined text-[20px]">lock</span>
-              </button>
-            </div>
-          </section>
-        )}
-
-      </main>
+            )}
+          </main>
+        </div>
+      </div>
     </div>
   );
 }

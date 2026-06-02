@@ -58,39 +58,39 @@ export function AiChatPanel() {
 
   return (
     <div className="fixed inset-0 pointer-events-none z-[100]">
-      <div className="absolute right-0 top-0 h-full w-[400px] max-w-full bg-[var(--color-surface)]/95 backdrop-blur-2xl border-l border-[var(--color-outline-variant)]/20 shadow-2xl flex flex-col slide-in-right pointer-events-auto">
+      <div className="absolute right-0 top-0 h-full w-[400px] max-w-full bg-[var(--color-surface)] border-l border-[var(--color-outline-variant)] shadow-2xl flex flex-col slide-in-right pointer-events-auto">
         
         {/* Header */}
-        <div className="p-4 border-b border-[var(--color-outline-variant)]/10 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-[var(--color-primary)]">
-            <span className="material-symbols-outlined">auto_awesome</span>
-            <h3 className="font-title-md font-bold text-[16px]">AI Assistant</h3>
+        <div className="px-4 py-3 border-b border-[var(--color-outline-variant)] flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-[18px] text-[var(--color-primary)]">auto_awesome</span>
+            <h3 className="font-mono text-[11px] uppercase tracking-[0.14em] text-[var(--color-on-surface-variant)]">AI Assistant</h3>
           </div>
-          <button onClick={closePanel} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[var(--color-surface-container-high)] text-[var(--color-on-surface-variant)] transition-colors">
-            <span className="material-symbols-outlined text-[20px]">close</span>
+          <button onClick={closePanel} className="w-7 h-7 flex items-center justify-center text-[var(--color-outline)] hover:text-[var(--color-on-surface)] transition-colors">
+            <span className="material-symbols-outlined text-[18px]">close</span>
           </button>
         </div>
 
         {/* Chat Area */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 flex flex-col gap-4 no-scrollbar">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 flex flex-col gap-3 no-scrollbar">
           {messages.length === 0 && !isLoading && (
             <div className="flex-1 flex flex-col items-center justify-center text-[var(--color-outline)] gap-2 opacity-60">
-              <span className="material-symbols-outlined text-[48px]">smart_toy</span>
-              <p className="font-body-md text-center text-[13px]">I can help break down goals, reflect on your journals, or plan your week.</p>
+              <span className="material-symbols-outlined text-[36px]">smart_toy</span>
+              <p className="text-center text-[12px] font-mono tracking-wide">BREAK DOWN GOALS · REFLECT · PLAN</p>
             </div>
           )}
 
           {messages.map((msg, i) => (
-            <div key={i} className={`flex gap-3 max-w-[85%] ${msg.role === 'user' ? 'self-end flex-row-reverse' : 'self-start'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${msg.role === 'user' ? 'bg-[var(--color-surface-container-high)] text-[var(--color-on-surface)]' : 'bg-[var(--color-primary)]/20 text-[var(--color-primary)]'}`}>
-                <span className="material-symbols-outlined text-[16px]">
+            <div key={i} className={`flex gap-2.5 max-w-[90%] ${msg.role === 'user' ? 'self-end flex-row-reverse' : 'self-start'}`}>
+              <div className={`w-6 h-6 flex items-center justify-center shrink-0 border ${msg.role === 'user' ? 'border-[var(--color-outline-variant)] text-[var(--color-on-surface-variant)]' : 'border-[var(--color-primary)]/30 text-[var(--color-primary)]'}`}>
+                <span className="material-symbols-outlined text-[14px]">
                   {msg.role === 'user' ? 'person' : 'auto_awesome'}
                 </span>
               </div>
-              <div className={`p-3 rounded-2xl font-body-md text-[14px] leading-relaxed whitespace-pre-wrap ${
+              <div className={`px-3 py-2 text-[13px] leading-relaxed whitespace-pre-wrap ${
                 msg.role === 'user' 
-                  ? 'bg-[var(--color-surface-container-high)] text-[var(--color-on-surface)] rounded-tr-sm' 
-                  : 'bg-[var(--color-primary)]/10 text-[var(--color-on-surface)] border border-[var(--color-primary)]/20 rounded-tl-sm'
+                  ? 'bg-[var(--color-surface-container-high)] text-[var(--color-on-surface)] border border-[var(--color-outline-variant)]' 
+                  : 'bg-[var(--color-primary)]/5 text-[var(--color-on-surface)] border border-[var(--color-primary)]/20'
               }`}>
                 {msg.content}
               </div>
@@ -98,21 +98,19 @@ export function AiChatPanel() {
           ))}
 
           {isLoading && (
-            <div className="self-start flex gap-3 max-w-[85%]">
-              <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-[var(--color-primary)]/20 text-[var(--color-primary)] animate-pulse">
-                <span className="material-symbols-outlined text-[16px]">auto_awesome</span>
+            <div className="self-start flex gap-2.5 max-w-[90%]">
+              <div className="w-6 h-6 flex items-center justify-center shrink-0 border border-[var(--color-primary)]/30 text-[var(--color-primary)]">
+                <span className="material-symbols-outlined text-[14px]">auto_awesome</span>
               </div>
-              <div className="p-3 rounded-2xl bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/20 rounded-tl-sm flex items-center gap-1">
-                <div className="w-1.5 h-1.5 bg-[var(--color-primary)] rounded-full animate-bounce" />
-                <div className="w-1.5 h-1.5 bg-[var(--color-primary)] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <div className="w-1.5 h-1.5 bg-[var(--color-primary)] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              <div className="px-3 py-2.5 bg-[var(--color-primary)]/5 border border-[var(--color-primary)]/20 flex items-center gap-1.5">
+                <span className="font-mono text-[10px] text-[var(--color-primary)] animate-pulse tracking-wider">THINKING...</span>
               </div>
             </div>
           )}
         </div>
 
         {/* Input Area */}
-        <div className="p-4 border-t border-[var(--color-outline-variant)]/10 bg-[var(--color-surface)]">
+        <div className="p-3 border-t border-[var(--color-outline-variant)] bg-[var(--color-surface-container-low)]">
           <form 
             onSubmit={(e) => { e.preventDefault(); handleSend(input); }}
             className="flex gap-2"
@@ -121,14 +119,14 @@ export function AiChatPanel() {
               value={input}
               onChange={e => setInput(e.target.value)}
               placeholder="Ask the assistant..."
-              className="flex-1 bg-[var(--color-surface-container)] rounded-xl px-4 py-3 outline-none border border-transparent focus:border-[var(--color-primary)]/40 font-body-md text-[14px] text-[var(--color-on-surface)] transition-all"
+              className="flex-1 bg-[var(--color-surface-container)] px-3 py-2.5 outline-none border border-[var(--color-outline-variant)] focus:border-[var(--color-primary)] text-[13px] text-[var(--color-on-surface)] transition-colors placeholder:text-[var(--color-outline)]"
             />
             <button 
               type="submit"
               disabled={!input.trim() || isLoading}
-              className="w-12 h-12 flex items-center justify-center bg-[var(--color-primary)] text-black rounded-xl hover:scale-105 transition-all disabled:opacity-50 disabled:hover:scale-100"
+              className="w-10 h-10 flex items-center justify-center bg-[var(--color-primary)] text-[var(--color-on-primary)] hover:opacity-90 transition-opacity disabled:opacity-30"
             >
-              <span className="material-symbols-outlined">send</span>
+              <span className="material-symbols-outlined text-[18px]">send</span>
             </button>
           </form>
         </div>

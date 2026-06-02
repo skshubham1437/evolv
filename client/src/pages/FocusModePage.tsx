@@ -33,8 +33,6 @@ function createNoiseBuffer(ctx: AudioContext, seconds = 4): AudioBuffer {
   return buf;
 }
 
-/** Starts ambient audio for the given sound ID.
- *  Returns a cleanup function that fades out and closes the AudioContext. */
 function startAudio(soundId: string): () => void {
   const ctx = new AudioContext();
   const master = ctx.createGain();
@@ -64,7 +62,6 @@ function startAudio(soundId: string): () => void {
     master.gain.linearRampToValueAtTime(0.28, ctx.currentTime + 1.2);
     src.start();
 
-    // Random drip ticks
     const iv = window.setInterval(() => {
       if (ctx.state === 'closed') return;
       const osc = ctx.createOscillator();
@@ -79,7 +76,6 @@ function startAudio(soundId: string): () => void {
     cleanupFns.push(() => { src.stop(); window.clearInterval(iv); });
 
   } else if (soundId === 'binaural') {
-    // 10 Hz alpha-wave beat: 200 Hz left, 210 Hz right
     master.gain.setValueAtTime(0, ctx.currentTime);
     master.gain.linearRampToValueAtTime(0.12, ctx.currentTime + 1.2);
     const merger = ctx.createChannelMerger(2);
@@ -108,7 +104,6 @@ function startAudio(soundId: string): () => void {
     src.connect(bpf); bpf.connect(forestGain); forestGain.connect(master);
     src.start();
 
-    // Bird chirps
     const iv = window.setInterval(() => {
       if (ctx.state === 'closed') return;
       const osc = ctx.createOscillator();
@@ -134,32 +129,29 @@ function startAudio(soundId: string): () => void {
 
 // ── SVG Progress Ring ──────────────────────────────────────
 function FocusRing({ pct, timeStr, running }: { pct: number; timeStr: string; running: boolean }) {
-  const size = 280, strokeW = 5;
-  const r = (size - strokeW * 2) / 2;
+  const size = 300, strokeW = 4;
+  const r = (size - 60 - strokeW * 2) / 2;
   const circ = 2 * Math.PI * r;
   return (
-    <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
-      <div className={`absolute inset-[-16px] rounded-full bg-[var(--color-primary)]/8 blur-[40px] ${running ? 'anim-breathe' : ''}`} />
-      <svg width={size} height={size} className="absolute rotate-[-90deg]"
-        style={{ filter: 'drop-shadow(0 0 8px color-mix(in srgb, var(--color-primary) 30%, transparent))' }}>
-        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="var(--color-surface-container-highest)" strokeWidth={strokeW} opacity="0.4" />
-        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="url(#fg)" strokeWidth={strokeW} strokeLinecap="round"
+    <div className="relative flex items-center justify-center border border-[var(--color-outline-variant)] bg-[var(--color-surface-container)]" style={{ width: size, height: size }}>
+      {running && (
+        <div className="absolute inset-0 border border-[var(--color-primary)]/50 pointer-events-none animate-pulse" />
+      )}
+      
+      <svg width={size-60} height={size-60} className="absolute rotate-[-90deg]">
+        <circle cx={(size-60)/2} cy={(size-60)/2} r={r} fill="none" stroke="var(--color-surface-variant)" strokeWidth={strokeW} opacity="0.5" />
+        <circle cx={(size-60)/2} cy={(size-60)/2} r={r} fill="none" stroke="var(--color-primary)" strokeWidth={strokeW}
           strokeDasharray={`${circ * pct} ${circ}`}
           style={{ transition: running ? 'stroke-dasharray 1s linear' : 'stroke-dasharray 0.4s ease' }} />
-        <defs>
-          <linearGradient id="fg" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%"   stopColor="var(--color-primary)" />
-            <stop offset="100%" stopColor="var(--color-secondary)" />
-          </linearGradient>
-        </defs>
       </svg>
-      <div className="relative z-10 flex flex-col items-center justify-center w-[220px] h-[220px] rounded-full glass-panel border-none">
-        <span className={`font-display-lg text-[var(--color-on-surface)] tracking-tighter select-none ${running ? 'anim-tick' : ''}`}
-          style={{ fontSize: 56, lineHeight: 1, fontWeight: 200 }}>
+      
+      <div className="relative z-10 flex flex-col items-center justify-center">
+        <span className={`font-mono text-[var(--color-on-surface)] tracking-tight select-none`}
+          style={{ fontSize: 56, lineHeight: 1, fontWeight: 300 }}>
           {timeStr}
         </span>
-        <span className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-[0.4em] mt-3">
-          {running ? 'Remaining' : 'Paused'}
+        <span className="font-label-sm text-[10px] text-[var(--color-primary)] font-bold uppercase tracking-widest mt-4">
+          {running ? 'Execution Active' : 'System Paused'}
         </span>
       </div>
     </div>
@@ -169,10 +161,10 @@ function FocusRing({ pct, timeStr, running }: { pct: number; timeStr: string; ru
 // ── Animated Waveform ──────────────────────────────────────
 function Waveform({ active }: { active: boolean }) {
   return (
-    <div className="flex items-end gap-[3px] h-8" aria-hidden="true">
+    <div className="flex items-end gap-[4px] h-8" aria-hidden="true">
       {WAVE_HEIGHTS.map((h, i) => (
         <div key={i}
-          className={`w-[3px] rounded-full bg-gradient-to-t from-[var(--color-primary)] to-[var(--color-secondary)] transition-opacity duration-300 ${active ? 'anim-wave' : 'opacity-25'}`}
+          className={`w-[4px] bg-[var(--color-primary)] transition-opacity duration-300 ${active ? 'anim-wave' : 'opacity-20'}`}
           style={{ height: h * 0.4 + 'px', animationDelay: `${i * 0.08}s`, animationDuration: `${0.9 + (i % 3) * 0.3}s`, transformOrigin: 'bottom' }}
         />
       ))}
@@ -199,7 +191,6 @@ export function FocusModePage() {
   const pct     = totalSecs > 0 ? (totalSecs - remaining) / totalSecs : 0;
   const timeStr = formatTime(remaining);
 
-  // ── Audio lifecycle ──────────────────────────────────────
   useEffect(() => {
     if (running) {
       stopAudioRef.current?.();
@@ -212,7 +203,6 @@ export function FocusModePage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [running, sound]);
 
-  // ── Timer lifecycle ──────────────────────────────────────
   const tick = useCallback(() => {
     setRemaining(prev => {
       if (prev <= 1) { setRunning(false); setFinished(true); return 0; }
@@ -226,7 +216,6 @@ export function FocusModePage() {
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [running, tick]);
 
-  // ── Handlers ─────────────────────────────────────────────
   const handlePreset = (idx: number, secs: number) => {
     if (secs === 0) { setShowCustom(true); setPreset(idx); return; }
     setShowCustom(false); setPreset(idx);
@@ -250,116 +239,132 @@ export function FocusModePage() {
   };
 
   return (
-    <div className="flex-1 w-full flex flex-col relative z-10 min-h-screen overflow-hidden page-enter">
-      <div className="absolute top-[-15%] left-[-10%] w-[55vw] h-[55vw] rounded-full bg-[var(--color-primary)]/8 blur-[130px] pointer-events-none" />
-      <div className="absolute bottom-[-20%] right-[-10%] w-[60vw] h-[60vw] rounded-full bg-[var(--color-secondary)]/6 blur-[120px] pointer-events-none" />
-
-      <main className="flex-1 w-full max-w-md mx-auto flex flex-col items-center px-[var(--spacing-margin-mobile)] py-10 gap-8 relative z-10">
-
-        {/* Status pill */}
-        <div className="flex items-center gap-2 bg-[var(--color-primary)]/6 border border-[var(--color-primary)]/20 rounded-full px-5 py-2 backdrop-blur-xl">
-          <span className={`w-2 h-2 rounded-full bg-[var(--color-secondary)] ${running ? 'animate-ping absolute' : ''}`} />
-          <span className="w-2 h-2 rounded-full bg-[var(--color-secondary)] relative"
-            style={{ boxShadow: running ? '0 0 8px rgba(90,218,206,1)' : 'none' }} />
-          <span className="font-label-sm text-[10px] text-[var(--color-primary)] tracking-[0.3em] uppercase font-bold">
-            {finished ? 'Session Complete' : running ? 'Deep Focus Active' : 'Focus Ready'}
-          </span>
-        </div>
-
-        {/* Presets */}
-        <div className="flex gap-2 w-full justify-center flex-wrap">
-          {PRESETS.map((p, i) => (
-            <button key={p.label} onClick={() => handlePreset(i, p.seconds)} disabled={running}
-              className={`px-4 py-2 rounded-full font-label-sm text-[11px] uppercase tracking-widest border transition-all duration-200 press-scale disabled:opacity-40 ${
-                selectedPreset === i
-                  ? 'bg-[var(--color-primary)] text-[var(--color-on-primary)] border-[var(--color-primary)] shadow-[0_0_15px_rgba(210,187,255,0.3)]'
-                  : 'border-[var(--color-outline-variant)]/40 text-[var(--color-on-surface-variant)] hover:border-[var(--color-primary)]/50 hover:text-[var(--color-primary)]'
-              }`}>
-              {p.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Custom duration input */}
-        {showCustom && (
-          <div className="flex items-center gap-3 w-full bg-[var(--color-surface-container-low)] border border-[var(--color-outline-variant)]/30 rounded-xl px-4 py-3 anim-fade-up">
-            <span className="material-symbols-outlined text-[var(--color-primary)] text-[20px]">timer</span>
-            <input autoFocus type="number" min={1} max={180} value={customMins}
-              onChange={e => setCustomMins(e.target.value)} placeholder="Minutes (1–180)"
-              className="flex-1 bg-transparent outline-none text-[var(--color-on-surface)] font-body-md placeholder:text-[var(--color-outline)]" />
-            <button onClick={handleCustom}
-              className="px-3 py-1 bg-[var(--color-primary)] text-[var(--color-on-primary)] rounded-full font-label-sm text-[11px]">
-              Set
-            </button>
+    <div className="flex flex-col h-full w-full bg-[var(--color-surface-container-lowest)] text-[var(--color-on-surface)] items-center overflow-hidden">
+      <div className="flex flex-col h-full w-full max-w-[var(--spacing-container-max)] border-x border-[var(--color-outline-variant)] relative">
+        
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between px-8 py-6 border-b border-[var(--color-outline-variant)] shrink-0 bg-[var(--color-surface-container-lowest)] gap-4">
+          <div>
+            <h2 className="font-title-md text-[32px] font-medium tracking-tight text-[var(--color-primary-fixed)]">
+              Deep Focus
+            </h2>
+            <p className="font-label-sm text-[11px] text-[var(--color-outline)] uppercase tracking-widest mt-1 font-bold">
+              UNINTERRUPTED EXECUTION MODE
+            </p>
           </div>
-        )}
-
-        {/* Timer ring / completion */}
-        <div className="flex flex-col items-center gap-6 flex-1 justify-center w-full">
-          {finished ? (
-            <div className="flex flex-col items-center gap-4 anim-celeb">
-              <div className="w-28 h-28 rounded-full bg-[var(--color-primary)]/15 border border-[var(--color-primary)]/30 flex items-center justify-center anim-glow-burst">
-                <svg width="60" height="60" viewBox="0 0 60 60" fill="none">
-                  <circle cx="30" cy="30" r="26" stroke="var(--color-primary)" strokeWidth="3" fill="none"
-                    strokeDasharray="163.4" strokeDashoffset="163.4" strokeLinecap="round" className="svg-stroke-draw" />
-                  <polyline points="18,30 26,40 42,20" stroke="var(--color-primary)" strokeWidth="3.5" fill="none"
-                    strokeLinecap="round" strokeLinejoin="round" strokeDasharray="50" strokeDashoffset="50"
-                    className="svg-stroke-draw" style={{ animationDelay: '0.35s' }} />
-                </svg>
-              </div>
-              <p className="font-title-md text-title-md text-[var(--color-on-surface)]">Session Complete!</p>
-              <p className="font-body-md text-[13px] text-[var(--color-on-surface-variant)] text-center max-w-[240px]">
-                {formatTime(totalSecs)} of focused execution. Outstanding.
-              </p>
-            </div>
-          ) : (
-            <FocusRing pct={pct} timeStr={timeStr} running={running} />
-          )}
-
-          {/* Controls */}
-          <div className="flex items-center gap-4 mt-2">
-            <button onClick={handleReset} title="Reset"
-              className="w-12 h-12 rounded-full border border-[var(--color-outline-variant)]/40 flex items-center justify-center text-[var(--color-on-surface-variant)] hover:text-[var(--color-on-surface)] hover:border-[var(--color-outline-variant)] transition-all press-scale">
-              <span className="material-symbols-outlined text-[22px]">restart_alt</span>
-            </button>
-
-            {!finished && (
-              <button onClick={handleToggle} title={running ? 'Pause' : 'Start'}
-                className="w-20 h-20 rounded-full bg-[var(--color-primary)] text-[var(--color-on-primary)] flex items-center justify-center shadow-[0_0_30px_color-mix(in_srgb,var(--color-primary)_40%,transparent)] hover:shadow-[0_0_40px_color-mix(in_srgb,var(--color-primary)_60%,transparent)] transition-all duration-300 press-scale">
-                <span className="material-symbols-outlined text-[36px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-                  {running ? 'pause' : 'play_arrow'}
+          
+          <div className="flex items-center gap-10">
+            <div className="flex flex-col items-end">
+              <span className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest mb-1 font-bold">Status</span>
+              <div className="flex items-center gap-2">
+                <span className={`w-2.5 h-2.5 ${finished ? 'bg-[var(--color-secondary)]' : running ? 'bg-[var(--color-primary)] animate-pulse' : 'bg-[var(--color-outline)]'}`} />
+                <span className="font-label-sm text-[12px] text-[var(--color-on-surface)] uppercase tracking-widest font-bold">
+                  {finished ? 'COMPLETE' : running ? 'ACTIVE' : 'IDLE'}
                 </span>
-              </button>
-            )}
-
-            <button onClick={handleEndSession} title="End Session"
-              className="w-12 h-12 rounded-full border border-[var(--color-outline-variant)]/40 flex items-center justify-center text-[var(--color-on-surface-variant)] hover:text-[var(--color-error)] hover:border-[var(--color-error)]/40 transition-all press-scale">
-              <span className="material-symbols-outlined text-[22px]">stop_circle</span>
-            </button>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Sound selector */}
-        <div className="w-full flex flex-col items-center gap-3">
-          <Waveform active={running} />
-          <div className="flex items-center gap-2 bg-[var(--color-surface-container)]/60 backdrop-blur-xl border border-[var(--color-outline-variant)]/20 rounded-full p-1.5">
-            {SOUNDS.map(s => (
-              <button key={s.id} aria-label={s.label} onClick={() => setSound(s.id)} title={s.label}
-                className={`p-3 rounded-full transition-all duration-200 flex items-center justify-center press-scale ${
-                  sound === s.id
-                    ? 'bg-[var(--color-primary)]/15 text-[var(--color-primary)] border border-[var(--color-primary)]/25 shadow-[0_0_12px_color-mix(in_srgb,var(--color-primary)_20%,transparent)]'
-                    : 'text-[var(--color-on-surface-variant)] hover:bg-[var(--color-surface-variant)]/50 hover:text-[var(--color-primary)]'
+        <main className="flex-1 w-full flex flex-col items-center justify-center p-8 gap-10 bg-[var(--color-surface-container-low)] relative overflow-y-auto no-scrollbar pb-32">
+
+          {/* Presets */}
+          <div className="flex gap-4 w-full justify-center flex-wrap">
+            {PRESETS.map((p, i) => (
+              <button key={p.label} onClick={() => handlePreset(i, p.seconds)} disabled={running}
+                className={`px-6 py-3 font-label-sm text-[11px] uppercase tracking-widest font-bold border transition-colors disabled:opacity-40 ${
+                  selectedPreset === i
+                    ? 'bg-[var(--color-primary)] text-black border-[var(--color-primary)]'
+                    : 'bg-[var(--color-surface-container)] text-[var(--color-on-surface-variant)] border-[var(--color-outline-variant)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]'
                 }`}>
-                <span className="material-symbols-outlined text-[20px]">{s.icon}</span>
+                {p.label}
               </button>
             ))}
           </div>
-          <p className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest">
-            {SOUNDS.find(s => s.id === sound)?.label} · Zen Ambient{running ? ' · Live' : ''}
-          </p>
-        </div>
 
-      </main>
+          {/* Custom duration input */}
+          {showCustom && (
+            <div className="flex items-center gap-3 w-full max-w-sm bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] p-2">
+              <input autoFocus type="number" min={1} max={180} value={customMins}
+                onChange={e => setCustomMins(e.target.value)} placeholder="Minutes (1–180)"
+                className="flex-1 bg-transparent px-3 outline-none text-[var(--color-on-surface)] font-body-md placeholder:text-[var(--color-outline)]" />
+              <button onClick={handleCustom}
+                className="px-6 py-2 bg-[var(--color-primary)] text-black font-label-sm text-[11px] font-bold uppercase tracking-widest hover:bg-[var(--color-primary-fixed)] transition-colors">
+                Set
+              </button>
+            </div>
+          )}
+
+          {/* Timer ring / completion */}
+          <div className="flex flex-col items-center gap-8 w-full">
+            {finished ? (
+              <div className="flex flex-col items-center gap-6 p-12 border border-[var(--color-primary)] bg-[var(--color-surface-container)] w-full max-w-md">
+                <div className="w-16 h-16 bg-[var(--color-primary)] text-black flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[32px] font-bold">done_all</span>
+                </div>
+                <div className="text-center">
+                  <p className="font-label-sm text-[14px] text-[var(--color-on-surface)] font-bold uppercase tracking-widest mb-2">Session Complete</p>
+                  <p className="font-body-md text-[13px] text-[var(--color-outline)]">
+                    {formatTime(totalSecs)} of focused execution. Outstanding.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <FocusRing pct={pct} timeStr={timeStr} running={running} />
+            )}
+
+            {/* Controls */}
+            <div className="flex items-center gap-6 mt-4">
+              <button onClick={handleReset} title="Reset"
+                className="w-14 h-14 border border-[var(--color-outline-variant)] flex items-center justify-center text-[var(--color-outline)] hover:text-[var(--color-on-surface)] hover:border-[var(--color-on-surface)] hover:bg-[var(--color-surface-container)] transition-colors">
+                <span className="material-symbols-outlined text-[24px]">restart_alt</span>
+              </button>
+
+              {!finished && (
+                <button onClick={handleToggle} title={running ? 'Pause' : 'Start'}
+                  className={`w-24 h-16 border flex items-center justify-center transition-colors ${
+                    running 
+                      ? 'bg-[var(--color-surface-container)] text-[var(--color-primary)] border-[var(--color-primary)] hover:bg-[var(--color-primary)]/10' 
+                      : 'bg-[var(--color-primary)] text-black border-[var(--color-primary)] hover:bg-[var(--color-primary-fixed)]'
+                  }`}>
+                  <span className="material-symbols-outlined text-[32px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+                    {running ? 'pause' : 'play_arrow'}
+                  </span>
+                </button>
+              )}
+
+              <button onClick={handleEndSession} title="End Session"
+                className="w-14 h-14 border border-[var(--color-outline-variant)] flex items-center justify-center text-[var(--color-outline)] hover:text-[var(--color-error)] hover:border-[var(--color-error)] hover:bg-[var(--color-error)]/10 transition-colors">
+                <span className="material-symbols-outlined text-[24px]">stop_circle</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Sound selector */}
+          <div className="w-full flex flex-col items-center gap-6 mt-8">
+            <Waveform active={running} />
+            <div className="flex items-center border border-[var(--color-outline-variant)] bg-[var(--color-surface-container)]">
+              {SOUNDS.map(s => (
+                <button key={s.id} aria-label={s.label} onClick={() => setSound(s.id)} title={s.label}
+                  className={`w-14 h-14 border-r border-[var(--color-outline-variant)] last:border-r-0 transition-colors flex items-center justify-center ${
+                    sound === s.id
+                      ? 'bg-[var(--color-primary)] text-black'
+                      : 'text-[var(--color-outline)] hover:bg-[var(--color-surface-container-high)] hover:text-[var(--color-on-surface)]'
+                  }`}>
+                  <span className="material-symbols-outlined text-[20px]">{s.icon}</span>
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-none bg-[var(--color-secondary)]" />
+              <p className="font-label-sm text-[10px] text-[var(--color-outline)] font-bold uppercase tracking-widest">
+                {SOUNDS.find(s => s.id === sound)?.label} · Ambient Engine
+              </p>
+            </div>
+          </div>
+
+        </main>
+      </div>
     </div>
   );
 }

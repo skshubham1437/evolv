@@ -18,27 +18,19 @@ const PRIORITY_META: Record<Priority, { label: string; color: string; bg: string
 
 function PriorityBadge({ priority }: { priority: Priority }) {
   const m = PRIORITY_META[priority];
+  const code = priority === 'high' ? 'P0' : priority === 'medium' ? 'P1' : 'P2';
   return (
     <span
-      className="font-label-sm text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-md border font-bold"
-      style={{ color: m.color, backgroundColor: m.bg, borderColor: `color-mix(in srgb, ${m.color} 25%, transparent)` }}
+      className="font-mono text-[10px] font-bold px-1.5 py-0.5 border"
+      style={{ color: m.color, borderColor: `color-mix(in srgb, ${m.color} 30%, transparent)` }}
     >
-      {m.label}
+      {code}
     </span>
   );
 }
 
 function TaskRow({
-  task,
-  onComplete,
-  onDelete,
-  onChangePriority,
-  idx,
-  projects,
-  allTasks,
-  subtasks = [],
-  onAddSubtask,
-  isTaskBlocked,
+  task, onComplete, onDelete, onChangePriority, idx, projects, allTasks, subtasks = [], onAddSubtask, isTaskBlocked,
 }: {
   task: Task;
   onComplete: (id: number) => void;
@@ -67,111 +59,80 @@ function TaskRow({
   const blockCheck = isTaskBlocked(task);
 
   return (
-    <div
-      className="anim-fade-up w-full"
-      style={{ animationDelay: `${idx * 30}ms` }}
-    >
+    <div className="anim-fade-up w-full" style={{ animationDelay: `${idx * 30}ms` }}>
       <div
-        className={`group flex flex-col gap-2 px-4 py-3.5 rounded-2xl border transition-all duration-200 backdrop-blur-md ${
-          task.is_completed
-            ? 'bg-[var(--color-surface-container-lowest)]/50 border-[var(--color-outline-variant)]/10 opacity-50'
-            : expanded
-              ? 'bg-[var(--color-surface-container)]/80 border-[var(--color-primary)]/25 shadow-lg'
-              : 'bg-[var(--color-surface-container-low)]/70 border-[var(--color-outline-variant)]/20 hover:border-[var(--color-outline-variant)]/50 hover:shadow-sm'
-        } ${completing ? 'scale-[0.98] opacity-60' : ''}`}
+        className={`group flex flex-col gap-2 p-4 transition-colors duration-150 border-b border-[var(--color-surface-variant)] hover:bg-[var(--color-surface-container-high)] relative ${
+          task.is_completed ? 'opacity-40' : expanded ? 'bg-[var(--color-surface-container-high)]' : 'bg-[var(--color-surface-container)]'
+        } ${completing ? 'opacity-60' : ''}`}
       >
-        <div className="flex items-start gap-3">
-          {/* Complete button with SVG checkmark animation */}
+        {expanded && !task.is_completed && <div className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--color-primary)]" />}
+        <div className="flex items-start gap-4">
           <button
             onClick={handleComplete}
             disabled={task.is_completed}
-            className={`shrink-0 mt-0.5 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${
+            className={`shrink-0 mt-0.5 w-5 h-5 border flex items-center justify-center transition-colors ${
               task.is_completed
-                ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/15'
-                : 'border-[var(--color-outline-variant)] hover:border-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 group-hover:border-[var(--color-primary)]/60'
+                ? 'border-[var(--color-outline-variant)] bg-[var(--color-outline-variant)]/20 text-[var(--color-outline)]'
+                : 'border-[var(--color-outline-variant)] hover:border-[var(--color-primary)] text-transparent hover:text-[var(--color-primary)]'
             }`}
           >
-            {task.is_completed ? (
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <polyline
-                  points="2,6 5,9 10,3"
-                  stroke="var(--color-primary)"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeDasharray="20"
-                  strokeDashoffset="20"
-                  className="svg-stroke-draw"
-                />
-              </svg>
-            ) : (
-              <span className="w-2 h-2 rounded-full bg-transparent group-hover:bg-[var(--color-primary)]/40 transition-colors" />
-            )}
+            {task.is_completed && <span className="material-symbols-outlined text-[14px]">check</span>}
+            {!task.is_completed && <span className="material-symbols-outlined text-[14px] opacity-0 group-hover:opacity-100 transition-opacity">check</span>}
           </button>
 
-          {/* Content */}
           <div className="flex-1 min-w-0" onClick={() => !task.is_completed && setExpanded(e => !e)}>
-            <div className="flex items-center gap-2 flex-wrap">
-              <p className={`font-body-md text-[15px] leading-snug transition-colors ${
+            <div className="flex items-center gap-2 flex-wrap mb-1">
+              <p className={`font-body-md text-[15px] font-semibold leading-snug transition-colors ${
                 task.is_completed
                   ? 'line-through text-[var(--color-outline)] decoration-[var(--color-outline)]/50'
-                  : 'text-[var(--color-on-surface)] group-hover:text-[var(--color-primary)]'
+                  : 'text-[var(--color-on-surface)]/80 group-hover:text-[var(--color-primary)]'
               }`}>
                 {task.title}
               </p>
+              
               <PriorityBadge priority={task.priority as Priority} />
               
               {project && (
-                <span
-                  className="font-label-sm text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-md border font-bold"
+                <span className="font-label-sm text-[9px] uppercase tracking-widest px-2 py-0.5 border font-bold"
                   style={{
                     color: project.color,
                     backgroundColor: `color-mix(in srgb, ${project.color} 10%, transparent)`,
                     borderColor: `color-mix(in srgb, ${project.color} 25%, transparent)`
-                  }}
-                >
+                  }}>
                   {project.title}
                 </span>
               )}
 
               {blockCheck.blocked && (
-                <span 
-                  className="material-symbols-outlined text-orange-400 text-[18px] select-none"
-                  title={`Blocked by: ${blockCheck.blockingTitle}`}
-                >
-                  lock
-                </span>
+                <span className="material-symbols-outlined text-orange-400 text-[18px] select-none" title={`Blocked by: ${blockCheck.blockingTitle}`}>lock</span>
               )}
             </div>
 
-            {/* Tag List */}
             {tagList.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-2">
                 {tagList.map(tag => (
-                  <span key={tag} className="font-label-sm text-[9px] uppercase tracking-wider bg-[var(--color-surface-container-high)] text-[var(--color-outline)] border border-[var(--color-outline-variant)]/20 px-2 py-0.5 rounded-md font-bold">
+                  <span key={tag} className="font-label-sm text-[9px] uppercase tracking-wider bg-[var(--color-surface-container-high)] text-[var(--color-outline)] border border-[var(--color-outline-variant)]/20 px-2 py-0.5 font-bold">
                     #{tag}
                   </span>
                 ))}
               </div>
             )}
 
-            {/* Expanded detail */}
             {expanded && !task.is_completed && (
-              <div className="mt-4 border-t border-[var(--color-outline-variant)]/10 pt-3 flex flex-col gap-3 anim-fade-up">
-                {/* Priority updates */}
+              <div className="mt-4 border-t border-[var(--color-outline-variant)] pt-3 flex flex-col gap-3 anim-fade-up">
                 <div className="flex items-center gap-3 flex-wrap">
-                  <span className="font-label-sm text-[10px] text-[var(--color-on-surface-variant)] uppercase tracking-widest">Priority:</span>
+                  <span className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest font-bold">Priority:</span>
                   {(['high', 'medium', 'low'] as Priority[]).map(p => (
                     <button
                       key={p}
                       onClick={e => { e.stopPropagation(); onChangePriority(task.id, p); }}
-                      className={`px-3 py-1 rounded-full font-label-sm text-[10px] uppercase tracking-widest border transition-all press-scale ${
-                        task.priority === p ? 'opacity-100 scale-100' : 'opacity-50 hover:opacity-80'
+                      className={`px-3 py-1 font-label-sm text-[10px] uppercase tracking-widest border transition-all ${
+                        task.priority === p ? 'opacity-100 font-bold' : 'opacity-50 hover:opacity-80'
                       }`}
                       style={{
                         color: PRIORITY_META[p].color,
-                        backgroundColor: PRIORITY_META[p].bg,
-                        borderColor: `color-mix(in srgb, ${PRIORITY_META[p].color} 25%, transparent)`,
+                        backgroundColor: task.priority === p ? PRIORITY_META[p].bg : 'transparent',
+                        borderColor: task.priority === p ? PRIORITY_META[p].color : 'var(--color-outline-variant)',
                       }}
                     >
                       {PRIORITY_META[p].label}
@@ -179,7 +140,6 @@ function TaskRow({
                   ))}
                 </div>
 
-                {/* Subtask Add outcome */}
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
@@ -196,54 +156,31 @@ function TaskRow({
                   <input
                     name="subtaskTitle"
                     placeholder="Add subtask outcome…"
-                    className="flex-1 bg-[var(--color-surface-container-high)]/60 border border-[var(--color-outline-variant)]/20 rounded-xl px-3 py-1.5 text-[12px] text-[var(--color-on-surface)] outline-none placeholder:text-[var(--color-outline)] focus:border-[var(--color-primary)]/40"
+                    className="flex-1 bg-transparent border-b border-[var(--color-surface-variant)] pb-1 text-[13px] text-[var(--color-on-surface)] outline-none placeholder:text-[var(--color-outline)] focus:border-[var(--color-primary)]"
                   />
-                  <button type="submit" className="px-4 py-1.5 bg-[var(--color-primary)] text-black font-bold font-label-sm text-[10px] uppercase tracking-widest rounded-xl hover:scale-105 transition-transform">
-                    Add Subtask
+                  <button type="submit" className="px-4 py-1.5 bg-[var(--color-primary)] text-black font-bold font-label-sm text-[10px] uppercase tracking-widest hover:bg-[var(--color-primary-fixed)] transition-colors">
+                    Add
                   </button>
                 </form>
               </div>
             )}
           </div>
 
-          {/* Actions */}
           <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity no-print">
-            {!task.is_completed && (
-              <button
-                onClick={() => { setExpanded(e => !e); }}
-                className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--color-outline)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/10 transition-all"
-                title="Edit priority"
-              >
-                <span className="material-symbols-outlined text-[16px]">tune</span>
-              </button>
-            )}
-            <button
-              onClick={() => onDelete(task.id)}
-              className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--color-outline)] hover:text-[var(--color-error)] hover:bg-[var(--color-error)]/10 transition-all"
-              title="Delete task"
-            >
-              <span className="material-symbols-outlined text-[16px]">delete</span>
+            <button onClick={() => onDelete(task.id)} className="w-8 h-8 flex items-center justify-center text-[var(--color-outline)] hover:text-[var(--color-error)] hover:bg-[var(--color-error)]/10 transition-colors" title="Delete task">
+              <span className="material-symbols-outlined text-[18px]">delete</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* Render children subtasks */}
       {subtasks.length > 0 && (
-        <div className="pl-6 mt-2 flex flex-col gap-2 border-l border-[var(--color-outline-variant)]/20 ml-6 relative">
+        <div className="pl-4 border-l border-[var(--color-outline-variant)] ml-6 flex flex-col">
           {subtasks.map((sub, sidx) => (
             <TaskRow
-              key={sub.id}
-              task={sub}
-              idx={sidx}
-              onComplete={onComplete}
-              onDelete={onDelete}
-              onChangePriority={onChangePriority}
-              projects={projects}
-              allTasks={allTasks}
-              subtasks={allTasks.filter(t => t.parent_task_id === sub.id)}
-              onAddSubtask={onAddSubtask}
-              isTaskBlocked={isTaskBlocked}
+              key={sub.id} task={sub} idx={sidx} onComplete={onComplete} onDelete={onDelete}
+              onChangePriority={onChangePriority} projects={projects} allTasks={allTasks}
+              subtasks={allTasks.filter(t => t.parent_task_id === sub.id)} onAddSubtask={onAddSubtask} isTaskBlocked={isTaskBlocked}
             />
           ))}
         </div>
@@ -265,7 +202,6 @@ export function TasksPage() {
   const [showAdd, setShowAdd]     = useState(false);
   const [error, setError]         = useState<string | null>(null);
 
-  // New states for Projects & Subtasks
   const [collapsedProjects, setCollapsedProjects] = useState<Record<number, boolean>>({});
   const [showAddProject, setShowAddProject]       = useState(false);
   const [newProjectTitle, setNewProjectTitle]     = useState('');
@@ -283,42 +219,23 @@ export function TasksPage() {
 
   const load = async () => {
     try {
-      const [dashboardData, projectsData] = await Promise.all([
-        fetchDashboard(),
-        fetchProjects(),
-      ]);
+      const [dashboardData, projectsData] = await Promise.all([fetchDashboard(), fetchProjects()]);
       setTasks(dashboardData.tasks ?? []);
       setProjects(projectsData ?? []);
     } catch {
       setError('Cannot reach the server.');
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   const handleAdd = async (e: FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim()) return;
     try {
-      const t = await createTask(
-        newTitle.trim(),
-        newPriority,
-        selectedProjectId,
-        selectedParentTaskId,
-        newTags.trim(),
-        newDependencyId ? String(newDependencyId) : ''
-      );
+      const t = await createTask(newTitle.trim(), newPriority, selectedProjectId, selectedParentTaskId, newTags.trim(), newDependencyId ? String(newDependencyId) : '');
       setTasks(p => [t, ...p]);
-      setNewTitle('');
-      setNewTags('');
-      setSelectedProjectId(null);
-      setSelectedParentTaskId(null);
-      setNewDependencyId(null);
-      setShowAdd(false);
+      setNewTitle(''); setNewTags(''); setSelectedProjectId(null); setSelectedParentTaskId(null); setNewDependencyId(null); setShowAdd(false);
       showToast('Action logged in Priority Queue', 'success');
-    } catch (e: any) {
-      showToast(e.message || 'Failed to create task', 'error');
-    }
+    } catch (e: any) { showToast(e.message || 'Failed to create task', 'error'); }
   };
 
   const handleAddProject = async (e: FormEvent) => {
@@ -327,42 +244,27 @@ export function TasksPage() {
     try {
       const p = await createProject(newProjectTitle.trim(), newProjectColor);
       setProjects(prev => [p, ...prev]);
-      setNewProjectTitle('');
-      setShowAddProject(false);
+      setNewProjectTitle(''); setShowAddProject(false);
       showToast('Project container established', 'success');
-    } catch (e: any) {
-      showToast(e.message || 'Failed to create project', 'error');
-    }
+    } catch (e: any) { showToast(e.message || 'Failed to create project', 'error'); }
   };
 
   const handleDeleteProject = async (id: number) => {
     try {
       await deleteProject(id);
       setProjects(prev => prev.filter(p => p.id !== id));
-      // unlink tasks
       setTasks(prev => prev.map(t => t.project_id === id ? { ...t, project_id: null } : t));
       showToast('Project removed, actions retained', 'success');
-    } catch (e: any) {
-      showToast(e.message || 'Failed to delete project', 'error');
-    }
+    } catch (e: any) { showToast(e.message || 'Failed to delete project', 'error'); }
   };
 
   const handleAddSubtask = async (parentId: number, title: string) => {
     try {
       const parent = tasks.find(t => t.id === parentId);
-      const sub = await createTask(
-        title,
-        parent ? parent.priority : 'medium',
-        parent ? parent.project_id : null,
-        parentId,
-        '',
-        ''
-      );
+      const sub = await createTask(title, parent ? parent.priority : 'medium', parent ? parent.project_id : null, parentId, '', '');
       setTasks(p => [sub, ...p]);
       showToast('Sub-outcome mapped successfully', 'success');
-    } catch (e: any) {
-      showToast(e.message || 'Failed to add subtask', 'error');
-    }
+    } catch (e: any) { showToast(e.message || 'Failed to add subtask', 'error'); }
   };
 
   const isTaskBlocked = (task: Task): { blocked: boolean; blockingTitle?: string } => {
@@ -370,9 +272,7 @@ export function TasksPage() {
     const depIds = task.dependencies.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
     for (const depId of depIds) {
       const depTask = tasks.find(t => t.id === depId);
-      if (depTask && !depTask.is_completed) {
-        return { blocked: true, blockingTitle: depTask.title };
-      }
+      if (depTask && !depTask.is_completed) return { blocked: true, blockingTitle: depTask.title };
     }
     return { blocked: false };
   };
@@ -400,12 +300,7 @@ export function TasksPage() {
     setTasks(p => p.map(t => t.id === id ? { ...t, priority } : t));
   };
 
-  const filtered = tasks.filter(t =>
-    filter === 'all'     ? true :
-    filter === 'pending' ? !t.is_completed :
-    t.is_completed
-  );
-
+  const filtered = tasks.filter(t => filter === 'all' ? true : filter === 'pending' ? !t.is_completed : t.is_completed);
   const pending = tasks.filter(t => !t.is_completed).length;
   const done    = tasks.filter(t => t.is_completed).length;
   const pct     = tasks.length > 0 ? Math.round((done / tasks.length) * 100) : 0;
@@ -417,347 +312,273 @@ export function TasksPage() {
   ];
 
   return (
-    <div className="flex-1 overflow-y-auto no-scrollbar w-full page-enter">
-      {/* Ambient orbs */}
-      <div className="fixed top-[10%] right-[5%] w-80 h-80 bg-[var(--color-primary)]/5 rounded-full blur-[120px] pointer-events-none -z-10 animate-pulse" />
-      <div className="fixed bottom-[20%] left-[5%] w-96 h-96 bg-[var(--color-secondary)]/4 rounded-full blur-[140px] pointer-events-none -z-10" />
-
-      <div className="max-w-[var(--spacing-container-max)] mx-auto px-[var(--spacing-margin-mobile)] md:px-[var(--spacing-margin-desktop)] py-8 pb-24 flex flex-col gap-6">
-
-        {/* ── Header ────────────────────────────────────── */}
-        <section className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+    <div className="flex flex-col h-full w-full bg-[var(--color-surface-container-lowest)] text-[var(--color-on-surface)] items-center overflow-hidden">
+      <div className="flex flex-col h-full w-full max-w-[var(--spacing-container-max)] border-x border-[var(--color-outline-variant)] relative">
+        
+        {/* Top Header */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between px-8 py-6 border-b border-[var(--color-outline-variant)] shrink-0 bg-[var(--color-surface-container-lowest)] gap-4">
           <div>
-            <h1 className="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-[var(--color-on-surface)] mb-1">
+            <h2 className="font-title-md text-[32px] font-medium tracking-tight text-[var(--color-primary-fixed)]">
               Priority Queue
-            </h1>
-            <p className="font-body-md text-body-md text-[var(--color-on-surface-variant)] opacity-70">
-              {loading ? 'Loading…' : `${pending} pending · ${done} complete · ${pct}% done`}
+            </h2>
+            <p className="font-label-sm text-[11px] text-[var(--color-outline)] uppercase tracking-widest mt-1 font-bold">
+              TASK MANAGEMENT • PROJECT CONTAINERS
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setShowAddProject(v => !v)}
-              className="flex items-center gap-2 px-5 py-3 rounded-xl border border-[var(--color-secondary)]/20 text-[var(--color-secondary)] hover:bg-[var(--color-secondary)]/10 font-label-sm text-label-sm uppercase tracking-widest transition-all press-scale"
-            >
-              <span className="material-symbols-outlined text-[20px]">{showAddProject ? 'close' : 'folder'}</span>
-              {showAddProject ? 'Cancel Project' : 'New Project'}
-            </button>
-            <button
-              onClick={() => setShowAdd(v => !v)}
-              className={`flex items-center gap-2 px-5 py-3 rounded-xl font-label-sm text-label-sm uppercase tracking-widest transition-all press-scale ${
-                showAdd
-                  ? 'bg-[var(--color-surface-container-high)] border border-[var(--color-outline-variant)]/30 text-[var(--color-on-surface-variant)]'
-                  : 'bg-[var(--color-primary)] text-[var(--color-on-primary)] shadow-[0_0_20px_color-mix(in_srgb,var(--color-primary)_30%,transparent)] hover:shadow-[0_0_28px_color-mix(in_srgb,var(--color-primary)_50%,transparent)]'
-              }`}
-            >
-              <span className="material-symbols-outlined text-[20px]">{showAdd ? 'close' : 'add'}</span>
-              {showAdd ? 'Cancel' : 'New Task'}
-            </button>
+          
+          <div className="flex items-center gap-10">
+            <div className="flex flex-col items-end">
+              <span className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest mb-1 font-bold">Pending</span>
+              <span className="font-label-sm text-[28px] text-[var(--color-on-surface)] font-normal tracking-tight leading-none">{pending}</span>
+            </div>
+            <div className="w-px h-10 bg-[var(--color-outline-variant)] self-center" />
+            <div className="flex flex-col items-end">
+              <span className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest mb-1 font-bold">Completed</span>
+              <span className="font-label-sm text-[28px] text-[var(--color-on-surface)] font-normal tracking-tight leading-none">{done}</span>
+            </div>
+            <div className="w-px h-10 bg-[var(--color-outline-variant)] self-center" />
+            <div className="flex flex-col items-end">
+              <span className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest mb-1 font-bold">Completion</span>
+              <span className="font-label-sm text-[28px] text-[var(--color-primary)] font-normal tracking-tight leading-none">{pct}%</span>
+            </div>
           </div>
-        </section>
+        </div>
 
         {error && (
-          <div className="bg-[var(--color-error-container)]/20 border border-[var(--color-error)]/30 rounded-xl px-4 py-3 text-[var(--color-error)] text-sm flex items-center gap-2">
-            <span className="material-symbols-outlined text-[18px]">warning</span>{error}
+          <div className="border-b border-[var(--color-error)]/30 bg-[var(--color-error)]/10 px-8 py-3 text-[var(--color-error)] font-label-sm text-[11px] uppercase tracking-widest flex items-center gap-2 font-bold shrink-0">
+            <span className="material-symbols-outlined text-[16px]">warning</span>{error}
           </div>
         )}
 
-        {/* ── Progress bar ──────────────────────────────── */}
-        {tasks.length > 0 && (
-          <div className="flex items-center gap-3">
-            <div className="flex-1 h-1.5 bg-[var(--color-surface-container-highest)] rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)] rounded-full transition-all duration-700"
-                style={{ width: `${pct}%` }}
-              />
+        <div className="flex-1 overflow-y-auto no-scrollbar bg-[var(--color-surface-container-low)]">
+          {/* Controls Bar */}
+          <div className="flex items-center justify-between border-b border-[var(--color-outline-variant)] bg-[var(--color-surface-container-lowest)] px-8 py-4 shrink-0">
+            <div className="flex items-center gap-6">
+              {TABS.map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => setFilter(tab.id)}
+                  className={`font-label-sm text-[11px] uppercase tracking-widest font-bold flex items-center gap-1.5 transition-colors ${
+                    filter === tab.id ? 'text-[var(--color-primary)]' : 'text-[var(--color-outline)] hover:text-[var(--color-on-surface)]'
+                  }`}
+                >
+                  {tab.label}
+                  <span className={`px-1.5 py-0.5 border text-[9px] ${filter === tab.id ? 'border-[var(--color-primary)]/30 bg-[var(--color-primary)]/10' : 'border-[var(--color-outline-variant)] bg-[var(--color-surface-container-high)]'}`}>
+                    {tab.count}
+                  </span>
+                </button>
+              ))}
             </div>
-            <span className="font-label-sm text-[11px] text-[var(--color-outline)] shrink-0">{pct}%</span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowAddProject(v => !v)}
+                className="font-label-sm text-[10px] text-[var(--color-secondary)] uppercase tracking-widest font-bold flex items-center gap-1 border border-[var(--color-secondary)]/30 px-4 py-1.5 hover:bg-[var(--color-secondary)]/10 transition-colors"
+              >
+                <span className="material-symbols-outlined text-[14px]">{showAddProject ? 'close' : 'folder_open'}</span>
+                {showAddProject ? 'Cancel' : 'Project'}
+              </button>
+              <button
+                onClick={() => setShowAdd(v => !v)}
+                className={`font-label-sm text-[10px] uppercase tracking-widest font-bold flex items-center gap-1 px-4 py-1.5 transition-colors border ${
+                  showAdd ? 'border-[var(--color-outline-variant)] text-[var(--color-outline)] hover:text-[var(--color-on-surface)]' : 'border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-black'
+                }`}
+              >
+                <span className="material-symbols-outlined text-[14px]">{showAdd ? 'close' : 'add'}</span>
+                {showAdd ? 'Cancel' : 'Task'}
+              </button>
+            </div>
           </div>
-        )}
 
-        {/* ── New Project Form ───────────────────────────── */}
-        {showAddProject && (
-          <form onSubmit={handleAddProject} className="glass-panel rounded-2xl p-5 flex flex-col gap-4 anim-fade-up">
-            <div className="flex items-center gap-3">
-              <span className="material-symbols-outlined text-[var(--color-secondary)] text-[22px]">folder</span>
-              <input
-                autoFocus
-                value={newProjectTitle}
-                onChange={e => setNewProjectTitle(e.target.value)}
-                placeholder="Project Title…"
-                className="flex-1 bg-transparent outline-none text-[var(--color-on-surface)] font-body-md text-[15px] placeholder:text-[var(--color-outline)]"
-              />
-            </div>
-            <div className="flex items-center gap-4 pl-8 flex-wrap">
-              <span className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest">Accent Color:</span>
-              <div className="flex gap-2">
-                {["#D2BBFF", "#5ADACE", "#FF8DA1", "#F5D0A9", "#A8E6CF"].map(c => (
-                  <button
-                    type="button"
-                    key={c}
-                    onClick={() => setNewProjectColor(c)}
-                    className={`w-6 h-6 rounded-full border transition-all ${newProjectColor === c ? 'scale-110 border-white ring-2 ring-[var(--color-secondary)]' : 'border-transparent'}`}
-                    style={{ backgroundColor: c }}
+          <div className="p-8 pb-32">
+            {showAddProject && (
+              <form onSubmit={handleAddProject} className="bg-[var(--color-surface-container)] border border-[var(--color-secondary)]/30 p-6 mb-8 relative">
+                <div className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--color-secondary)]" />
+                <h4 className="font-label-sm text-[10px] text-[var(--color-secondary)] uppercase tracking-widest font-bold mb-4">Define Project Container</h4>
+                <div className="flex flex-col gap-4">
+                  <input
+                    autoFocus
+                    value={newProjectTitle} onChange={e => setNewProjectTitle(e.target.value)}
+                    placeholder="Project Title *"
+                    className="w-full bg-transparent border-b border-[var(--color-surface-variant)] pb-1 text-[var(--color-on-surface)] font-body-md outline-none focus:border-[var(--color-secondary)]"
                   />
-                ))}
-              </div>
-              <div className="ml-auto">
-                <button
-                  type="submit"
-                  disabled={!newProjectTitle.trim()}
-                  className="px-5 py-1.5 bg-[var(--color-secondary)] text-black font-bold rounded-full font-label-sm text-label-sm disabled:opacity-40 transition-all uppercase tracking-widest text-[11px]"
-                >
-                  Create Project
-                </button>
-              </div>
-            </div>
-          </form>
-        )}
-
-        {/* ── Quick Add Task Form ────────────────────────── */}
-        {showAdd && (
-          <form
-            onSubmit={handleAdd}
-            className="glass-panel rounded-2xl p-5 flex flex-col gap-4 anim-fade-up"
-          >
-            <div className="flex items-center gap-3">
-              <span className="material-symbols-outlined text-[var(--color-primary)] text-[20px]">task_alt</span>
-              <input
-                autoFocus
-                value={newTitle}
-                onChange={e => setNewTitle(e.target.value)}
-                placeholder="Task Title…"
-                className="flex-1 bg-transparent outline-none text-[var(--color-on-surface)] font-body-md text-[15px] placeholder:text-[var(--color-outline)]"
-              />
-            </div>
-            
-            {/* Project, Parent Task, and Dependency dropdowns */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pl-8">
-              <label className="flex flex-col gap-1 text-[10px] text-[var(--color-outline)] uppercase tracking-widest">
-                Project
-                <select
-                  value={selectedProjectId || ''}
-                  onChange={e => setSelectedProjectId(e.target.value ? parseInt(e.target.value) : null)}
-                  className="bg-[var(--color-surface-container-high)] text-[var(--color-on-surface)] rounded-xl px-3 py-2 font-label-sm text-[12px] border border-[var(--color-outline-variant)]/20 outline-none"
-                >
-                  <option value="">No Project</option>
-                  {projects.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
-                </select>
-              </label>
-
-              <label className="flex flex-col gap-1 text-[10px] text-[var(--color-outline)] uppercase tracking-widest">
-                Parent Task
-                <select
-                  value={selectedParentTaskId || ''}
-                  onChange={e => setSelectedParentTaskId(e.target.value ? parseInt(e.target.value) : null)}
-                  className="bg-[var(--color-surface-container-high)] text-[var(--color-on-surface)] rounded-xl px-3 py-2 font-label-sm text-[12px] border border-[var(--color-outline-variant)]/20 outline-none"
-                >
-                  <option value="">Top-level Task</option>
-                  {tasks.filter(t => !t.is_completed && !t.parent_task_id).map(t => <option key={t.id} value={t.id}>{t.title}</option>)}
-                </select>
-              </label>
-
-              <label className="flex flex-col gap-1 text-[10px] text-[var(--color-outline)] uppercase tracking-widest">
-                Blocking Dependency
-                <select
-                  value={newDependencyId || ''}
-                  onChange={e => setNewDependencyId(e.target.value ? parseInt(e.target.value) : null)}
-                  className="bg-[var(--color-surface-container-high)] text-[var(--color-on-surface)] rounded-xl px-3 py-2 font-label-sm text-[12px] border border-[var(--color-outline-variant)]/20 outline-none"
-                >
-                  <option value="">No Dependency</option>
-                  {tasks.filter(t => !t.is_completed).map(t => <option key={t.id} value={t.id}>{t.title}</option>)}
-                </select>
-              </label>
-            </div>
-
-            <div className="flex items-center gap-3 pl-8 flex-wrap">
-              <span className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest">Priority:</span>
-              <div className="flex gap-1.5">
-                {(['high', 'medium', 'low'] as Priority[]).map(p => (
-                  <button
-                    type="button"
-                    key={p}
-                    onClick={() => setNewPriority(p)}
-                    className={`px-3 py-1 rounded-full font-label-sm text-[10px] uppercase tracking-widest border transition-all press-scale ${
-                      newPriority === p ? 'scale-105 opacity-100 font-bold' : 'opacity-50 hover:opacity-80'
-                    }`}
-                    style={{
-                      color: PRIORITY_META[p].color,
-                      backgroundColor: newPriority === p ? PRIORITY_META[p].bg : 'transparent',
-                      borderColor: `color-mix(in srgb, ${PRIORITY_META[p].color} 30%, transparent)`,
-                    }}
-                  >
-                    {p}
-                  </button>
-                ))}
-              </div>
-
-              <div className="flex-1 min-w-[200px] flex gap-2">
-                <input
-                  value={newTags}
-                  onChange={e => setNewTags(e.target.value)}
-                  placeholder="Tags (e.g. ui, design)…"
-                  className="flex-1 bg-[var(--color-surface-container-high)]/60 border border-[var(--color-outline-variant)]/20 rounded-xl px-3 py-1.5 text-[12px] text-[var(--color-on-surface)] outline-none placeholder:text-[var(--color-outline)] focus:border-[var(--color-primary)]/40"
-                />
-              </div>
-
-              <div className="ml-auto">
-                <button
-                  type="submit"
-                  disabled={!newTitle.trim()}
-                  className="px-5 py-1.5 bg-[var(--color-primary)] text-[var(--color-on-primary)] rounded-full font-label-sm text-label-sm disabled:opacity-40 transition-all uppercase tracking-widest text-[11px]"
-                >
-                  Create Task
-                </button>
-              </div>
-            </div>
-          </form>
-        )}
-
-        {/* ── Filter tabs ───────────────────────────────── */}
-        <div className="flex items-center gap-2 border-b border-[var(--color-outline-variant)]/20 pb-1">
-          {TABS.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setFilter(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full font-label-sm text-[11px] uppercase tracking-widest transition-all press-scale ${
-                filter === tab.id
-                  ? 'bg-[var(--color-primary)]/10 text-[var(--color-primary)]/80 border border-[var(--color-primary)]/20 shadow-sm'
-                  : 'text-[var(--color-on-surface-variant)] hover:text-[var(--color-on-surface)]'
-              }`}
-            >
-              {tab.label}
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                filter === tab.id ? 'bg-[var(--color-primary)]/20 text-[var(--color-primary)]' : 'bg-[var(--color-surface-variant)] text-[var(--color-outline)]'
-              }`}>
-                {tab.count}
-              </span>
-            </button>
-          ))}
-          <div className="ml-auto">
-            <button
-              onClick={() => navigate('/focus')}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-full border border-[var(--color-secondary)]/30 text-[var(--color-secondary)] font-label-sm text-[11px] uppercase tracking-widest hover:bg-[var(--color-secondary)]/8 transition-all press-scale"
-            >
-              <span className="material-symbols-outlined text-[14px]">self_improvement</span>
-              Focus
-            </button>
-          </div>
-        </div>
-
-        {/* ── Collapsible Projects Sections List ─────────── */}
-        <div className="flex flex-col gap-6">
-          {loading ? (
-            [...Array(3)].map((_, i) => (
-              <div key={i} className="h-36 rounded-3xl bg-[var(--color-surface-container)]/50 animate-pulse" />
-            ))
-          ) : (
-            <>
-              {projects.map(proj => {
-                const projTasks = filtered.filter(t => t.project_id === proj.id && !t.parent_task_id);
-                const isCollapsed = collapsedProjects[proj.id] ?? false;
-
-                return (
-                  <div key={proj.id} className="bg-[var(--color-surface-container-low)]/40 rounded-3xl p-6 border border-[var(--color-outline-variant)]/15 backdrop-blur-xl">
-                    <div className="flex items-center justify-between gap-4 mb-4">
-                      <div 
-                        className="flex items-center gap-3 cursor-pointer select-none group/title" 
-                        onClick={() => setCollapsedProjects(prev => ({ ...prev, [proj.id]: !isCollapsed }))}
-                      >
-                        <span className="w-3.5 h-3.5 rounded-full shadow-sm animate-pulse" style={{ backgroundColor: proj.color }} />
-                        <div>
-                          <h3 className="font-title-md text-[17px] text-[var(--color-on-surface)] flex items-center gap-1.5 group-hover/title:text-[var(--color-primary)] transition-colors">
-                            {proj.title}
-                            <span 
-                              className="material-symbols-outlined text-[18px] text-[var(--color-outline)] transition-transform duration-200" 
-                              style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'none' }}
-                            >
-                              expand_more
-                            </span>
-                          </h3>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2 no-print">
-                        <span className="font-label-sm text-[10px] bg-[var(--color-surface-variant)] text-[var(--color-outline)] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider">
-                          {projTasks.length} task{projTasks.length !== 1 ? 's' : ''}
-                        </span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest font-bold mr-2">Color:</span>
+                      {["#D2BBFF", "#5ADACE", "#FF8DA1", "#F5D0A9", "#A8E6CF"].map(c => (
                         <button
-                          onClick={() => handleDeleteProject(proj.id)}
-                          className="w-8 h-8 rounded-lg flex items-center justify-center text-[var(--color-outline)] hover:text-[var(--color-error)] hover:bg-[var(--color-error)]/10 transition-all"
-                          title="Delete Project"
-                        >
-                          <span className="material-symbols-outlined text-[18px]">delete</span>
-                        </button>
+                          type="button" key={c} onClick={() => setNewProjectColor(c)}
+                          className={`w-5 h-5 border transition-all ${newProjectColor === c ? 'border-white scale-110' : 'border-transparent'}`}
+                          style={{ backgroundColor: c }}
+                        />
+                      ))}
+                    </div>
+                    <button type="submit" disabled={!newProjectTitle.trim()} className="px-5 py-1.5 bg-[var(--color-secondary)] text-black font-label-sm text-[10px] font-bold disabled:opacity-50 uppercase tracking-widest hover:brightness-110 transition-colors">
+                      Establish
+                    </button>
+                  </div>
+                </div>
+              </form>
+            )}
+
+            {showAdd && (
+              <form onSubmit={handleAdd} className="bg-[var(--color-surface-container)] border border-[var(--color-primary)]/30 p-6 mb-8 relative">
+                <div className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--color-primary)]" />
+                <h4 className="font-label-sm text-[10px] text-[var(--color-primary)] uppercase tracking-widest font-bold mb-4">Queue New Action</h4>
+                
+                <div className="flex flex-col gap-5">
+                  <input
+                    autoFocus
+                    value={newTitle} onChange={e => setNewTitle(e.target.value)}
+                    placeholder="Action Title *"
+                    className="w-full bg-transparent border-b border-[var(--color-surface-variant)] pb-1 text-[var(--color-on-surface)] font-body-md outline-none focus:border-[var(--color-primary)]"
+                  />
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <select value={selectedProjectId || ''} onChange={e => setSelectedProjectId(e.target.value ? parseInt(e.target.value) : null)}
+                      className="w-full bg-transparent border-b border-[var(--color-surface-variant)] pb-1 text-[13px] text-[var(--color-on-surface)] outline-none focus:border-[var(--color-primary)]">
+                      <option value="" className="bg-[var(--color-surface-container-high)]">No Project</option>
+                      {projects.map(p => <option key={p.id} value={p.id} className="bg-[var(--color-surface-container-high)]">{p.title}</option>)}
+                    </select>
+                    <select value={selectedParentTaskId || ''} onChange={e => setSelectedParentTaskId(e.target.value ? parseInt(e.target.value) : null)}
+                      className="w-full bg-transparent border-b border-[var(--color-surface-variant)] pb-1 text-[13px] text-[var(--color-on-surface)] outline-none focus:border-[var(--color-primary)]">
+                      <option value="" className="bg-[var(--color-surface-container-high)]">Top-level Task</option>
+                      {tasks.filter(t => !t.is_completed && !t.parent_task_id).map(t => <option key={t.id} value={t.id} className="bg-[var(--color-surface-container-high)]">{t.title}</option>)}
+                    </select>
+                    <select value={newDependencyId || ''} onChange={e => setNewDependencyId(e.target.value ? parseInt(e.target.value) : null)}
+                      className="w-full bg-transparent border-b border-[var(--color-surface-variant)] pb-1 text-[13px] text-[var(--color-on-surface)] outline-none focus:border-[var(--color-primary)]">
+                      <option value="" className="bg-[var(--color-surface-container-high)]">No Dependency</option>
+                      {tasks.filter(t => !t.is_completed).map(t => <option key={t.id} value={t.id} className="bg-[var(--color-surface-container-high)]">{t.title}</option>)}
+                    </select>
+                  </div>
+
+                  <div className="flex items-center justify-between mt-2 flex-wrap gap-4">
+                    <div className="flex items-center gap-2">
+                      <span className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest font-bold">Priority:</span>
+                      <div className="flex gap-2">
+                        {(['high', 'medium', 'low'] as Priority[]).map(p => (
+                          <button
+                            type="button" key={p} onClick={() => setNewPriority(p)}
+                            className={`px-3 py-1 font-label-sm text-[10px] uppercase tracking-widest border transition-colors ${newPriority === p ? 'font-bold text-black' : 'text-[var(--color-outline)] border-[var(--color-surface-variant)] hover:border-[var(--color-outline-variant)]'}`}
+                            style={newPriority === p ? { backgroundColor: PRIORITY_META[p].color, borderColor: PRIORITY_META[p].color } : {}}
+                          >
+                            {p}
+                          </button>
+                        ))}
                       </div>
                     </div>
+                    <div className="flex gap-4 items-center">
+                      <input
+                        value={newTags} onChange={e => setNewTags(e.target.value)}
+                        placeholder="Tags (csv)…"
+                        className="w-32 bg-transparent border-b border-[var(--color-surface-variant)] pb-1 text-[13px] text-[var(--color-on-surface)] outline-none focus:border-[var(--color-primary)]"
+                      />
+                      <button type="submit" disabled={!newTitle.trim()} className="px-6 py-2 bg-[var(--color-primary)] text-black font-label-sm text-[11px] font-bold disabled:opacity-50 uppercase tracking-widest hover:bg-[var(--color-primary-fixed)] transition-colors">
+                        Deploy Task
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            )}
 
-                    {!isCollapsed && (
-                      <div className="flex flex-col gap-2 mt-2">
-                        {projTasks.length === 0 ? (
-                          <div className="text-center py-6 text-[var(--color-outline)] font-body-md text-[12px] border border-dashed border-[var(--color-outline-variant)]/20 rounded-2xl opacity-60">
-                            No active tasks in this project.
+            <div className="flex flex-col gap-8">
+              {loading ? (
+                <div className="animate-pulse space-y-4">
+                  <div className="h-24 bg-[var(--color-surface-container)] border border-[var(--color-surface-variant)]" />
+                  <div className="h-24 bg-[var(--color-surface-container)] border border-[var(--color-surface-variant)]" />
+                </div>
+              ) : (
+                <>
+                  {projects.map(proj => {
+                    const projTasks = filtered.filter(t => t.project_id === proj.id && !t.parent_task_id);
+                    const isCollapsed = collapsedProjects[proj.id] ?? false;
+
+                    return (
+                      <div key={proj.id} className="bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)]">
+                        <div 
+                          className="flex items-center justify-between p-4 px-5 border-b border-[var(--color-surface-variant)] bg-[var(--color-surface-container-lowest)] cursor-pointer group"
+                          onClick={() => setCollapsedProjects(prev => ({ ...prev, [proj.id]: !isCollapsed }))}
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className="w-2.5 h-2.5 rounded-none" style={{ backgroundColor: proj.color }} />
+                            <h3 className="font-label-sm text-[11px] font-bold text-[var(--color-on-surface)] uppercase tracking-widest group-hover:text-[var(--color-primary)] transition-colors flex items-center gap-2">
+                              {proj.title}
+                              <span className="material-symbols-outlined text-[14px] text-[var(--color-outline)] transition-transform duration-200" style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'none' }}>
+                                expand_more
+                              </span>
+                            </h3>
                           </div>
-                        ) : (
-                          projTasks.map((task, idx) => (
-                            <TaskRow
-                              key={task.id}
-                              task={task}
-                              idx={idx}
-                              onComplete={handleComplete}
-                              onDelete={handleDelete}
-                              onChangePriority={handlePriority}
-                              projects={projects}
-                              allTasks={tasks}
-                              subtasks={filtered.filter(t => t.parent_task_id === task.id)}
-                              onAddSubtask={handleAddSubtask}
-                              isTaskBlocked={isTaskBlocked}
-                            />
-                          ))
+                          <div className="flex items-center gap-4 no-print">
+                            <span className="font-label-sm text-[9px] uppercase tracking-widest text-[var(--color-outline)] font-bold">
+                              {projTasks.length} {projTasks.length === 1 ? 'Action' : 'Actions'}
+                            </span>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleDeleteProject(proj.id); }}
+                              className="opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 flex items-center justify-center text-[var(--color-outline)] hover:text-[var(--color-error)]"
+                              title="Delete Project"
+                            >
+                              <span className="material-symbols-outlined text-[14px]">delete</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        {!isCollapsed && (
+                          <div className="flex flex-col">
+                            {projTasks.length === 0 ? (
+                              <div className="text-center py-6 font-label-sm text-[10px] uppercase tracking-widest text-[var(--color-outline)] opacity-50">
+                                NO ACTIVE TASKS.
+                              </div>
+                            ) : (
+                              projTasks.map((task, idx) => (
+                                <TaskRow
+                                  key={task.id} task={task} idx={idx} onComplete={handleComplete} onDelete={handleDelete}
+                                  onChangePriority={handlePriority} projects={projects} allTasks={tasks}
+                                  subtasks={filtered.filter(t => t.parent_task_id === task.id)}
+                                  onAddSubtask={handleAddSubtask} isTaskBlocked={isTaskBlocked}
+                                />
+                              ))
+                            )}
+                          </div>
                         )}
                       </div>
-                    )}
-                  </div>
-                );
-              })}
+                    );
+                  })}
 
-              {/* Standalone Tasks (No Project) */}
-              {(() => {
-                const standaloneTasks = filtered.filter(t => !t.project_id && !t.parent_task_id);
-                return (
-                  <div className="bg-[var(--color-surface-container-low)]/30 rounded-3xl p-6 border border-dashed border-[var(--color-outline-variant)]/20">
-                    <h3 className="font-title-md text-[16px] text-[var(--color-on-surface-variant)] mb-4 flex items-center gap-2">
-                      <span className="material-symbols-outlined text-[20px] text-[var(--color-outline)]">inbox</span>
-                      Standalone Actions
-                    </h3>
-                    <div className="flex flex-col gap-2">
-                      {standaloneTasks.length === 0 ? (
-                        <p className="text-center py-4 font-body-md text-[12px] text-[var(--color-outline)] opacity-50">All standalone actions sorted.</p>
-                      ) : (
-                        standaloneTasks.map((task, idx) => (
-                          <TaskRow
-                            key={task.id}
-                            task={task}
-                            idx={idx}
-                            onComplete={handleComplete}
-                            onDelete={handleDelete}
-                            onChangePriority={handlePriority}
-                            projects={projects}
-                            allTasks={tasks}
-                            subtasks={filtered.filter(t => t.parent_task_id === task.id)}
-                            onAddSubtask={handleAddSubtask}
-                            isTaskBlocked={isTaskBlocked}
-                          />
-                        ))
-                      )}
-                    </div>
-                  </div>
-                );
-              })()}
-            </>
-          )}
+                  {(() => {
+                    const standaloneTasks = filtered.filter(t => !t.project_id && !t.parent_task_id);
+                    if (standaloneTasks.length === 0 && projects.length > 0) return null;
+                    return (
+                      <div className="bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] mt-4">
+                        <div className="p-4 px-5 border-b border-[var(--color-surface-variant)] bg-[var(--color-surface-container-lowest)]">
+                          <h3 className="font-label-sm text-[11px] font-bold text-[var(--color-outline)] uppercase tracking-widest flex items-center gap-2">
+                            <span className="material-symbols-outlined text-[14px]">inbox</span>
+                            Standalone Actions
+                          </h3>
+                        </div>
+                        <div className="flex flex-col">
+                          {standaloneTasks.length === 0 ? (
+                            <div className="text-center py-8 font-label-sm text-[10px] uppercase tracking-widest text-[var(--color-outline)] opacity-50">
+                              INBOX ZERO.
+                            </div>
+                          ) : (
+                            standaloneTasks.map((task, idx) => (
+                              <TaskRow
+                                key={task.id} task={task} idx={idx} onComplete={handleComplete} onDelete={handleDelete}
+                                onChangePriority={handlePriority} projects={projects} allTasks={tasks}
+                                subtasks={filtered.filter(t => t.parent_task_id === task.id)}
+                                onAddSubtask={handleAddSubtask} isTaskBlocked={isTaskBlocked}
+                              />
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </>
+              )}
+            </div>
+          </div>
         </div>
-
       </div>
     </div>
   );

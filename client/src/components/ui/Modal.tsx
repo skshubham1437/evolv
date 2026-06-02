@@ -1,5 +1,4 @@
 import { useEffect, type ReactNode } from 'react';
-import { X } from 'lucide-react';
 
 interface ModalProps {
   open: boolean;
@@ -28,25 +27,21 @@ export function Modal({ open, onClose, title, children, width = 'max-w-lg' }: Mo
   return (
     <div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
-      style={{ backdropFilter: 'blur(8px)', backgroundColor: 'rgba(0,0,0,0.5)' }}
+      style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div
-        className={`
-          w-full ${width} bg-[var(--bg-surface)] border border-[var(--border-default)]
-          rounded-2xl shadow-[var(--shadow-lg)]
-          animate-[modalSlideUp_250ms_cubic-bezier(0.34,1.56,0.64,1)]
-        `}
-        style={{ animation: 'modalSlideUp 250ms cubic-bezier(0.34,1.56,0.64,1)' }}
+        className={`w-full ${width} bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)]`}
+        style={{ animation: 'modalSlideUp 200ms ease' }}
       >
         {title && (
-          <div className="flex items-center justify-between p-5 border-b border-[var(--border-subtle)]">
-            <h2 className="font-semibold text-[var(--text-primary)]">{title}</h2>
+          <div className="flex items-center justify-between px-5 py-3.5 border-b border-[var(--color-outline-variant)]">
+            <h2 className="font-mono text-[11px] uppercase tracking-[0.14em] text-[var(--color-on-surface-variant)]">{title}</h2>
             <button
               onClick={onClose}
-              className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors p-1 rounded-lg hover:bg-white/5"
+              className="text-[var(--color-outline)] hover:text-[var(--color-on-surface)] transition-colors w-7 h-7 flex items-center justify-center"
             >
-              <X size={18} />
+              <span className="material-symbols-outlined text-[18px]">close</span>
             </button>
           </div>
         )}
@@ -55,8 +50,8 @@ export function Modal({ open, onClose, title, children, width = 'max-w-lg' }: Mo
 
       <style>{`
         @keyframes modalSlideUp {
-          from { opacity: 0; transform: translateY(16px) scale(0.97); }
-          to   { opacity: 1; transform: translateY(0) scale(1); }
+          from { opacity: 0; transform: translateY(10px); }
+          to   { opacity: 1; transform: translateY(0); }
         }
       `}</style>
     </div>

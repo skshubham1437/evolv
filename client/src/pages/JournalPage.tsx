@@ -24,47 +24,45 @@ function ChipList({
   };
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center gap-2">
-        <span className="material-symbols-outlined text-[18px]" style={{ color }}>{icon}</span>
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center gap-2 border-b border-[var(--color-surface-variant)] pb-2">
+        <span className="material-symbols-outlined text-[16px]" style={{ color }}>{icon}</span>
         <p className="font-label-sm text-[11px] uppercase tracking-widest font-bold" style={{ color }}>{label}</p>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-col gap-2">
         {items.map((item, i) => (
           <div
             key={i}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full font-body-md text-[13px] border transition-all group"
+            className="flex items-start justify-between gap-3 p-2 border transition-colors group bg-[var(--color-surface-container-low)]"
             style={{
-              color,
-              backgroundColor: `color-mix(in srgb, ${color} 8%, transparent)`,
               borderColor: `color-mix(in srgb, ${color} 20%, transparent)`,
             }}
           >
-            <span>{item}</span>
+            <span className="font-body-md text-[13px] text-[var(--color-on-surface)] leading-snug">{item}</span>
             <button
               onClick={() => onChange(items.filter((_, j) => j !== i))}
-              className="opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
+              className="opacity-0 group-hover:opacity-100 transition-opacity text-[var(--color-outline)] hover:text-[var(--color-error)] shrink-0"
             >
-              <span className="material-symbols-outlined text-[14px]">close</span>
+              <span className="material-symbols-outlined text-[16px]">close</span>
             </button>
           </div>
         ))}
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center border border-[var(--color-outline-variant)]">
         <input
           value={draft}
           onChange={e => setDraft(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); commit(); } }}
           placeholder={placeholder}
-          className="flex-1 bg-[var(--color-surface-container-high)]/50 border border-[var(--color-outline-variant)]/30 rounded-xl px-3 py-2 text-[13px] text-[var(--color-on-surface)] outline-none placeholder:text-[var(--color-outline)] focus:border-[var(--color-primary)]/50 transition-colors"
+          className="flex-1 bg-transparent px-3 py-2 text-[13px] text-[var(--color-on-surface)] outline-none placeholder:text-[var(--color-outline)]"
         />
         <button
           onClick={commit}
           disabled={!draft.trim()}
-          className="w-8 h-8 rounded-full flex items-center justify-center transition-all disabled:opacity-30"
-          style={{ backgroundColor: `color-mix(in srgb, ${color} 15%, transparent)`, color }}
+          className="w-8 h-8 flex items-center justify-center transition-colors disabled:opacity-30 border-l border-[var(--color-outline-variant)]"
+          style={{ backgroundColor: `color-mix(in srgb, ${color} 10%, transparent)`, color }}
         >
           <span className="material-symbols-outlined text-[16px]">add</span>
         </button>
@@ -88,46 +86,51 @@ function HistoryCard({ entry, expanded }: { entry: JournalEntry, expanded?: bool
   const themes = parseArrSafe(entry.themes || '[]');
 
   return (
-    <div className="flex items-start gap-4 bg-[var(--color-surface-container-low)]/50 border border-[var(--color-outline-variant)]/15 rounded-2xl p-4 hover:border-[var(--color-primary)]/20 transition-all group anim-fade-up">
+    <div className="flex flex-col sm:flex-row items-start gap-6 bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] p-6 transition-colors hover:bg-[var(--color-surface-container-high)]">
       {/* Date badge */}
-      <div className="flex flex-col items-center gap-0.5 shrink-0 w-10">
-        <span className="font-label-sm text-[9px] text-[var(--color-outline)] uppercase tracking-widest">
+      <div className="flex flex-row sm:flex-col items-center gap-2 sm:gap-0.5 shrink-0 sm:w-16 sm:border-r sm:border-[var(--color-surface-variant)] sm:pr-6">
+        <span className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest font-bold">
           {date.toLocaleDateString('en', { month: 'short' })}
         </span>
-        <span className="font-display-lg text-[20px] font-bold text-[var(--color-on-surface)] leading-none">
+        <span className="font-title-md text-[24px] sm:text-[32px] font-medium text-[var(--color-on-surface)] leading-none">
           {date.getDate()}
         </span>
       </div>
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-          <span className="material-symbols-outlined text-[16px]" style={{ color: mood.color, fontVariationSettings: "'FILL' 1" }}>
-            {mood.icon}
-          </span>
-          <span className="font-label-sm text-[10px] uppercase tracking-widest font-bold" style={{ color: mood.color }}>
-            {mood.label}
-          </span>
+        <div className="flex items-center gap-3 mb-3 flex-wrap">
+          <div className="flex items-center gap-1 border border-[var(--color-outline-variant)] px-2 py-0.5" style={{ backgroundColor: `color-mix(in srgb, ${mood.color} 10%, transparent)` }}>
+            <span className="material-symbols-outlined text-[14px]" style={{ color: mood.color, fontVariationSettings: "'FILL' 1" }}>
+              {mood.icon}
+            </span>
+            <span className="font-label-sm text-[9px] uppercase tracking-widest font-bold" style={{ color: mood.color }}>
+              {mood.label}
+            </span>
+          </div>
+          
           {entry.sentiment && (
-            <span className="font-label-sm text-[9px] bg-[var(--color-primary)]/10 text-[var(--color-primary)] border border-[var(--color-primary)]/20 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+            <span className="font-label-sm text-[9px] text-[var(--color-primary)] border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/10 px-2 py-0.5 font-bold uppercase tracking-widest">
               {entry.sentiment}
             </span>
           )}
-          <span className="font-label-sm text-[10px] text-[var(--color-outline)] ml-auto flex gap-3 flex-wrap">
-            <span>Energy: {entry.energy}%</span>
-            {entry.stress !== undefined && entry.stress > 0 && <span>Stress: {entry.stress}/5</span>}
-            {entry.confidence !== undefined && entry.confidence > 0 && <span>Conf: {entry.confidence}/5</span>}
-          </span>
+          
+          <div className="font-label-sm text-[9px] text-[var(--color-outline)] font-bold uppercase tracking-widest flex gap-3 ml-auto">
+            <span>NRG: {entry.energy}%</span>
+            {entry.stress !== undefined && entry.stress > 0 && <span>STR: {entry.stress}/5</span>}
+            {entry.confidence !== undefined && entry.confidence > 0 && <span>CNF: {entry.confidence}/5</span>}
+          </div>
         </div>
-        <p className={`font-body-md text-[13px] text-[var(--color-on-surface-variant)] leading-relaxed ${expanded ? '' : 'line-clamp-2'}`}>
-          {entry.content || <em className="opacity-40">No content</em>}
+        
+        <p className={`font-body-md text-[14px] text-[var(--color-on-surface-variant)] leading-relaxed ${expanded ? '' : 'line-clamp-3'}`}>
+          {entry.content || <em className="opacity-40 font-mono text-[11px] uppercase">No textual log</em>}
         </p>
 
         {/* Themes tags */}
         {themes.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mt-3">
+          <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-[var(--color-surface-variant)]">
             {themes.map((t, idx) => (
-              <span key={idx} className="font-label-sm text-[9px] bg-[var(--color-surface-container-high)] text-[var(--color-on-surface-variant)] px-2 py-0.5 rounded-md border border-[var(--color-outline-variant)]/20 uppercase tracking-widest font-bold">
+              <span key={idx} className="font-label-sm text-[9px] text-[var(--color-outline)] px-2 py-0.5 border border-[var(--color-outline-variant)] uppercase tracking-widest font-bold">
                 #{t}
               </span>
             ))}
@@ -145,15 +148,15 @@ function parseArrSafe(raw: string): string[] {
 function ReadOnlyChipList({ label, icon, items, color }: { label: string; icon: string; items: string[]; color: string }) {
   if (!items || items.length === 0) return null;
   return (
-    <div className="bg-[var(--color-surface-container-low)] border border-[var(--color-outline-variant)]/10 rounded-xl p-4 flex flex-col gap-2">
-      <div className="flex items-center gap-2">
+    <div className="bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] p-5 flex flex-col gap-3">
+      <div className="flex items-center gap-2 border-b border-[var(--color-surface-variant)] pb-2">
         <span className="material-symbols-outlined text-[16px]" style={{ color }}>{icon}</span>
         <p className="font-label-sm text-[10px] uppercase tracking-widest font-bold" style={{ color }}>{label}</p>
       </div>
-      <div className="flex flex-col gap-1.5 mt-1">
+      <div className="flex flex-col gap-2">
         {items.map((item, i) => (
-          <div key={i} className="font-body-md text-[13px] text-[var(--color-on-surface-variant)] flex items-start gap-2">
-            <span className="opacity-50 mt-0.5">•</span>
+          <div key={i} className="font-body-md text-[13px] text-[var(--color-on-surface-variant)] leading-snug flex items-start gap-2">
+            <span className="text-[10px] font-bold mt-0.5" style={{ color }}>//</span>
             <span>{item}</span>
           </div>
         ))}
@@ -185,7 +188,6 @@ function HistoryView({ entries }: { entries: JournalEntry[] }) {
   for (let i = 0; i < startOffset; i++) grid.push(null);
   for (let i = 1; i <= daysInMonth; i++) {
     const d = new Date(year, month, i);
-    // adjust timezone offset to avoid previous day bug
     grid.push(new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0]);
   }
 
@@ -193,17 +195,17 @@ function HistoryView({ entries }: { entries: JournalEntry[] }) {
   const todayStr = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
 
   return (
-    <div className="flex flex-col md:flex-row gap-6 anim-fade-up">
+    <div className="flex flex-col lg:flex-row gap-8">
       {/* Calendar */}
-      <div className="bg-[var(--color-surface-container-low)]/50 border border-[var(--color-outline-variant)]/15 rounded-2xl p-6 md:w-[320px] shrink-0 h-fit">
-        <div className="flex items-center justify-between mb-6">
-          <button onClick={prevMonth} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[var(--color-surface-container-high)] transition-colors material-symbols-outlined text-[var(--color-outline)] hover:text-[var(--color-on-surface)]">chevron_left</button>
-          <h3 className="font-title-md text-[16px] text-[var(--color-on-surface)]">{currentMonth.toLocaleDateString('en', { month: 'long', year: 'numeric' })}</h3>
-          <button onClick={nextMonth} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[var(--color-surface-container-high)] transition-colors material-symbols-outlined text-[var(--color-outline)] hover:text-[var(--color-on-surface)]">chevron_right</button>
+      <div className="bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] p-6 lg:w-[340px] shrink-0 h-fit">
+        <div className="flex items-center justify-between mb-6 pb-4 border-b border-[var(--color-surface-variant)]">
+          <button onClick={prevMonth} className="w-8 h-8 flex items-center justify-center border border-transparent hover:border-[var(--color-outline-variant)] hover:bg-[var(--color-surface-container-high)] transition-colors material-symbols-outlined text-[var(--color-outline)] hover:text-[var(--color-on-surface)]">chevron_left</button>
+          <h3 className="font-label-sm text-[12px] font-bold uppercase tracking-widest text-[var(--color-on-surface)]">{currentMonth.toLocaleDateString('en', { month: 'long', year: 'numeric' })}</h3>
+          <button onClick={nextMonth} className="w-8 h-8 flex items-center justify-center border border-transparent hover:border-[var(--color-outline-variant)] hover:bg-[var(--color-surface-container-high)] transition-colors material-symbols-outlined text-[var(--color-outline)] hover:text-[var(--color-on-surface)]">chevron_right</button>
         </div>
         
         <div className="grid grid-cols-7 gap-1 text-center mb-2">
-          {['M','T','W','T','F','S','S'].map((d, i) => <div key={i} className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase">{d}</div>)}
+          {['M','T','W','T','F','S','S'].map((d, i) => <div key={i} className="font-label-sm text-[10px] font-bold text-[var(--color-outline)] uppercase">{d}</div>)}
         </div>
         
         <div className="grid grid-cols-7 gap-1">
@@ -219,17 +221,16 @@ function HistoryView({ entries }: { entries: JournalEntry[] }) {
                 key={i}
                 onClick={() => entry && setSelectedDate(dateStr)}
                 disabled={!entry}
-                className={`aspect-square rounded-full flex items-center justify-center font-body-md text-[13px] transition-all relative ${
-                  isSelected ? 'border-2 shadow-sm scale-110 z-10' : 'border border-transparent'
-                } ${entry ? 'cursor-pointer hover:scale-105' : 'opacity-30 cursor-default'}`}
+                className={`aspect-square flex items-center justify-center font-mono text-[12px] transition-colors relative border ${
+                  isSelected ? 'border-[var(--color-on-surface)] z-10 font-bold' : isToday ? 'border-[var(--color-primary)]/50' : 'border-transparent'
+                } ${entry ? 'cursor-pointer hover:border-[var(--color-outline)]' : 'opacity-30 cursor-default'}`}
                 style={{
-                  backgroundColor: entry ? `color-mix(in srgb, ${mood!.color} 20%, transparent)` : 'transparent',
+                  backgroundColor: entry ? `color-mix(in srgb, ${mood!.color} 15%, transparent)` : 'var(--color-surface-container-lowest)',
                   color: entry ? mood!.color : 'var(--color-on-surface-variant)',
-                  borderColor: isSelected ? mood!.color : isToday ? 'var(--color-outline-variant)' : 'transparent',
                 }}
               >
                 {parseInt(dateStr.split('-')[2])}
-                {entry && <div className="absolute bottom-1 w-1 h-1 rounded-full" style={{ backgroundColor: mood!.color }} />}
+                {entry && <div className="absolute bottom-1 w-1 h-1" style={{ backgroundColor: mood!.color }} />}
               </button>
             );
           })}
@@ -239,22 +240,22 @@ function HistoryView({ entries }: { entries: JournalEntry[] }) {
       {/* Selected Entry Detail */}
       <div className="flex-1">
         {selectedEntry ? (
-          <div className="flex flex-col gap-4">
-            <button onClick={() => setSelectedDate(null)} className="text-[var(--color-outline)] hover:text-[var(--color-on-surface)] font-label-sm text-[11px] uppercase tracking-widest flex items-center gap-1 w-fit transition-colors">
-              <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-              Back to calendar
+          <div className="flex flex-col gap-6">
+            <button onClick={() => setSelectedDate(null)} className="text-[var(--color-outline)] hover:text-[var(--color-on-surface)] font-label-sm text-[10px] uppercase tracking-widest font-bold flex items-center gap-1 w-fit transition-colors border border-transparent hover:border-[var(--color-outline-variant)] px-3 py-1.5">
+              <span className="material-symbols-outlined text-[14px]">arrow_back</span>
+              Back to Calendar
             </button>
             <HistoryCard entry={selectedEntry} expanded={true} />
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                <ReadOnlyChipList label="Gratitude" icon="favorite" items={parseArrSafe(selectedEntry.gratitude)} color="var(--color-secondary)" />
                <ReadOnlyChipList label="Wins" icon="emoji_events" items={parseArrSafe(selectedEntry.wins)} color="var(--color-primary)" />
                <ReadOnlyChipList label="Lessons" icon="lightbulb" items={parseArrSafe(selectedEntry.lessons)} color="orange" />
             </div>
           </div>
         ) : (
-          <div className="bg-[var(--color-surface-container-low)]/30 border border-dashed border-[var(--color-outline-variant)]/20 rounded-2xl h-full min-h-[300px] flex flex-col items-center justify-center p-6 text-center text-[var(--color-outline)] anim-fade-up">
-             <span className="material-symbols-outlined text-[32px] mb-2 opacity-50">calendar_month</span>
-             <p className="font-body-md text-[13px]">Select a highlighted date to view your entry.</p>
+          <div className="bg-[var(--color-surface-container)] border border-dashed border-[var(--color-outline-variant)] h-full min-h-[400px] flex flex-col items-center justify-center p-8 text-center text-[var(--color-outline)]">
+             <span className="material-symbols-outlined text-[32px] mb-4 opacity-50">calendar_month</span>
+             <p className="font-label-sm text-[11px] font-bold uppercase tracking-widest">Select a highlighted date to access log.</p>
           </div>
         )}
       </div>
@@ -322,7 +323,6 @@ Confidence: ${confidence}/5`;
   const loadHistory = async () => {
     try {
       const all = await fetchJournalEntries();
-      // Use all entries for the calendar, do not slice.
       setHistory(all);
     } catch { /* ignore */ }
   };
@@ -361,14 +361,8 @@ Confidence: ${confidence}/5`;
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
     timeoutRef.current = setTimeout(() => {
       saveEntry(
-        overrides?.c ?? content,
-        overrides?.m ?? mood,
-        overrides?.en ?? energy,
-        overrides?.st ?? stress,
-        overrides?.cf ?? confidence,
-        overrides?.gr ?? gratitude,
-        overrides?.w ?? wins,
-        overrides?.l ?? lessons,
+        overrides?.c ?? content, overrides?.m ?? mood, overrides?.en ?? energy, overrides?.st ?? stress,
+        overrides?.cf ?? confidence, overrides?.gr ?? gratitude, overrides?.w ?? wins, overrides?.l ?? lessons,
       );
     }, 1200);
   };
@@ -390,263 +384,255 @@ Confidence: ${confidence}/5`;
   ];
 
   return (
-    <div className="flex-1 overflow-y-auto no-scrollbar w-full page-enter">
-      {/* Ambient */}
-      <div className="fixed top-[10%] left-[5%] w-96 h-96 bg-[var(--color-primary)]/5 rounded-full blur-[140px] pointer-events-none -z-10 animate-pulse" />
-      <div className="fixed bottom-[20%] right-[10%] w-[500px] h-[500px] bg-[var(--color-secondary)]/4 rounded-full blur-[160px] pointer-events-none -z-10" />
-
-      <div className="max-w-3xl mx-auto px-[var(--spacing-margin-mobile)] md:px-[var(--spacing-margin-desktop)] py-8 pb-24 flex flex-col gap-6">
+    <div className="flex flex-col h-full w-full bg-[var(--color-surface-container-lowest)] text-[var(--color-on-surface)] items-center overflow-hidden">
+      <div className="flex flex-col h-full w-full max-w-[var(--spacing-container-max)] border-x border-[var(--color-outline-variant)] relative">
 
         {/* ── Header ─────────────────────────────────────── */}
-        <header className="flex items-start justify-between gap-4">
+        <header className="flex flex-col md:flex-row md:items-end justify-between px-8 py-6 border-b border-[var(--color-outline-variant)] shrink-0 bg-[var(--color-surface-container-lowest)] gap-4">
           <div>
-            <p className="font-label-sm text-[11px] text-[var(--color-secondary)] tracking-[0.2em] uppercase mb-1">
+            <h2 className="font-title-md text-[32px] font-medium tracking-tight text-[var(--color-primary-fixed)]">
+              Reflection Log
+            </h2>
+            <p className="font-label-sm text-[11px] text-[var(--color-outline)] uppercase tracking-widest mt-1 font-bold">
               {new Date().toLocaleDateString('en', { weekday: 'long', month: 'long', day: 'numeric' })}
             </p>
-            <h1 className="font-display-lg text-[clamp(26px,5vw,40px)] text-[var(--color-on-surface)] tracking-tight leading-none">
-              Daily Reflection
-            </h1>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-6">
             {/* Save status */}
-            <div className="flex items-center gap-1.5 px-3.5 py-1.5 bg-[var(--color-surface-container-low)] rounded-full border border-[var(--color-outline-variant)]/20 shadow-sm transition-all duration-300">
+            <div className="flex items-center gap-2 px-3 py-1.5 border border-[var(--color-surface-variant)] bg-[var(--color-surface-container)] transition-colors">
               {saving ? (
                 <>
-                  <div className="w-2.5 h-2.5 rounded-full border-2 border-[var(--color-secondary)] border-t-transparent animate-spin" />
-                  <span className="font-label-sm text-[10px] text-[var(--color-on-surface-variant)] uppercase tracking-widest">Saving...</span>
+                  <div className="w-3 h-3 border-2 border-[var(--color-secondary)] border-t-transparent animate-spin" />
+                  <span className="font-label-sm text-[10px] text-[var(--color-on-surface-variant)] uppercase tracking-widest font-bold">Syncing...</span>
                 </>
               ) : lastSaved ? (
                 <>
-                  <span className="material-symbols-outlined text-[14px] text-[var(--color-secondary)] font-bold" style={{ fontVariationSettings: "'FILL' 1" }}>
-                    check_circle
+                  <span className="material-symbols-outlined text-[14px] text-[var(--color-secondary)]" style={{ fontVariationSettings: "'FILL' 1" }}>
+                    cloud_done
                   </span>
                   <span className="font-label-sm text-[10px] text-[var(--color-secondary)] uppercase tracking-widest font-bold">
-                    Saved {lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                    Saved {lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </span>
                 </>
               ) : (
                 <>
-                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-outline)] animate-pulse" />
-                  <span className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest">Draft</span>
+                  <span className="w-2 h-2 bg-[var(--color-outline)] animate-pulse" />
+                  <span className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest font-bold">Draft</span>
                 </>
               )}
             </div>
 
             {/* View toggle */}
-            <div className="flex p-1 bg-[var(--color-surface-container-low)] rounded-xl border border-[var(--color-outline-variant)]/15">
+            <div className="flex border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-lowest)]">
               {(['write', 'history'] as const).map(v => (
                 <button
                   key={v}
                   onClick={() => setView(v)}
-                  className={`px-4 py-1.5 rounded-lg font-label-sm text-[11px] uppercase tracking-widest transition-all ${
+                  className={`px-5 py-2 font-label-sm text-[10px] uppercase tracking-widest font-bold transition-colors border-r border-[var(--color-outline-variant)] last:border-r-0 ${
                     view === v
-                      ? 'bg-[var(--color-primary)] text-[var(--color-on-primary)] shadow-sm'
-                      : 'text-[var(--color-on-surface-variant)] hover:text-[var(--color-on-surface)]'
+                      ? 'bg-[var(--color-primary)] text-black'
+                      : 'text-[var(--color-outline)] hover:text-[var(--color-on-surface)] hover:bg-[var(--color-surface-container)]'
                   }`}
                 >
-                  {v === 'write' ? 'Today' : 'History'}
+                  {v === 'write' ? 'Today' : 'Archive'}
                 </button>
               ))}
             </div>
           </div>
         </header>
 
-        {/* ── Write view ─────────────────────────────────── */}
-        {view === 'write' && (
-          <>
-            {/* Mind & Body Metrics Grid */}
-            <section className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Mood */}
-              <div className="glass-panel rounded-2xl p-5 flex flex-col gap-4">
-                <p className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest">State of Mind</p>
-                <div className="flex gap-2 flex-wrap">
-                  {MOODS.map(m => (
+        <div className="flex-1 overflow-y-auto no-scrollbar bg-[var(--color-surface-container-low)] pb-32">
+          <div className="p-8 flex flex-col gap-8">
+            
+            {/* ── Write view ─────────────────────────────────── */}
+            {view === 'write' && (
+              <>
+                {/* Mind & Body Metrics Grid */}
+                <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Mood */}
+                  <div className="bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] p-6 flex flex-col gap-6">
+                    <p className="font-label-sm text-[11px] font-bold text-[var(--color-outline)] uppercase tracking-widest border-b border-[var(--color-surface-variant)] pb-2">State of Mind</p>
+                    <div className="flex gap-3">
+                      {MOODS.map(m => (
+                        <button
+                          key={m.val}
+                          onClick={() => handleMood(m.val)}
+                          className={`flex-1 flex flex-col items-center gap-2 py-3 border transition-colors ${
+                            mood === m.val
+                              ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-primary)]'
+                              : 'border-[var(--color-surface-variant)] text-[var(--color-on-surface-variant)] hover:border-[var(--color-outline-variant)] hover:bg-[var(--color-surface-container-high)]'
+                          }`}
+                        >
+                          <span
+                            className="material-symbols-outlined text-[20px]"
+                            style={{ fontVariationSettings: mood === m.val ? "'FILL' 1" : "'FILL' 0" }}
+                          >
+                            {m.icon}
+                          </span>
+                          <span className="font-label-sm text-[10px] font-bold uppercase tracking-widest">{m.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Energy */}
+                  <div className="bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] p-6 flex flex-col justify-center gap-6">
+                    <div className="flex justify-between items-center border-b border-[var(--color-surface-variant)] pb-2">
+                      <p className="font-label-sm text-[11px] font-bold text-[var(--color-outline)] uppercase tracking-widest">Cognitive Energy</p>
+                      <p className="font-label-sm text-[13px] font-bold text-[var(--color-primary)]">{energy}%</p>
+                    </div>
+                    <div className="relative h-6 flex items-center group cursor-pointer border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-lowest)] p-1">
+                      <div className="w-full h-full relative">
+                        <div
+                          className="h-full bg-[var(--color-primary)] transition-all duration-100"
+                          style={{ width: `${energy}%` }}
+                        />
+                        <input
+                          type="range" min="0" max="100" value={energy}
+                          onChange={e => handleEnergy(parseInt(e.target.value))}
+                          onMouseUp={handleEnergyRelease} onTouchEnd={handleEnergyRelease}
+                          className="absolute inset-0 opacity-0 cursor-pointer w-full"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Stress Level */}
+                  <div className="bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] p-6 flex flex-col justify-center gap-6">
+                    <div className="flex justify-between items-center border-b border-[var(--color-surface-variant)] pb-2">
+                      <p className="font-label-sm text-[11px] font-bold text-[var(--color-outline)] uppercase tracking-widest">Cognitive Stress</p>
+                      <p className="font-label-sm text-[11px] font-bold uppercase tracking-widest text-[var(--color-error)]">
+                        {stress === 1 ? 'Calm (1)' : stress === 2 ? 'Low (2)' : stress === 3 ? 'Moderate (3)' : stress === 4 ? 'High (4)' : 'Severe (5)'}
+                      </p>
+                    </div>
+                    <div className="relative h-6 flex items-center group cursor-pointer border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-lowest)] p-1">
+                      <div className="w-full h-full relative flex">
+                        {[1, 2, 3, 4, 5].map(v => (
+                          <div key={v} className="flex-1 border-r border-[var(--color-surface-container)] last:border-r-0 h-full relative">
+                            {stress >= v && (
+                              <div className="absolute inset-0 bg-[var(--color-error)] opacity-80" />
+                            )}
+                          </div>
+                        ))}
+                        <input
+                          type="range" min="1" max="5" value={stress}
+                          onChange={e => handleStress(parseInt(e.target.value))}
+                          className="absolute inset-0 opacity-0 cursor-pointer w-full"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Confidence */}
+                  <div className="bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] p-6 flex flex-col justify-center gap-6">
+                    <div className="flex justify-between items-center border-b border-[var(--color-surface-variant)] pb-2">
+                      <p className="font-label-sm text-[11px] font-bold text-[var(--color-outline)] uppercase tracking-widest">Personal Confidence</p>
+                      <p className="font-label-sm text-[11px] font-bold uppercase tracking-widest text-[var(--color-secondary)]">
+                        {confidence === 1 ? 'Uncertain (1)' : confidence === 2 ? 'Hesitant (2)' : confidence === 3 ? 'Steady (3)' : confidence === 4 ? 'Strong (4)' : 'Unstoppable (5)'}
+                      </p>
+                    </div>
+                    <div className="relative h-6 flex items-center group cursor-pointer border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-lowest)] p-1">
+                      <div className="w-full h-full relative flex">
+                        {[1, 2, 3, 4, 5].map(v => (
+                          <div key={v} className="flex-1 border-r border-[var(--color-surface-container)] last:border-r-0 h-full relative">
+                            {confidence >= v && (
+                              <div className="absolute inset-0 bg-[var(--color-secondary)] opacity-80" />
+                            )}
+                          </div>
+                        ))}
+                        <input
+                          type="range" min="1" max="5" value={confidence}
+                          onChange={e => handleConfidence(parseInt(e.target.value))}
+                          className="absolute inset-0 opacity-0 cursor-pointer w-full"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                {/* Prompt chips */}
+                <section className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
+                  {[
+                    { text: 'What challenged you today?', icon: 'storm' },
+                    { text: "Three things I'm grateful for…", icon: 'favorite' },
+                    { text: "Tomorrow's primary objective?", icon: 'route' },
+                    { text: 'What did I learn?', icon: 'lightbulb' },
+                  ].map(p => (
                     <button
-                      key={m.val}
-                      onClick={() => handleMood(m.val)}
-                      className={`flex items-center gap-1.5 px-4 py-2 rounded-xl border font-label-sm text-[12px] transition-all press-scale ${
-                        mood === m.val
-                          ? 'font-bold shadow-sm'
-                          : 'border-[var(--color-outline-variant)]/30 text-[var(--color-on-surface-variant)] hover:border-[var(--color-outline-variant)]'
-                      }`}
-                      style={mood === m.val ? {
-                        color: m.color,
-                        backgroundColor: `color-mix(in srgb, ${m.color} 10%, transparent)`,
-                        borderColor: `color-mix(in srgb, ${m.color} 25%, transparent)`,
-                      } : {}}
+                      key={p.text}
+                      onClick={() => handleContent(content + (content ? '\n\n' : '') + p.text + ' ')}
+                      className="whitespace-nowrap flex items-center gap-2 px-5 py-3 bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] font-label-sm text-[11px] font-bold uppercase tracking-widest text-[var(--color-on-surface)]/80 hover:text-[var(--color-primary)] hover:border-[var(--color-primary)]/50 transition-colors shrink-0"
                     >
-                      <span
-                        className="material-symbols-outlined text-[18px]"
-                        style={{ fontVariationSettings: mood === m.val ? "'FILL' 1" : "'FILL' 0", color: mood === m.val ? m.color : undefined }}
-                      >
-                        {m.icon}
-                      </span>
-                      {m.label}
+                      <span className="material-symbols-outlined text-[16px]">{p.icon}</span>
+                      {p.text}
                     </button>
                   ))}
-                </div>
-              </div>
+                </section>
 
-              {/* Energy */}
-              <div className="glass-panel rounded-2xl p-5 flex flex-col justify-center gap-4">
-                <div className="flex justify-between items-center">
-                  <p className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest">Cognitive Energy</p>
-                  <p className="font-label-sm text-[13px] font-bold text-[var(--color-primary)]">{energy}%</p>
-                </div>
-                <div className="relative h-5 flex items-center group">
-                  <div className="absolute w-full h-2 bg-[var(--color-surface-container-highest)] rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-[var(--color-secondary)] to-[var(--color-primary)] rounded-full transition-all duration-100"
-                      style={{ width: `${energy}%` }}
+                {/* Main write area */}
+                <section className="bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] flex flex-col focus-within:border-[var(--color-primary)] transition-colors">
+                  <div className="p-4 px-6 border-b border-[var(--color-surface-variant)] bg-[var(--color-surface-container-lowest)] flex justify-between items-center">
+                    <h3 className="font-label-sm text-[11px] font-bold uppercase tracking-widest text-[var(--color-on-surface)] flex items-center gap-2">
+                      <span className="material-symbols-outlined text-[16px]">edit_document</span>
+                      Freeform Log
+                    </h3>
+                  </div>
+                  <textarea
+                    value={content}
+                    onChange={e => handleContent(e.target.value)}
+                    className="w-full flex-1 bg-transparent resize-y px-6 py-5 text-[15px] leading-relaxed text-[var(--color-on-surface)] placeholder:text-[var(--color-outline)] focus:outline-none min-h-[300px] font-mono"
+                    placeholder="Begin your transmission…"
+                  />
+                </section>
+
+                {/* Gratitude / Wins / Lessons */}
+                <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] p-6">
+                    <ChipList
+                      label="Gratitude" icon="favorite" items={gratitude} onChange={handleGratitude}
+                      placeholder="I'm grateful for…" color="var(--color-secondary)"
                     />
                   </div>
-                  <input
-                    type="range" min="0" max="100" value={energy}
-                    onChange={e => handleEnergy(parseInt(e.target.value))}
-                    onMouseUp={handleEnergyRelease} onTouchEnd={handleEnergyRelease}
-                    className="absolute inset-0 opacity-0 cursor-pointer w-full"
-                  />
-                  <div
-                    className="absolute w-4 h-4 bg-white rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.25)] pointer-events-none transition-all duration-100 border-2 border-[var(--color-primary)]/30"
-                    style={{ left: `calc(${energy}% - 8px)` }}
-                  />
-                </div>
-              </div>
-
-              {/* Stress Level */}
-              <div className="glass-panel rounded-2xl p-5 flex flex-col justify-center gap-4">
-                <div className="flex justify-between items-center">
-                  <p className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest">Cognitive Stress</p>
-                  <p className="font-label-sm text-[13px] font-bold text-[var(--color-error)]">
-                    {stress === 1 ? 'Calm (1)' : stress === 2 ? 'Low (2)' : stress === 3 ? 'Moderate (3)' : stress === 4 ? 'High (4)' : 'Severe (5)'}
-                  </p>
-                </div>
-                <div className="relative h-5 flex items-center group">
-                  <div className="absolute w-full h-2 bg-[var(--color-surface-container-highest)] rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-[var(--color-secondary)] to-[var(--color-error)] rounded-full transition-all duration-100"
-                      style={{ width: `${(stress - 1) * 25}%` }}
+                  <div className="bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] p-6">
+                    <ChipList
+                      label="Wins" icon="emoji_events" items={wins} onChange={handleWins}
+                      placeholder="Today I won…" color="var(--color-primary)"
                     />
                   </div>
-                  <input
-                    type="range" min="1" max="5" value={stress}
-                    onChange={e => handleStress(parseInt(e.target.value))}
-                    className="absolute inset-0 opacity-0 cursor-pointer w-full"
-                  />
-                  <div
-                    className="absolute w-4 h-4 bg-white rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.25)] pointer-events-none transition-all duration-100 border-2 border-[var(--color-error)]/30"
-                    style={{ left: `calc(${(stress - 1) * 25}% - 8px)` }}
-                  />
-                </div>
-              </div>
-
-              {/* Confidence */}
-              <div className="glass-panel rounded-2xl p-5 flex flex-col justify-center gap-4">
-                <div className="flex justify-between items-center">
-                  <p className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest">Personal Confidence</p>
-                  <p className="font-label-sm text-[13px] font-bold text-[var(--color-secondary)]">
-                    {confidence === 1 ? 'Uncertain (1)' : confidence === 2 ? 'Hesitant (2)' : confidence === 3 ? 'Steady (3)' : confidence === 4 ? 'Strong (4)' : 'Unstoppable (5)'}
-                  </p>
-                </div>
-                <div className="relative h-5 flex items-center group">
-                  <div className="absolute w-full h-2 bg-[var(--color-surface-container-highest)] rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-[var(--color-outline)] to-[var(--color-secondary)] rounded-full transition-all duration-100"
-                      style={{ width: `${(confidence - 1) * 25}%` }}
+                  <div className="bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] p-6">
+                    <ChipList
+                      label="Lessons" icon="lightbulb" items={lessons} onChange={handleLessons}
+                      placeholder="I learned that…" color="orange"
                     />
                   </div>
+                </section>
+
+                {/* AI Coach bar */}
+                <form onSubmit={handleAskAI} className="bg-[var(--color-surface-container)] border border-[var(--color-secondary)] p-3 flex items-center gap-4 focus-within:border-[var(--color-primary)] transition-colors">
+                  <div className="w-10 h-10 bg-[var(--color-secondary)]/10 border border-[var(--color-secondary)]/30 flex items-center justify-center shrink-0">
+                    <span className="material-symbols-outlined text-[var(--color-secondary)]" style={{ fontVariationSettings: "'FILL' 1" }}>robot_2</span>
+                  </div>
                   <input
-                    type="range" min="1" max="5" value={confidence}
-                    onChange={e => handleConfidence(parseInt(e.target.value))}
-                    className="absolute inset-0 opacity-0 cursor-pointer w-full"
+                    value={aiQuery}
+                    onChange={e => setAiQuery(e.target.value)}
+                    className="flex-1 bg-transparent outline-none font-mono text-[13px] text-[var(--color-on-surface)] placeholder:text-[var(--color-outline)]"
+                    placeholder="Ask Evolv Coach to analyze your entry..."
+                    type="text"
                   />
-                  <div
-                    className="absolute w-4 h-4 bg-white rounded-full shadow-[0_2px_8px_rgba(0,0,0,0.25)] pointer-events-none transition-all duration-100 border-2 border-[var(--color-secondary)]/30"
-                    style={{ left: `calc(${(confidence - 1) * 25}% - 8px)` }}
-                  />
-                </div>
-              </div>
-            </section>
+                  <button type="submit" disabled={!aiQuery.trim()} className="px-6 py-2 bg-[var(--color-secondary)] text-black font-label-sm text-[11px] font-bold uppercase tracking-widest disabled:opacity-50 hover:brightness-110 transition-all shrink-0">
+                    Analyze
+                  </button>
+                </form>
+              </>
+            )}
 
-            {/* Prompt chips */}
-            <section className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-              {[
-                { text: 'What challenged you today?', icon: 'storm' },
-                { text: "Three things I'm grateful for…", icon: 'favorite' },
-                { text: "Tomorrow's primary objective?", icon: 'route' },
-                { text: 'What did I learn?', icon: 'lightbulb' },
-              ].map(p => (
-                <button
-                  key={p.text}
-                  onClick={() => handleContent(content + (content ? '\n\n' : '') + p.text + ' ')}
-                  className="whitespace-nowrap flex items-center gap-1.5 px-4 py-2.5 bg-[var(--color-surface-container-low)] border border-[var(--color-outline-variant)]/20 rounded-full font-body-md text-[12px] text-[var(--color-on-surface-variant)] hover:text-[var(--color-primary)] hover:border-[var(--color-primary)]/30 transition-all press-scale shrink-0"
-                >
-                  <span className="material-symbols-outlined text-[16px]">{p.icon}</span>
-                  {p.text}
-                </button>
-              ))}
-            </section>
+            {/* ── History view ────────────────────────────────── */}
+            {view === 'history' && (
+              <HistoryView entries={history} />
+            )}
 
-            {/* Main write area */}
-            <section className="relative group min-h-[240px] flex flex-col">
-              <div className="absolute inset-0 bg-[var(--color-surface-container-low)]/70 backdrop-blur-2xl rounded-2xl border border-[var(--color-outline-variant)]/20 group-focus-within:border-[var(--color-primary)]/40 transition-all duration-500 shadow-lg" />
-              <textarea
-                value={content}
-                onChange={e => handleContent(e.target.value)}
-                className="relative z-10 w-full flex-1 bg-transparent resize-none px-6 py-5 text-[18px] leading-relaxed text-[var(--color-on-surface)] placeholder:text-[var(--color-outline)]/30 focus:outline-none min-h-[240px]"
-                style={{ fontFamily: 'Newsreader, serif', fontWeight: 300 }}
-                placeholder="Begin your transmission…"
-              />
-              {/* Focus glow */}
-              <div className="absolute bottom-0 left-10 right-10 h-px bg-gradient-to-r from-transparent via-[var(--color-primary)] to-transparent opacity-0 group-focus-within:opacity-100 transition-opacity duration-500" />
-            </section>
-
-            {/* Gratitude / Wins / Lessons */}
-            <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="glass-panel rounded-2xl p-5">
-                <ChipList
-                  label="Gratitude" icon="favorite" items={gratitude} onChange={handleGratitude}
-                  placeholder="I'm grateful for…" color="var(--color-secondary)"
-                />
-              </div>
-              <div className="glass-panel rounded-2xl p-5">
-                <ChipList
-                  label="Wins" icon="emoji_events" items={wins} onChange={handleWins}
-                  placeholder="Today I won…" color="var(--color-primary)"
-                />
-              </div>
-              <div className="glass-panel rounded-2xl p-5">
-                <ChipList
-                  label="Lessons" icon="lightbulb" items={lessons} onChange={handleLessons}
-                  placeholder="I learned that…" color="orange"
-                />
-              </div>
-            </section>
-
-            {/* AI Coach bar */}
-            <form onSubmit={handleAskAI} className="bg-[var(--color-surface-container)]/60 backdrop-blur-xl border border-[var(--color-secondary)]/15 rounded-2xl p-2 flex items-center gap-3 focus-within:border-[var(--color-secondary)]/35 transition-all duration-300">
-              <div className="w-10 h-10 rounded-full bg-[var(--color-secondary)]/10 flex items-center justify-center shrink-0 ml-1">
-                <span className="material-symbols-outlined text-[var(--color-secondary)]" style={{ fontVariationSettings: "'FILL' 1" }}>robot_2</span>
-              </div>
-              <input
-                value={aiQuery}
-                onChange={e => setAiQuery(e.target.value)}
-                className="flex-1 bg-transparent outline-none font-body-md text-body-md text-[var(--color-on-surface)] placeholder:text-[var(--color-on-surface-variant)]/40 px-2"
-                placeholder="Ask Evolv Coach to analyze your entry..."
-                type="text"
-              />
-              <button type="submit" disabled={!aiQuery.trim()} className="w-10 h-10 rounded-full bg-[var(--color-secondary)] text-[var(--color-on-secondary)] flex items-center justify-center hover:scale-105 transition-transform shrink-0 shadow-[0_0_12px_rgba(90,218,206,0.3)] disabled:opacity-50 disabled:hover:scale-100">
-                <span className="material-symbols-outlined text-[20px]">arrow_upward</span>
-              </button>
-            </form>
-          </>
-        )}
-
-        {/* ── History view ────────────────────────────────── */}
-        {view === 'history' && (
-          <HistoryView entries={history} />
-        )}
-
+          </div>
+        </div>
       </div>
     </div>
   );

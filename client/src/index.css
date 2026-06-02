@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* ─────────────────────────────────────────────────────────────
+   EVOLV — Terminal-Cyber Design System
+   Brutalist · Monospace Labels · Sharp Corners · Flat Surfaces
+   ───────────────────────────────────────────────────────────── */
+
 @theme {
   --color-on-tertiary-fixed-variant: #4b4359;
   --color-surface-container-high: #282a30;
@@ -7,42 +12,42 @@
   --color-surface-bright: #38393f;
   --color-on-secondary-fixed-variant: #00504a;
   --color-on-secondary: #003733;
-  --color-background: #121319;
+  --color-background: #0e0e12;
   --color-surface-container-highest: #33343a;
   --color-inverse-on-surface: #2f3036;
   --color-surface-tint: #d2bbff;
   --color-secondary: #5adace;
   --color-on-primary-fixed-variant: #543196;
-  --color-surface-container-lowest: #0c0e13;
+  --color-surface-container-lowest: #09090c;
   --color-on-primary: #3d147e;
   --color-on-secondary-container: #003531;
   --color-inverse-surface: #e2e2e9;
   --color-inverse-primary: #6c4ab0;
-  --color-outline-variant: #4a4551;
-  --color-surface-dim: #121319;
+  --color-outline-variant: #3a3640;
+  --color-surface-dim: #0e0e12;
   --color-tertiary-fixed-dim: #cec2dc;
   --color-on-tertiary-fixed: #1f182c;
   --color-on-secondary-fixed: #00201d;
   --color-on-error-container: #ffdad6;
   --color-on-primary-container: #49248b;
-  --color-surface-variant: #33343a;
+  --color-surface-variant: #2a2a30;
   --color-on-primary-fixed: #25005a;
   --color-on-background: #e2e2e9;
   --color-on-surface: #e2e2e9;
-  --color-on-surface-variant: #cbc3d3;
+  --color-on-surface-variant: #9e97a7;
   --color-secondary-fixed-dim: #5adace;
   --color-secondary-fixed: #79f7ea;
   --color-error: #ffb4ab;
   --color-tertiary-container: #aea2bc;
   --color-primary: #d2bbff;
-  --color-surface: #121319;
-  --color-surface-container: #1e1f25;
+  --color-surface: #121216;
+  --color-surface-container: #1a1a1f;
   --color-primary-container: #b794ff;
   --color-on-error: #690005;
-  --color-surface-container-low: #1a1b21;
+  --color-surface-container-low: #16161a;
   --color-primary-fixed: #eaddff;
   --color-on-tertiary: #352d41;
-  --color-outline: #958e9d;
+  --color-outline: #6e6878;
   --color-on-tertiary-container: #41384e;
   --color-tertiary-fixed: #eaddf9;
   --color-secondary-container: #01a89d;
@@ -51,23 +56,28 @@
 
   --spacing-base: 8px;
   --spacing-gutter: 24px;
-  --spacing-margin-mobile: 20px;
-  --spacing-margin-tablet: 32px;
+  --spacing-margin-mobile: 16px;
+  --spacing-margin-tablet: 24px;
   --spacing-container-max: 1280px;
-  --spacing-margin-desktop: 64px;
+  --spacing-margin-desktop: 32px;
 
-  --font-label-sm: Outfit, sans-serif;
-  --font-headline-lg-mobile: Newsreader, serif;
+  /* Terminal-Cyber Typography */
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  --font-label-sm: 'JetBrains Mono', monospace;
+  --font-headline-lg-mobile: Outfit, sans-serif;
   --font-title-md: Outfit, sans-serif;
-  --font-headline-lg: Newsreader, serif;
+  --font-headline-lg: Outfit, sans-serif;
   --font-body-lg: Outfit, sans-serif;
-  --font-display-lg: Newsreader, serif;
+  --font-display-lg: Outfit, sans-serif;
   --font-body-md: Outfit, sans-serif;
+
+  /* Sidebar width token */
+  --sidebar-width: 56px;
 }
 
 [data-theme='light'] {
-  --color-background: #FDFCFE;
-  --color-surface: #FFFFFF;
+  --color-background: #f5f5f7;
+  --color-surface: #ffffff;
   --color-on-background: #1C1B1F;
   --color-on-surface: #1C1B1F;
   
@@ -81,118 +91,150 @@
   --color-secondary-container: #DAFBF8;
   --color-on-secondary-container: #00201D;
   
-  --color-surface-variant: #E7E0EB;
+  --color-surface-variant: #e8e8ec;
   --color-on-surface-variant: #49454F;
   --color-outline: #79747E;
-  --color-outline-variant: #CAC4D0;
+  --color-outline-variant: #d0ccd6;
   
   --color-surface-container-lowest: #FFFFFF;
-  --color-surface-container-low: #F7F2FA;
-  --color-surface-container: #F3EDF7;
-  --color-surface-container-high: #ECE6F0;
-  --color-surface-container-highest: #E6E0E9;
+  --color-surface-container-low: #f8f8fa;
+  --color-surface-container: #f0f0f4;
+  --color-surface-container-high: #e8e8ec;
+  --color-surface-container-highest: #e0e0e4;
 }
 
 @layer base {
   body {
     background-color: var(--color-background);
     color: var(--color-on-background);
-    min-height: max(884px, 100dvh);
-    transition: background-color 0.3s ease, color 0.3s ease;
+    min-height: 100dvh;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Selection styling */
   ::selection {
-    background: rgba(210, 187, 255, 0.3);
+    background: rgba(210, 187, 255, 0.25);
     color: var(--color-primary);
   }
 
-  /* Custom scrollbar */
-  ::-webkit-scrollbar { width: 6px; }
+  /* Minimal scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--color-surface-variant); border-radius: 4px; }
-  ::-webkit-scrollbar-thumb:hover { background: var(--color-primary); }
+  ::-webkit-scrollbar-thumb { background: var(--color-outline-variant); border-radius: 0; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--color-outline); }
 }
 
 @layer utilities {
-  /* --- Typography Utilities --- */
+  /* ── Typography ────────────────────────────────────────── */
+
+  /* Monospace label — the signature terminal style */
   .text-label-sm {
-    font-size: 12px;
+    font-size: 11px;
     line-height: 1;
-    letter-spacing: 0.1em;
-    font-weight: 700;
+    letter-spacing: 0.12em;
+    font-weight: 500;
   }
+
   .text-headline-lg-mobile {
+    font-size: 24px;
+    line-height: 1.2;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  .text-title-md {
+    font-size: 18px;
+    line-height: 1.4;
+    letter-spacing: -0.01em;
+    font-weight: 600;
+  }
+
+  .text-headline-lg {
     font-size: 28px;
     line-height: 1.2;
-    font-weight: 500;
-  }
-  .text-title-md {
-    font-size: 20px;
-    line-height: 1.4;
-    letter-spacing: 0.02em;
     font-weight: 600;
-  }
-  .text-headline-lg {
-    font-size: 32px;
-    line-height: 1.2;
-    font-weight: 500;
-  }
-  .text-body-lg {
-    font-size: 18px;
-    line-height: 1.6;
-    font-weight: 300;
-  }
-  .text-display-lg {
-    font-size: 48px;
-    line-height: 1.1;
     letter-spacing: -0.02em;
-    font-weight: 600;
   }
+
+  .text-body-lg {
+    font-size: 15px;
+    line-height: 1.6;
+    font-weight: 400;
+  }
+
+  .text-display-lg {
+    font-size: 40px;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    font-weight: 700;
+  }
+
   .text-body-md {
-    font-size: 16px;
+    font-size: 14px;
     line-height: 1.5;
     font-weight: 400;
   }
 
-  /* --- Surface & Glass Utilities --- */
-  .glass-panel {
-    background: color-mix(in srgb, var(--color-surface) 60%, transparent);
-    backdrop-filter: blur(20px);
+  /* ── Terminal Section Header ────────────────────────────── */
+  .section-header {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-on-surface-variant);
+  }
+
+  /* ── Flat Panel (replaces glass-panel) ─────────────────── */
+  .panel {
+    background: var(--color-surface-container);
     border: 1px solid var(--color-outline-variant);
-    border-top: 1px solid color-mix(in srgb, var(--color-primary) 20%, transparent);
   }
 
-  .glass-panel-glow {
-    border-top: 1px solid var(--color-primary);
-    box-shadow: 0 -4px 20px rgba(210, 187, 255, 0.1);
+  .panel-elevated {
+    background: var(--color-surface-container-low);
+    border: 1px solid var(--color-outline-variant);
   }
 
-  /* --- Glow Utilities --- */
-  .glow-active {
-    box-shadow: 0 0 15px rgba(90, 218, 206, 0.4);
+  /* Keep glass-panel as alias during transition */
+  .glass-panel {
+    background: var(--color-surface-container);
+    border: 1px solid var(--color-outline-variant);
   }
 
-  .glow-primary {
-    box-shadow: 0 0 15px rgba(210, 187, 255, 0.4);
+  /* ── Priority Badges ───────────────────────────────────── */
+  .badge-priority {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    padding: 2px 6px;
+    border: 1px solid var(--color-outline-variant);
+    background: var(--color-surface-container-high);
+    color: var(--color-on-surface-variant);
   }
 
-  .text-glow-primary {
-    text-shadow: 0 0 10px rgba(210, 187, 255, 0.4);
+  /* ── Stats Number ──────────────────────────────────────── */
+  .stat-number {
+    font-family: var(--font-mono);
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    color: var(--color-on-surface);
   }
 
-  .text-glow-secondary {
-    text-shadow: 0 0 10px rgba(90, 218, 206, 0.4);
+  .stat-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-outline);
   }
 
-  /* --- Bar Chart Fill (Analytics) --- */
-  .bar-chart-fill {
-    background: linear-gradient(to top, rgba(210, 187, 255, 0.1), rgba(210, 187, 255, 0.5));
-    border-top-left-radius: 4px;
-    border-top-right-radius: 4px;
-  }
-
-  /* --- Material Symbols --- */
+  /* ── Material Symbols ──────────────────────────────────── */
   .material-symbols-outlined {
     font-family: 'Material Symbols Outlined';
     font-weight: normal;
@@ -209,42 +251,80 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  /* --- Page Transition Animation --- */
-  .page-enter {
-    animation: pageEnter 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-  }
-
-  /* --- Card Hover Lift --- */
-  .card-hover {
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-  }
-  .card-hover:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 30px rgba(210, 187, 255, 0.08);
-  }
-
-  /* --- Press Feedback --- */
+  /* ── Interaction ───────────────────────────────────────── */
   .press-scale {
     transition: transform 0.1s ease;
   }
   .press-scale:active {
-    transform: scale(0.97);
+    transform: scale(0.98);
   }
 
-  /* --- No Scrollbar --- */
+  .hover-row {
+    transition: background-color 0.15s ease;
+  }
+  .hover-row:hover {
+    background-color: var(--color-surface-container-high);
+  }
+
+  /* ── No Scrollbar ──────────────────────────────────────── */
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* ── Animations (minimal set) ──────────────────────────── */
+  .page-enter {
+    animation: pageEnter 0.2s ease forwards;
+  }
+
+  .anim-fade-up {
+    opacity: 0;
+    animation: fadeUp 0.25s ease forwards;
+  }
+
+  /* Focus breathing (kept for focus mode) */
+  .anim-breathe {
+    animation: breathe 4s ease-in-out infinite;
+  }
+
+  /* Waveform bar (kept for focus mode) */
+  .anim-wave {
+    animation: wave 1.2s ease-in-out infinite;
+    transform-origin: bottom;
+  }
+
+  /* Progress bar fill */
+  .bar-chart-fill {
+    background: var(--color-primary);
+  }
+
+  /* Respect prefers-reduced-motion */
+  @media (prefers-reduced-motion: reduce) {
+    .anim-breathe, .anim-wave, .anim-fade-up,
+    .page-enter, .animate-pulse {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
 }
 
-/* --- Keyframes --- */
+/* ── Keyframes ─────────────────────────────────────────────── */
 @keyframes pageEnter {
-  from { opacity: 0; transform: translateY(12px); }
+  from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50%       { transform: translateY(-6px); }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes breathe {
+  0%, 100% { transform: scale(1);    opacity: 0.5; }
+  50%       { transform: scale(1.08); opacity: 0.15; }
+}
+
+@keyframes wave {
+  0%, 100% { transform: scaleY(0.4); }
+  50%       { transform: scaleY(1); }
 }
 
 @keyframes shimmer {
@@ -252,108 +332,7 @@
   100% { background-position: 200% 0; }
 }
 
-/* SVG stroke-draw: checkmark / circle completion */
-@keyframes strokeDraw {
-  from { stroke-dashoffset: 100; opacity: 0; }
-  to   { stroke-dashoffset: 0;   opacity: 1; }
-}
-
-/* Completion glow burst */
-@keyframes glowBurst {
-  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-primary) 40%, transparent); }
-  50%  { box-shadow: 0 0 0 12px transparent; }
-  100% { box-shadow: 0 0 0 0 transparent; }
-}
-
-/* Staggered fade-up for list items */
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-/* Focus-mode breathing ring */
-@keyframes breathe {
-  0%, 100% { transform: scale(1);    opacity: 0.5; }
-  50%       { transform: scale(1.08); opacity: 0.15; }
-}
-
-/* Sine wave oscillation (for focus page waveform bars) */
-@keyframes wave {
-  0%, 100% { transform: scaleY(0.4); }
-  50%       { transform: scaleY(1); }
-}
-
-/* Tick animation for timer */
-@keyframes tickPulse {
-  0%   { transform: scale(1); }
-  50%  { transform: scale(1.015); }
-  100% { transform: scale(1); }
-}
-
-/* Progress fill sliding in */
-@keyframes progressFill {
-  from { width: 0%; }
-}
-
-/* Celebration pop */
-@keyframes celebPop {
-  0%   { transform: scale(0.5); opacity: 0; }
-  70%  { transform: scale(1.1); opacity: 1; }
-  100% { transform: scale(1); }
-}
-
-@layer utilities {
-  /* SVG checkmark draw */
-  .svg-stroke-draw {
-    stroke-dasharray: 100;
-    stroke-dashoffset: 100;
-    animation: strokeDraw 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-  }
-
-  /* Completion glow ring */
-  .anim-glow-burst {
-    animation: glowBurst 0.5s ease-out forwards;
-  }
-
-  /* Staggered list item animation */
-  .anim-fade-up {
-    opacity: 0;
-    animation: fadeUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-  }
-
-  /* Focus breathing orb */
-  .anim-breathe {
-    animation: breathe 4s ease-in-out infinite;
-  }
-
-  /* Waveform bar */
-  .anim-wave {
-    animation: wave 1.2s ease-in-out infinite;
-    transform-origin: bottom;
-  }
-
-  /* Timer tick */
-  .anim-tick {
-    animation: tickPulse 1s ease-in-out infinite;
-  }
-
-  /* Celebration pop */
-  .anim-celeb {
-    animation: celebPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-  }
-
-  /* Respect prefers-reduced-motion */
-  @media (prefers-reduced-motion: reduce) {
-    .anim-breathe, .anim-wave, .anim-tick, .svg-stroke-draw,
-    .anim-glow-burst, .anim-fade-up, .anim-celeb,
-    .page-enter, .float, .animate-pulse, .slide-in-right {
-      animation: none !important;
-      transition: none !important;
-    }
-  }
-}
-
-/* AI Panel slide-in from right */
+/* AI Panel slide-in */
 @keyframes slideInRight {
   from { transform: translateX(100%); opacity: 0; }
   to   { transform: translateX(0);    opacity: 1; }
@@ -361,13 +340,11 @@
 
 @layer utilities {
   .slide-in-right {
-    animation: slideInRight 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    animation: slideInRight 0.2s ease forwards;
   }
 }
 
-
-
-/* --- Premium Landing Page Custom Interactions & Animations --- */
+/* ── Landing Page Animations (kept for public page) ────────── */
 @keyframes orbit {
   0% { transform: rotate(0deg) translate(100px) rotate(0deg); }
   100% { transform: rotate(360deg) translate(100px) rotate(-360deg); }
@@ -399,7 +376,6 @@
     animation: float-slow 10s ease-in-out infinite;
   }
 
-  /* Tactile dynamic borders */
   .glow-card {
     position: relative;
   }
@@ -424,4 +400,41 @@
     opacity: 1;
     background: linear-gradient(135deg, rgba(210, 187, 255, 0.5), transparent 30%, rgba(90, 218, 206, 0.4));
   }
+
+  /* Landing page text glow — kept for public page only */
+  .text-glow-primary {
+    text-shadow: 0 0 10px rgba(210, 187, 255, 0.4);
+  }
+
+  .text-glow-secondary {
+    text-shadow: 0 0 10px rgba(90, 218, 206, 0.4);
+  }
+}
+
+/* ── Tooltip utility for icon-only sidebar ─────────────────── */
+.tooltip-wrapper {
+  position: relative;
+}
+.tooltip-wrapper .tooltip-text {
+  visibility: hidden;
+  opacity: 0;
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--color-surface-container-highest);
+  color: var(--color-on-surface);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  padding: 4px 10px;
+  white-space: nowrap;
+  border: 1px solid var(--color-outline-variant);
+  z-index: 100;
+  pointer-events: none;
+  transition: opacity 0.15s ease, visibility 0.15s ease;
+}
+.tooltip-wrapper:hover .tooltip-text {
+  visibility: visible;
+  opacity: 1;
 }

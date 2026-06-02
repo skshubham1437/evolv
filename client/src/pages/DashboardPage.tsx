@@ -31,10 +31,10 @@ function getGreeting() {
   return 'Good Evening';
 }
 
-function getRoutineIcon(type?: string) {
-  if (type === 'morning') return 'wb_twilight';
-  if (type === 'night') return 'bedtime';
-  return 'bolt';
+function getPriorityCode(priority?: string) {
+  if (priority === 'high') return 'P0';
+  if (priority === 'medium') return 'P1';
+  return 'P2';
 }
 
 function getPriorityColor(priority?: string) {
@@ -90,27 +90,6 @@ function sortBlueprintHabitsByStack(items: BlueprintItem[]): BlueprintItem[] {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Progress ring SVG
-// ─────────────────────────────────────────────────────────────
-function ProgressRing({ pct, size = 88 }: { pct: number; size?: number }) {
-  const r = (size - 10) / 2;
-  const circ = 2 * Math.PI * r;
-  const dash = circ * (pct / 100);
-  return (
-    <svg width={size} height={size} className="rotate-[-90deg]">
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none"
-        stroke="var(--color-surface-container-highest)" strokeWidth="6" />
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none"
-        stroke="var(--color-primary)" strokeWidth="6"
-        strokeDasharray={`${dash} ${circ}`}
-        strokeLinecap="round"
-        style={{ transition: 'stroke-dasharray 0.6s cubic-bezier(0.4, 0, 0.2, 1)' }}
-      />
-    </svg>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────
 // Blueprint row component
 // ─────────────────────────────────────────────────────────────
 function BlueprintRow({
@@ -118,11 +97,13 @@ function BlueprintRow({
   onComplete,
   isNew = false,
   allHabits = [],
+  isLast = false,
 }: {
   item: BlueprintItem;
   onComplete: (item: BlueprintItem) => void;
   isNew?: boolean;
   allHabits?: Habit[];
+  isLast?: boolean;
 }) {
   const [animating, setAnimating] = useState(false);
 
@@ -132,115 +113,66 @@ function BlueprintRow({
     setTimeout(() => {
       onComplete(item);
       setAnimating(false);
-    }, 350);
+    }, 250);
   };
 
-  const iconName = item.type === 'habit' ? getRoutineIcon(item.routineType) : 'task_alt';
-  const accentColor = item.type === 'habit' ? 'var(--color-secondary)' : getPriorityColor(item.priority);
+  const routineLabel = item.type === 'habit'
+    ? (item.routineType !== 'none' ? item.routineType?.toUpperCase() : item.category?.toUpperCase())
+    : null;
 
-  const isStacked = item.type === 'habit' && !!item.stackAfterId && allHabits.some(h => h.id === item.stackAfterId);
-  const parentHabit = isStacked ? allHabits.find(h => h.id === item.stackAfterId) : null;
-
-  const rowContent = (
+  return (
     <div
-      className={`group flex items-center gap-4 px-4 py-3.5 rounded-2xl border transition-all duration-300 press-scale
-        ${item.done
-          ? 'bg-[var(--color-surface-container-lowest)]/50 border-[var(--color-outline-variant)]/10 opacity-55'
-          : isNew
-            ? 'bg-[var(--color-primary)]/5 border-[var(--color-primary)]/20 shadow-md'
-            : 'bg-[var(--color-surface-container-low)]/70 border-[var(--color-outline-variant)]/20 hover:border-[var(--color-outline-variant)]/50 hover:shadow-sm backdrop-blur-md'
-        }
-        ${animating ? 'scale-[0.97] opacity-70' : ''}
+      className={`group flex items-center gap-3 px-4 py-3 transition-colors duration-150 hover-row
+        ${!isLast ? 'border-b border-[var(--color-outline-variant)]/50' : ''}
+        ${item.done ? 'opacity-40' : ''}
+        ${isNew ? 'bg-[var(--color-primary)]/5' : ''}
+        ${animating ? 'opacity-50' : ''}
       `}
     >
-      {/* Left accent line */}
-      <div
-        className="w-0.5 h-full self-stretch rounded-full min-h-[20px] shrink-0"
-        style={{ backgroundColor: item.done ? 'var(--color-outline-variant)' : accentColor, opacity: item.done ? 0.3 : 0.7 }}
-      />
-
-      {/* Type icon */}
-      <div
-        className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-colors duration-300"
-        style={{
-          backgroundColor: item.done ? 'transparent' : `color-mix(in srgb, ${accentColor} 12%, transparent)`,
-          border: `1px solid color-mix(in srgb, ${accentColor} 25%, transparent)`
-        }}
+      {/* Checkbox / Complete button */}
+      <button
+        onClick={handleClick}
+        disabled={item.done}
+        className={`w-5 h-5 border flex items-center justify-center shrink-0 transition-colors
+          ${item.done
+            ? 'border-[var(--color-outline-variant)] bg-[var(--color-outline-variant)]/20 text-[var(--color-outline)]'
+            : 'border-[var(--color-outline-variant)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] text-transparent'
+          }
+        `}
       >
-        <span
-          className="material-symbols-outlined text-[18px] transition-all"
-          style={{
-            color: item.done ? 'var(--color-outline-variant)' : accentColor,
-            fontVariationSettings: item.done ? "'FILL' 1" : "'FILL' 0"
-          }}
-        >
-          {item.done ? 'check_circle' : iconName}
-        </span>
-      </div>
+        {item.done && <span className="material-symbols-outlined text-[14px]">check</span>}
+        {!item.done && <span className="material-symbols-outlined text-[14px] opacity-0 group-hover:opacity-100 transition-opacity">check</span>}
+      </button>
 
-      {/* Title & meta */}
-      <div className="flex-1 min-w-0">
-        <p
-          className={`font-body-lg text-[15px] leading-snug truncate transition-all duration-300 ${
-            item.done ? 'line-through text-[var(--color-outline)] decoration-[var(--color-outline)]/50' : 'text-[var(--color-on-surface)]'
-          }`}
-        >
-          {item.title}
-        </p>
-        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-          <span
-            className="font-label-sm text-[10px] uppercase tracking-widest font-bold px-2 py-0.5 rounded-md"
-            style={{
-              color: item.done ? 'var(--color-outline)' : accentColor,
-              backgroundColor: `color-mix(in srgb, ${item.done ? 'var(--color-outline)' : accentColor} 10%, transparent)`,
-            }}
-          >
-            {item.type === 'task' ? (item.priority || 'medium') : (item.routineType !== 'none' ? item.routineType : item.category)}
+      {/* Priority / Type badge */}
+      <span
+        className="font-mono text-[10px] font-semibold tracking-wide w-8 text-center shrink-0"
+        style={{ color: item.done ? 'var(--color-outline)' : (item.type === 'task' ? getPriorityColor(item.priority) : 'var(--color-primary)') }}
+      >
+        {item.type === 'task' ? getPriorityCode(item.priority) : '⚡'}
+      </span>
+
+      {/* Title */}
+      <span className={`flex-1 text-[14px] truncate ${item.done ? 'line-through text-[var(--color-outline)]' : 'text-[var(--color-on-surface)]'}`}>
+        {item.title}
+      </span>
+
+      {/* Meta tags */}
+      <div className="flex items-center gap-2 shrink-0">
+        {item.type === 'habit' && routineLabel && (
+          <span className="font-mono text-[9px] uppercase tracking-wider text-[var(--color-outline)] hidden sm:inline">
+            {routineLabel}
           </span>
-          {item.type === 'habit' && item.streak !== undefined && item.streak > 0 && (
-            <span className="font-label-sm text-[10px] text-[var(--color-outline)] flex items-center gap-1">
-              <span className="material-symbols-outlined text-[12px]" style={{ color: '#f97316' }}>local_fire_department</span>
-              {item.streak}d
-            </span>
-          )}
-
-          {isStacked && parentHabit && (
-            <span className="font-label-sm text-[9px] font-bold uppercase tracking-wider text-[var(--color-primary)] bg-[var(--color-primary)]/10 px-2 py-0.5 rounded-md border border-[var(--color-primary)]/20 flex items-center gap-1">
-              <span className="material-symbols-outlined text-[11px] font-bold">link</span>
-              <span>After: {parentHabit.title}</span>
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Complete button */}
-      {!item.done && (
-        <button
-          onClick={handleClick}
-          className="w-7 h-7 rounded-full border-2 border-[var(--color-outline-variant)] group-hover:border-[var(--color-primary)] group-hover:bg-[var(--color-primary)]/10 transition-all duration-200 flex items-center justify-center shrink-0"
-          title={item.type === 'task' ? 'Complete task' : 'Log habit'}
-        >
-          <span className="material-symbols-outlined text-[14px] text-transparent group-hover:text-[var(--color-primary)] transition-colors">
-            check
+        )}
+        {item.type === 'habit' && item.streak !== undefined && item.streak > 0 && (
+          <span className="font-mono text-[10px] text-[#f97316] flex items-center gap-0.5">
+            <span className="material-symbols-outlined text-[12px]">local_fire_department</span>
+            {item.streak}
           </span>
-        </button>
-      )}
+        )}
+      </div>
     </div>
   );
-
-  if (isStacked) {
-    return (
-      <div className="relative pl-8">
-        {/* Elegant vertical solid connection line */}
-        <div className="absolute left-3.5 top-[-14px] bottom-1/2 w-0.5 bg-[var(--color-primary)]/25" />
-        {/* Elegant horizontal branch line */}
-        <div className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-0.5 bg-[var(--color-primary)]/25" />
-        {rowContent}
-      </div>
-    );
-  }
-
-  return rowContent;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -376,367 +308,261 @@ export function DashboardPage() {
 
   // Pending/done split
   const pendingItems = blueprintItems.filter(i => !i.done);
-  const doneItems = blueprintItems.filter(i => i.done);
+  const doneItems = blueprintItems.filter(i => !i.done ? false : true);
+
+  const highPriorityCount = tasks.filter(t => t.priority === 'high' && !t.is_completed).length;
+
+  const renderBlueprintGroup = (title: string, items: BlueprintItem[], timeLabel: string) => {
+    if (items.length === 0) return null;
+    return (
+      <div className="mb-6">
+        <div className="flex justify-between items-center mb-3">
+          <span className="font-mono text-[10px] text-[var(--color-outline)] uppercase tracking-[0.14em] font-semibold">{title}</span>
+          <span className="font-mono text-[9px] bg-[var(--color-surface-container-high)] text-[var(--color-outline)] px-2 py-0.5 rounded-sm">{timeLabel}</span>
+        </div>
+        <div className="bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)]">
+          {items.map((item, idx) => (
+            <BlueprintRow
+              key={item.id}
+              item={item}
+              onComplete={handleComplete}
+              isNew={item.id === justAddedId}
+              allHabits={habits}
+              isLast={idx === items.length - 1}
+            />
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const morningItems = pendingItems.filter(i => i.type === 'habit' && i.routineType === 'morning');
+  const taskItems = pendingItems.filter(i => i.type === 'task');
+  const otherItems = pendingItems.filter(i => (i.type === 'habit' && i.routineType !== 'morning') || i.type !== 'habit' && i.type !== 'task'); // fallback
 
   return (
     <div className="flex-1 overflow-y-auto w-full no-scrollbar relative z-10 pb-24 md:pb-0">
-      {/* Ambient bg */}
-      <div className="absolute top-0 right-[5%] w-[500px] h-[500px] bg-[var(--color-primary)]/5 rounded-full blur-[150px] pointer-events-none -z-10 animate-pulse" />
-      <div className="absolute bottom-[10%] left-[2%] w-[400px] h-[400px] bg-[var(--color-secondary)]/5 rounded-full blur-[130px] pointer-events-none -z-10" />
-
-      <div className="max-w-[var(--spacing-container-max)] mx-auto px-[var(--spacing-margin-mobile)] md:px-[var(--spacing-margin-desktop)] pt-6 md:pt-12 pb-12 flex flex-col gap-8 relative z-10">
+      <div className="max-w-[var(--spacing-container-max)] mx-auto px-[var(--spacing-margin-mobile)] md:px-[var(--spacing-margin-desktop)] pt-5 md:pt-8 pb-12 flex flex-col gap-6 relative z-10">
 
         {/* ── HEADER ─────────────────────────────────────────── */}
-        <section className="flex items-start justify-between gap-4 flex-wrap">
-          <div className="flex flex-col gap-1.5">
-            <h2 className="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-[var(--color-on-surface)] leading-tight">
-              {getGreeting()},{' '}
-              <span className="text-[var(--color-primary)] italic">{user?.name || 'Builder'}</span>
-            </h2>
-            <p className="font-body-md text-body-md text-[var(--color-on-surface-variant)] opacity-75">
-              {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-            </p>
-          </div>
-
-          {/* Pulse badge */}
-          <div className="flex items-center gap-2 bg-[var(--color-surface-container-low)] px-4 py-2 rounded-full border border-[var(--color-outline-variant)]/30 backdrop-blur-md self-start mt-1">
-            <span className="w-2 h-2 rounded-full bg-[var(--color-secondary)] animate-pulse shadow-[0_0_8px_rgba(90,218,206,0.8)]" />
-            <span className="font-label-sm text-label-sm text-[var(--color-secondary)] uppercase tracking-widest">System Active</span>
-          </div>
+        <section className="flex flex-col gap-1">
+          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[var(--color-outline)] flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-secondary)]"></span>
+            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })} // SYSTEM ONLINE
+          </p>
+          <h2 className="font-title-md text-[32px] md:text-[36px] text-[var(--color-on-surface)] font-medium tracking-tight mt-1">
+            {getGreeting()},{' '}
+            <span className="text-[var(--color-primary)] font-serif italic">{user?.name || 'Builder'}</span>
+          </h2>
+          <p className="text-[13px] text-[var(--color-on-surface-variant)] mt-1">
+            Ready for execution. {tasks.filter(t => !t.is_completed).length} tasks queued.
+          </p>
         </section>
 
-        {/* ── EVENING SHUTDOWN TRANSITION BANNER ───────────────── */}
-        {new Date().getHours() >= 20 && (
-          <div className="glass-panel rounded-2xl p-6 relative overflow-hidden border border-[var(--color-secondary)]/20 bg-gradient-to-br from-[var(--color-secondary)]/5 to-transparent hover:border-[var(--color-secondary)]/40 transition-all duration-300 anim-fade-up flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div className="flex gap-4">
-              <div className="w-12 h-12 rounded-xl bg-[var(--color-secondary)]/10 text-[var(--color-secondary)] flex items-center justify-center shrink-0">
-                <span className="material-symbols-outlined text-[24px]">power_settings_new</span>
-              </div>
-              <div>
-                <h3 className="font-title-md text-[16px] text-[var(--color-on-surface)] font-bold flex items-center gap-2">
-                  System Transition Imminent
-                </h3>
-                <p className="font-body-md text-[13px] text-[var(--color-on-surface-variant)] mt-1 opacity-80 leading-relaxed">
-                  It's past 8 PM. Clear your mind, reflect on your wins, and schedule tomorrow's MITs with the **End-of-Day Shutdown Ritual**.
-                </p>
+        {/* ── STATS ROW ──────────────────────────────────────── */}
+        <div className="flex flex-col gap-4 mt-2">
+          <section className="grid grid-cols-2 md:grid-cols-4 border border-[var(--color-outline-variant)] bg-[var(--color-surface-container)] divide-x divide-[var(--color-outline-variant)]">
+            <div className="p-5">
+              <p className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-outline)] mb-1">Execution</p>
+              <div className="flex items-baseline gap-1">
+                <span className="text-[36px] font-light leading-none text-[var(--color-on-surface)]">{pct}</span>
+                <span className="text-[14px] text-[var(--color-outline)]">%</span>
               </div>
             </div>
-            <Link
-              to="/shutdown"
-              className="w-full md:w-auto px-5 py-3 bg-[var(--color-secondary)] hover:bg-[var(--color-secondary)]/90 text-[#000000] font-label-sm text-label-sm uppercase tracking-widest rounded-xl text-center shadow-[0_0_15px_color-mix(in_srgb,var(--color-secondary)_25%,transparent)] hover:shadow-[0_0_25px_color-mix(in_srgb,var(--color-secondary)_45%,transparent)] transition-all shrink-0 font-bold"
-            >
-              Start Shutdown
-            </Link>
-          </div>
-        )}
-
-        {/* ── AI MORNING BRIEFING ──────────────────────────────── */}
-        {briefLoading ? (
-          <div className="glass-panel rounded-2xl p-6 animate-pulse space-y-3">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-5 h-5 rounded-full bg-[var(--color-surface-container-high)] animate-pulse"></div>
-              <div className="h-4 bg-[var(--color-surface-container-high)] rounded w-1/4"></div>
-            </div>
-            <div className="h-3.5 bg-[var(--color-surface-container-high)] rounded w-11/12"></div>
-            <div className="h-3.5 bg-[var(--color-surface-container-high)] rounded w-3/4"></div>
-          </div>
-        ) : brief ? (
-          <div className="glass-panel rounded-2xl p-6 relative overflow-hidden border border-[var(--color-primary)]/10">
-            <div className="absolute top-0 right-0 p-4">
-              <span className="material-symbols-outlined text-[var(--color-primary)]/10 text-[64px] pointer-events-none select-none">wb_sunny</span>
-            </div>
-            <div className="flex items-center gap-2 mb-3 text-[var(--color-primary)]">
-              <span className="material-symbols-outlined text-[20px]">auto_awesome</span>
-              <h3 className="font-title-md font-bold text-[13px] uppercase tracking-wider">AI Daily Coach Briefing</h3>
-            </div>
-            <p className="font-body-md text-[14px] leading-relaxed text-[var(--color-on-surface-variant)] whitespace-pre-wrap">{brief}</p>
-          </div>
-        ) : null}
-
-        {/* ── AI BURNOUT ASSESSMENT ────────────────────────────── */}
-        {burnoutLoading ? (
-          <div className="glass-panel rounded-2xl p-5 animate-pulse space-y-2">
-            <div className="h-4 bg-[var(--color-surface-container-high)] rounded w-1/3"></div>
-            <div className="h-3 bg-[var(--color-surface-container-high)] rounded w-3/4"></div>
-          </div>
-        ) : burnoutRisk ? (
-          <div 
-            className="glass-panel rounded-2xl p-5 border flex gap-4 hover:shadow-md transition-all duration-300 anim-fade-up"
-            style={{
-              borderColor: burnoutRisk.risk === 'high' ? 'color-mix(in srgb, var(--color-error) 25%, transparent)' :
-                           burnoutRisk.risk === 'medium' ? 'color-mix(in srgb, var(--color-secondary) 25%, transparent)' :
-                                                           'color-mix(in srgb, var(--color-secondary) 15%, transparent)'
-            }}
-          >
-            <div 
-              className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-              style={{
-                backgroundColor: burnoutRisk.risk === 'high' ? 'color-mix(in srgb, var(--color-error) 12%, transparent)' :
-                                 burnoutRisk.risk === 'medium' ? 'color-mix(in srgb, var(--color-secondary) 12%, transparent)' :
-                                                                 'color-mix(in srgb, var(--color-secondary) 12%, transparent)',
-                color: burnoutRisk.risk === 'high' ? 'var(--color-error)' : 'var(--color-secondary)'
-              }}
-            >
-              <span className="material-symbols-outlined text-[22px]">
-                {burnoutRisk.risk === 'high' ? 'heart_broken' :
-                 burnoutRisk.risk === 'medium' ? 'battery_charging_50' : 'favorite'}
-              </span>
-            </div>
-            <div>
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <h4 className="font-title-md text-[14px] text-[var(--color-on-surface)] font-bold">Burnout Risk Assessment</h4>
-                <span 
-                  className="font-label-sm text-[9px] uppercase tracking-widest font-bold px-2 py-0.5 rounded"
-                  style={{
-                    backgroundColor: burnoutRisk.risk === 'high' ? 'color-mix(in srgb, var(--color-error) 15%, transparent)' :
-                                     burnoutRisk.risk === 'medium' ? 'color-mix(in srgb, var(--color-secondary) 15%, transparent)' :
-                                                                     'color-mix(in srgb, var(--color-secondary) 10%, transparent)',
-                    color: burnoutRisk.risk === 'high' ? 'var(--color-error)' : 'var(--color-secondary)'
-                  }}
-                >
-                  {burnoutRisk.risk} risk
-                </span>
+            <div className="p-5">
+              <p className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-outline)] mb-1">Active Tasks</p>
+              <div className="flex items-baseline gap-1">
+                <span className="text-[36px] font-light leading-none text-[var(--color-on-surface)]">{String(tasks.filter(t => !t.is_completed).length).padStart(2, '0')}</span>
+                <span className="font-mono text-[11px] text-[var(--color-outline)]">/{tasks.length}</span>
               </div>
-              <p className="font-body-md text-[13px] text-[var(--color-on-surface-variant)] mt-1.5 opacity-80 leading-relaxed">
-                {burnoutRisk.details}
-              </p>
             </div>
-          </div>
-        ) : null}
-
-        {error && (
-          <div className="bg-[var(--color-error-container)]/20 border border-[var(--color-error)]/30 rounded-xl px-4 py-3 text-[var(--color-error)] text-sm flex items-center gap-2">
-            <span className="material-symbols-outlined text-[18px]">warning</span>
-            {error}
-          </div>
-        )}
-
-        {/* ── PROGRESS OVERVIEW ──────────────────────────────── */}
-        <section className="glass-panel rounded-2xl p-6 flex flex-col sm:flex-row items-center gap-6 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-[var(--color-primary)]/5 to-transparent pointer-events-none" />
-
-          {/* Ring */}
-          <div className="relative shrink-0">
-            <ProgressRing pct={pct} size={96} />
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="font-display-lg text-[22px] font-bold text-[var(--color-primary)]">{pct}%</span>
+            <div className="p-5">
+              <p className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-outline)] mb-1">Habits</p>
+              <div className="flex items-baseline gap-1">
+                <span className="text-[36px] font-light leading-none text-[var(--color-on-surface)]">{String(habits.filter(h => h.completed_today).length).padStart(2, '0')}</span>
+                <span className="font-mono text-[11px] text-[var(--color-outline)]">/{habits.length}</span>
+              </div>
             </div>
-          </div>
+            <div className="p-5">
+              <p className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-outline)] mb-1">High Priority</p>
+              <div className="flex items-baseline gap-1">
+                <span className="text-[36px] font-light leading-none" style={{ color: highPriorityCount > 0 ? 'var(--color-error)' : 'var(--color-on-surface)' }}>{String(highPriorityCount).padStart(2, '0')}</span>
+                <span className="font-mono text-[11px] text-[var(--color-outline)]">pending</span>
+              </div>
+            </div>
+          </section>
 
-          {/* Stats */}
-          <div className="flex-1 w-full">
-            <h3 className="font-title-md text-title-md text-[var(--color-on-surface)] mb-0.5">Daily Blueprint</h3>
-            <p className="font-body-md text-[13px] text-[var(--color-on-surface-variant)] mb-4">
-              {doneCount} of {totalCount} items complete
-            </p>
-            <div className="w-full h-1.5 bg-[var(--color-surface-container-highest)] rounded-full overflow-hidden">
+          {/* Progress bar */}
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-1.5 bg-[var(--color-surface-container-highest)] relative rounded-full overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)] rounded-full transition-all duration-700"
+                className="absolute left-0 top-0 bottom-0 bg-[var(--color-primary)] transition-all duration-500 rounded-full"
                 style={{ width: `${pct}%` }}
               />
             </div>
+            <span className="font-mono text-[10px] text-[var(--color-outline)] w-8 text-right">{pct}%</span>
           </div>
+        </div>
 
-          {/* Quick stats */}
-          <div className="flex sm:flex-col gap-4 sm:gap-3 shrink-0 text-center sm:text-right">
-            <div>
-              <p className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest mb-0.5">Tasks</p>
-              <p className="font-title-md text-[20px] text-[var(--color-on-surface)] font-bold">
-                {tasks.filter(t => t.is_completed).length}
-                <span className="text-[var(--color-outline)] font-normal text-[14px]">/{tasks.length}</span>
-              </p>
+        {/* ── BURNOUT ASSESSMENT ────────────────────────────── */}
+        {!burnoutLoading && (
+          <div className="border border-[var(--color-outline-variant)] bg-[var(--color-surface-container)] p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mt-2">
+            <div className="flex items-center gap-4">
+               <div className="w-10 h-10 rounded-full border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-high)] flex items-center justify-center shrink-0">
+                 <span className="material-symbols-outlined text-[18px] text-[var(--color-secondary)]">show_chart</span>
+               </div>
+               <div>
+                 <div className="flex items-center gap-2">
+                   <h3 className="font-mono text-[12px] font-bold text-[var(--color-on-surface)] uppercase tracking-wider">Burnout Risk</h3>
+                   <span className="font-mono text-[9px] uppercase font-bold px-1.5 py-0.5 border border-[var(--color-secondary)] text-[var(--color-secondary)] bg-[var(--color-secondary)]/10 rounded-sm">
+                     {burnoutRisk?.risk || 'LOW'}
+                   </span>
+                 </div>
+                 <p className="font-mono text-[11px] text-[var(--color-outline)] mt-1">
+                   {burnoutRisk?.details || 'Cognitive load optimal. Proceed with Deep Work phase.'}
+                 </p>
+               </div>
             </div>
-            <div>
-              <p className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest mb-0.5">Habits</p>
-              <p className="font-title-md text-[20px] text-[var(--color-on-surface)] font-bold">
-                {habits.filter(h => h.completed_today).length}
-                <span className="text-[var(--color-outline)] font-normal text-[14px]">/{habits.length}</span>
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* ── DAILY BLUEPRINT TIMELINE ───────────────────────── */}
-        <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="font-title-md text-title-md text-[var(--color-on-surface)] flex items-center gap-2.5">
-              <span className="material-symbols-outlined text-[var(--color-primary)]" style={{ fontVariationSettings: "'FILL' 1" }}>
-                checklist
-              </span>
-              Today's Blueprint
-            </h3>
-            <button
-              onClick={() => setShowAddTask(v => !v)}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-full font-label-sm text-label-sm transition-all duration-200 press-scale ${
-                showAddTask
-                  ? 'bg-[var(--color-primary)] text-[var(--color-on-primary)]'
-                  : 'border border-[var(--color-outline-variant)]/40 text-[var(--color-on-surface-variant)] hover:border-[var(--color-primary)]/50 hover:text-[var(--color-primary)]'
-              }`}
-            >
-              <span className="material-symbols-outlined text-[16px]">{showAddTask ? 'close' : 'add'}</span>
-              {showAddTask ? 'Cancel' : 'Add Task'}
+            <button className="font-mono text-[10px] text-[var(--color-outline)] hover:text-[var(--color-on-surface)] uppercase tracking-widest flex items-center gap-1 shrink-0">
+              Calibrate <span className="material-symbols-outlined text-[14px]">chevron_right</span>
             </button>
           </div>
-
-          {/* Quick add */}
-          {showAddTask && (
-            <form
-              onSubmit={handleAddTask}
-              className="flex items-center gap-3 bg-[var(--color-primary)]/5 border border-[var(--color-primary)]/25 rounded-2xl px-4 py-3 backdrop-blur-md"
-            >
-              <span className="material-symbols-outlined text-[var(--color-primary)] text-[20px]">task_alt</span>
-              <input
-                autoFocus
-                value={newTaskTitle}
-                onChange={e => setNewTaskTitle(e.target.value)}
-                placeholder="What's the next mission objective?"
-                className="flex-1 bg-transparent outline-none text-[var(--color-on-surface)] font-body-md text-[15px] placeholder:text-[var(--color-outline)]"
-              />
-              <button
-                type="submit"
-                disabled={!newTaskTitle.trim()}
-                className="px-4 py-1.5 bg-[var(--color-primary)] text-[var(--color-on-primary)] rounded-full font-label-sm text-label-sm disabled:opacity-40 hover:shadow-[0_0_12px_rgba(210,187,255,0.4)] transition-all"
-              >
-                Add
-              </button>
-            </form>
-          )}
-
-          {/* Blueprint list */}
-          {loading ? (
-            <div className="flex flex-col gap-3">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-[68px] rounded-2xl bg-[var(--color-surface-container)]/50 animate-pulse" />
-              ))}
-            </div>
-          ) : blueprintItems.length === 0 ? (
-            <div className="text-center py-16 flex flex-col items-center gap-4">
-              <div className="w-20 h-20 rounded-full bg-[var(--color-surface-container)] flex items-center justify-center border border-[var(--color-outline-variant)]/20">
-                <span className="material-symbols-outlined text-[40px] text-[var(--color-outline)]">check_circle</span>
-              </div>
-              <div>
-                <p className="font-title-md text-title-md text-[var(--color-on-surface)] mb-1">Blueprint is empty</p>
-                <p className="font-body-md text-body-md text-[var(--color-on-surface-variant)]">
-                  Add tasks here or set habits in the{' '}
-                  <Link to="/habits" className="text-[var(--color-primary)] hover:underline">Habit Engine</Link>
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-2.5">
-              {/* Pending items */}
-              {pendingItems.map(item => (
-                <BlueprintRow
-                  key={item.id}
-                  item={item}
-                  onComplete={handleComplete}
-                  isNew={item.id === justAddedId}
-                  allHabits={habits}
-                />
-              ))}
-
-              {/* Done items (collapsed) */}
-              {doneItems.length > 0 && (
-                <details className="group" open={pct === 100}>
-                  <summary className="cursor-pointer list-none flex items-center gap-2 py-2 px-1 text-[var(--color-outline)] font-label-sm text-[11px] uppercase tracking-widest hover:text-[var(--color-on-surface-variant)] transition-colors select-none">
-                    <span className="material-symbols-outlined text-[14px] transition-transform group-open:rotate-90">chevron_right</span>
-                    {doneItems.length} completed
-                  </summary>
-                  <div className="flex flex-col gap-2 mt-2">
-                    {doneItems.map(item => (
-                      <BlueprintRow key={item.id} item={item} onComplete={handleComplete} allHabits={habits} />
-                    ))}
-                  </div>
-                </details>
-              )}
-
-              {/* All done celebration */}
-              {pct === 100 && totalCount > 0 && (
-                <div className="mt-2 bg-gradient-to-r from-[var(--color-primary)]/10 to-[var(--color-secondary)]/10 border border-[var(--color-primary)]/20 rounded-2xl p-5 text-center">
-                  <span className="material-symbols-outlined text-[36px] text-[var(--color-primary)]" style={{ fontVariationSettings: "'FILL' 1" }}>
-                    celebration
-                  </span>
-                  <p className="font-title-md text-title-md text-[var(--color-on-surface)] mt-2">Blueprint Complete!</p>
-                  <p className="font-body-md text-[13px] text-[var(--color-on-surface-variant)] mt-1">Outstanding execution. All items checked off.</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {totalCount > 0 && (
-            <div className="flex justify-center pt-2">
-              <Link
-                to="/daily"
-                className="font-label-sm text-label-sm text-[var(--color-primary)] hover:text-[var(--color-primary)]/80 flex items-center gap-1 bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/20 px-4 py-2 rounded-full transition-all press-scale hover:shadow-md"
-              >
-                <span>View Full Task Queue</span>
-                <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
-              </Link>
-            </div>
-          )}
-        </section>
-
-        {/* ── AI INSIGHTS ────────────────────────────────────── */}
-        {!insightsLoading && insights.length > 0 && (
-          <section className="space-y-4">
-            <h3 className="font-title-md text-title-md text-[var(--color-on-surface)] flex items-center gap-2.5">
-              <span className="material-symbols-outlined text-[var(--color-secondary)]" style={{ fontVariationSettings: "'FILL' 1" }}>
-                lightbulb
-              </span>
-              Personalized Insights
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {insights.map((insight, idx) => (
-                <div key={idx} className="glass-panel rounded-2xl p-5 border border-[var(--color-secondary)]/10 flex gap-4 hover:border-[var(--color-secondary)]/30 transition-all duration-300">
-                  <div className="w-10 h-10 rounded-xl bg-[var(--color-secondary)]/10 text-[var(--color-secondary)] flex items-center justify-center shrink-0">
-                    <span className="material-symbols-outlined text-[20px]">
-                      {insight.category.toLowerCase().includes('routine') ? 'sync' :
-                       insight.category.toLowerCase().includes('goal') ? 'track_changes' : 'bolt'}
-                    </span>
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-label-sm text-[10px] text-[var(--color-secondary)] uppercase tracking-widest font-bold bg-[var(--color-secondary)]/10 px-2.5 py-1 rounded">
-                        {insight.category}
-                      </span>
-                    </div>
-                    <h4 className="font-title-md text-[16px] text-[var(--color-on-surface)] mt-2 font-bold">{insight.title}</h4>
-                    <p className="font-body-md text-[13px] text-[var(--color-on-surface-variant)] mt-1.5 opacity-80 leading-relaxed">{insight.recommendation}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
         )}
 
-        {/* ── QUICK LINKS ────────────────────────────────────── */}
-        <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {[
-            { to: '/focus', icon: 'self_improvement', label: 'Focus Mode', color: 'var(--color-primary)' },
-            { to: '/journal', icon: 'psychology', label: 'Journal', color: 'var(--color-secondary)' },
-            { to: '/goals', icon: 'rocket_launch', label: 'Goals', color: 'var(--color-tertiary)' },
-            { to: '/analytics', icon: 'analytics', label: 'Analytics', color: 'var(--color-outline)' },
-          ].map(({ to, icon, label, color }) => (
-            <Link
-              key={to}
-              to={to}
-              className="glass-panel rounded-2xl p-4 flex flex-col items-center gap-2.5 hover:shadow-md transition-all duration-200 card-hover press-scale group text-center"
-            >
-              <div
-                className="w-11 h-11 rounded-xl flex items-center justify-center transition-colors"
-                style={{ backgroundColor: `color-mix(in srgb, ${color} 12%, transparent)` }}
-              >
-                <span
-                  className="material-symbols-outlined text-[22px] transition-all group-hover:scale-110"
-                  style={{ color }}
-                >
-                  {icon}
-                </span>
-              </div>
-              <span className="font-label-sm text-[11px] text-[var(--color-on-surface-variant)] tracking-wide">{label}</span>
-            </Link>
-          ))}
-        </section>
+        {/* ── TWO COLUMN LAYOUT ─────────────────────────────── */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8 mt-4">
+           
+           {/* LEFT COLUMN */}
+           <div className="flex flex-col gap-6">
+             {/* Today's Blueprint Header */}
+             <div className="flex items-center justify-between border-b border-[var(--color-outline-variant)] pb-3">
+               <h3 className="font-title-md font-bold text-[18px] text-[var(--color-on-surface)] flex items-center gap-2 tracking-wide uppercase">
+                 <span className="material-symbols-outlined text-[20px]">account_tree</span>
+                 Today's Blueprint
+               </h3>
+               <button onClick={() => setShowAddTask(v => !v)} className="font-mono text-[10px] text-[var(--color-primary)] hover:text-[var(--color-primary)]/80 uppercase tracking-widest flex items-center gap-1 transition-colors">
+                 <span className="material-symbols-outlined text-[14px]">{showAddTask ? 'close' : 'add'}</span> {showAddTask ? 'Cancel' : 'Add Task'}
+               </button>
+             </div>
+
+             {/* Quick add */}
+             {showAddTask && (
+               <form onSubmit={handleAddTask} className="flex items-center gap-2 px-4 py-3 border border-[var(--color-outline-variant)] bg-[var(--color-surface-container)] mb-4">
+                 <span className="material-symbols-outlined text-[16px] text-[var(--color-primary)]">add</span>
+                 <input autoFocus value={newTaskTitle} onChange={e => setNewTaskTitle(e.target.value)} placeholder="New task..." className="flex-1 bg-transparent outline-none text-[var(--color-on-surface)] text-[14px] placeholder:text-[var(--color-outline)]" />
+                 <button type="submit" disabled={!newTaskTitle.trim()} className="px-3 py-1 bg-[var(--color-primary)] text-[var(--color-on-primary)] font-mono text-[10px] uppercase tracking-wider disabled:opacity-30 hover:opacity-90 transition-opacity">Add</button>
+               </form>
+             )}
+
+             {/* Blueprint List */}
+             {loading ? (
+               <div className="divide-y divide-[var(--color-outline-variant)]/50">
+                 {[...Array(4)].map((_, i) => (
+                   <div key={i} className="h-[52px] animate-pulse bg-[var(--color-surface-container)]/30" />
+                 ))}
+               </div>
+             ) : blueprintItems.length === 0 ? (
+               <div className="text-center py-12 border border-[var(--color-outline-variant)]/50">
+                 <span className="material-symbols-outlined text-[32px] text-[var(--color-outline)] mb-2">check_circle</span>
+                 <p className="text-[14px] text-[var(--color-on-surface-variant)]">Blueprint is empty</p>
+               </div>
+             ) : (
+               <div>
+                 {renderBlueprintGroup('[01] MORNING ROUTINE', morningItems, '07:00 - 09:00')}
+                 {renderBlueprintGroup('[02] DEEP WORK PHASE', taskItems, '09:30 - 12:30')}
+                 {renderBlueprintGroup('[03] EVENING RITUAL', otherItems, '18:00 - 21:00')}
+
+                 {/* Done items (collapsed) */}
+                 {doneItems.length > 0 && (
+                   <details className="group mt-4 border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-low)]">
+                     <summary className="cursor-pointer list-none flex items-center gap-2 px-4 py-3 text-[var(--color-outline)] font-mono text-[10px] uppercase tracking-wider hover:text-[var(--color-on-surface-variant)] transition-colors select-none">
+                       <span className="material-symbols-outlined text-[12px] transition-transform group-open:rotate-90">chevron_right</span>
+                       {doneItems.length} completed
+                     </summary>
+                     <div className="border-t border-[var(--color-outline-variant)] bg-[var(--color-surface-container)]">
+                       {doneItems.map((item, idx) => (
+                         <BlueprintRow key={item.id} item={item} onComplete={handleComplete} allHabits={habits} isLast={idx === doneItems.length - 1} />
+                       ))}
+                     </div>
+                   </details>
+                 )}
+
+                 {pct === 100 && totalCount > 0 && (
+                   <div className="px-4 py-4 mt-6 border border-[var(--color-outline-variant)] bg-[var(--color-primary)]/5 text-center">
+                     <p className="font-mono text-[11px] uppercase tracking-wider text-[var(--color-primary)]">
+                       ✓ Blueprint Complete — Outstanding Execution
+                     </p>
+                   </div>
+                 )}
+
+                 {totalCount > 0 && (
+                   <div className="flex justify-center mt-6">
+                     <Link to="/daily" className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-outline)] hover:text-[var(--color-on-surface)] flex items-center gap-1 border border-[var(--color-outline-variant)] px-6 py-3 hover:bg-[var(--color-surface-container-high)] transition-colors">
+                       View Full Task Queue <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                     </Link>
+                   </div>
+                 )}
+               </div>
+             )}
+           </div>
+
+           {/* RIGHT COLUMN */}
+           <div className="flex flex-col gap-6">
+             {/* Focus Mode Widget */}
+             <div className="border border-[var(--color-outline-variant)] bg-[var(--color-surface-container)] overflow-hidden p-5 flex flex-col">
+                <div className="flex justify-between items-center mb-5">
+                  <h3 className="font-mono text-[11px] font-bold text-[var(--color-on-surface)] uppercase tracking-widest flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[14px]">center_focus_strong</span>
+                    Focus Mode
+                  </h3>
+                  <span className="font-mono text-[9px] text-[var(--color-outline)] uppercase tracking-widest">Offline</span>
+                </div>
+                
+                <div className="bg-[var(--color-surface-container-high)] border border-[var(--color-outline-variant)] py-8 flex flex-col items-center justify-center mb-4">
+                  <span className="font-mono text-[36px] font-light text-[var(--color-on-surface)] tracking-widest">25:00</span>
+                  <span className="font-mono text-[9px] text-[var(--color-outline)] uppercase tracking-widest mt-2">Pomodoro Ready</span>
+                </div>
+                
+                <Link to="/focus" className="w-full py-3 bg-[var(--color-primary)] hover:bg-[var(--color-primary)]/90 text-[var(--color-on-primary)] font-mono text-[11px] font-bold uppercase tracking-widest flex justify-center items-center gap-2 transition-colors">
+                  <span className="material-symbols-outlined text-[14px]">play_arrow</span>
+                  Initiate Focus
+                </Link>
+             </div>
+
+             {/* Scratchpad Widget */}
+             <div className="border border-[var(--color-outline-variant)] bg-[var(--color-surface-container)] flex flex-col h-64 relative">
+                <div className="px-5 py-4 border-b border-[var(--color-outline-variant)]">
+                  <h3 className="font-mono text-[11px] font-bold text-[var(--color-on-surface)] uppercase tracking-widest flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[14px]">edit_note</span>
+                    Scratchpad
+                  </h3>
+                </div>
+                <div className="flex-1 p-5">
+                  <textarea className="w-full h-full bg-transparent resize-none outline-none font-mono text-[11px] text-[var(--color-on-surface)] placeholder:text-[var(--color-outline)]" placeholder="// Quick thoughts..."></textarea>
+                </div>
+                {/* Floating add button */}
+                <button className="absolute bottom-[-16px] right-4 w-12 h-12 rounded-full bg-[var(--color-secondary)] hover:bg-[var(--color-secondary)]/90 flex items-center justify-center text-[var(--color-on-secondary)] shadow-lg transition-transform hover:scale-105 z-10">
+                   <span className="material-symbols-outlined text-[24px]">add</span>
+                </button>
+             </div>
+
+             {/* Evening Shutdown Banner */}
+             {new Date().getHours() >= 20 && (
+               <div className="border border-[var(--color-secondary)]/30 bg-[var(--color-secondary)]/5 p-5 flex flex-col gap-3 anim-fade-up">
+                 <div className="flex gap-2 items-start">
+                   <span className="material-symbols-outlined text-[16px] text-[var(--color-secondary)] mt-0.5">power_settings_new</span>
+                   <div>
+                     <p className="font-mono text-[11px] uppercase tracking-wider text-[var(--color-secondary)] font-semibold">System Transition</p>
+                     <p className="text-[12px] text-[var(--color-on-surface-variant)] mt-1">Time for End-of-Day Shutdown Ritual.</p>
+                   </div>
+                 </div>
+                 <Link to="/shutdown" className="w-full text-center py-2 bg-[var(--color-secondary)] text-[var(--color-on-secondary)] font-mono text-[10px] uppercase tracking-wider font-semibold hover:opacity-90 transition-opacity">
+                   Start Shutdown
+                 </Link>
+               </div>
+             )}
+           </div>
+        </div>
 
       </div>
     </div>
