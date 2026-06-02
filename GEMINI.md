@@ -1,8 +1,8 @@
-# Taskify — AI Development Configuration
+# Evolv — AI Development Configuration
 
 ## Project Overview
 
-This is the Taskify project. See `requirement.md` for project requirements.
+This is the Evolv project. See `requirement.md` for project requirements.
 
 ## Agent Skills
 
