@@ -1,11 +1,25 @@
 -- 005_functional_premortem_improvements.up.sql
 
 -- 1. Unify Date Schemas
+-- Rename milestones.target_date to milestones.date if target_date exists (GORM AutoMigrate legacy)
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 
+        FROM information_schema.columns 
+        WHERE table_name='milestones' AND column_name='target_date'
+    ) THEN
+        ALTER TABLE milestones RENAME COLUMN target_date TO date;
+    END IF;
+END $$;
+
 -- Convert goals.due_date from TEXT to TIMESTAMPTZ
 ALTER TABLE goals ALTER COLUMN due_date TYPE TIMESTAMPTZ USING (
     CASE 
         WHEN due_date IS NULL OR due_date = '' OR due_date = 'Ongoing' THEN NULL
-        ELSE due_date::TIMESTAMPTZ
+        WHEN due_date ~ '^\d{4}-\d{2}-\d{2}' THEN due_date::TIMESTAMPTZ
+        WHEN due_date ~ '^[A-Za-z]+ \d+$' THEN (due_date || ' 2026')::TIMESTAMPTZ
+        ELSE NULL
     END
 );
 
@@ -13,7 +27,9 @@ ALTER TABLE goals ALTER COLUMN due_date TYPE TIMESTAMPTZ USING (
 ALTER TABLE milestones ALTER COLUMN date TYPE TIMESTAMPTZ USING (
     CASE 
         WHEN date IS NULL OR date = '' OR date = 'Ongoing' THEN NULL
-        ELSE date::TIMESTAMPTZ
+        WHEN date ~ '^\d{4}-\d{2}-\d{2}' THEN date::TIMESTAMPTZ
+        WHEN date ~ '^[A-Za-z]+ \d+$' THEN (date || ' 2026')::TIMESTAMPTZ
+        ELSE NULL
     END
 );
 
