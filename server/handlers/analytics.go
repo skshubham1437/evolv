@@ -191,9 +191,24 @@ func GetAnalyticsSummary(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Circadian Energy heatmap grids (7 days x 8 hours)
-	energyGridSum := [7][8]float64{}
-	energyGridCount := [7][8]int{}
+	// Fetch actual energy logs in the range
+	var energyLogs []models.EnergyLog
+	database.DB.Where("user_id = ? AND logged_at >= ?", userID, rangeAgo).Find(&energyLogs)
+
+	// Grid to accumulate actual logs
+	actualGridSum := [7][8]float64{}
+	actualGridCount := [7][8]int{}
+
+	for _, el := range energyLogs {
+		dayIdx := int(el.LoggedAt.Weekday() + 6) % 7 // Monday=0
+		hIdx := getHourSlotIndex(el.LoggedAt)
+		actualGridSum[dayIdx][hIdx] += float64(el.Energy) * 20.0 // 1-5 to 20-100
+		actualGridCount[dayIdx][hIdx]++
+	}
+
+	// Simulated Energy heatmap grids (7 days x 8 hours)
+	simulatedGridSum := [7][8]float64{}
+	simulatedGridCount := [7][8]int{}
 
 	hourSlots := []string{"08:00", "10:00", "12:00", "14:00", "16:00", "18:00", "20:00", "22:00"}
 	factors := []float64{0.7, 1.0, 0.8, 0.5, 0.7, 0.9, 0.6, 0.3}
@@ -213,8 +228,8 @@ func GetAnalyticsSummary(w http.ResponseWriter, r *http.Request) {
 		energyPct := energyVal * 20.0 // 1-5 to 20-100
 
 		for hIdx := 0; hIdx < 8; hIdx++ {
-			energyGridSum[dayIdx][hIdx] += energyPct * factors[hIdx]
-			energyGridCount[dayIdx][hIdx]++
+			simulatedGridSum[dayIdx][hIdx] += energyPct * factors[hIdx]
+			simulatedGridCount[dayIdx][hIdx]++
 		}
 	}
 
@@ -227,9 +242,13 @@ func GetAnalyticsSummary(w http.ResponseWriter, r *http.Request) {
 	energyHeatmap := []HeatmapItem{}
 	for dIdx := 0; dIdx < 7; dIdx++ {
 		for hIdx := 0; hIdx < 8; hIdx++ {
-			val := 60.0 * factors[hIdx] // Default baseline if no data logged for this weekday
-			if energyGridCount[dIdx][hIdx] > 0 {
-				val = energyGridSum[dIdx][hIdx] / float64(energyGridCount[dIdx][hIdx])
+			var val float64
+			if actualGridCount[dIdx][hIdx] > 0 {
+				val = actualGridSum[dIdx][hIdx] / float64(actualGridCount[dIdx][hIdx])
+			} else if simulatedGridCount[dIdx][hIdx] > 0 {
+				val = simulatedGridSum[dIdx][hIdx] / float64(simulatedGridCount[dIdx][hIdx])
+			} else {
+				val = 60.0 * factors[hIdx]
 			}
 			energyHeatmap = append(energyHeatmap, HeatmapItem{
 				Day:   daysOfWeek[dIdx],
@@ -250,4 +269,25 @@ func GetAnalyticsSummary(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+func getHourSlotIndex(loggedAt time.Time) int {
+	hour := loggedAt.Hour()
+	if hour < 9 {
+		return 0 // 08:00
+	} else if hour < 11 {
+		return 1 // 10:00
+	} else if hour < 13 {
+		return 2 // 12:00
+	} else if hour < 15 {
+		return 3 // 14:00
+	} else if hour < 17 {
+		return 4 // 16:00
+	} else if hour < 19 {
+		return 5 // 18:00
+	} else if hour < 21 {
+		return 6 // 20:00
+	} else {
+		return 7 // 22:00
+	}
 }

@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import {
-  fetchWeeklyOverview, upsertWeeklyPlan, createTimeBlock, deleteTimeBlock, generateWeeklyReview,
+  fetchWeeklyOverview, createTimeBlock, deleteTimeBlock, generateWeeklyReview,
   type WeeklyOverview, type TimeBlock, type Task,
 } from '../api';
 import { useToast } from '../context/ToastContext';
@@ -41,7 +41,7 @@ function getDuration(start: string, end: string) {
 
 // ── sub-components ────────────────────────────────────────────────────────────
 
-function PriorityCard({ task, index }: { task: Task; index: number }) {
+function PriorityCard({ task }: { task: Task }) {
   const isP1 = task.priority === 'high';
   const isP2 = task.priority === 'medium';
   
@@ -58,7 +58,7 @@ function PriorityCard({ task, index }: { task: Task; index: number }) {
       : 'bg-[var(--color-outline)]';
 
   const pLabel = isP1 ? 'P1' : isP2 ? 'P2' : 'P3';
-  const progress = task.status === 'completed' ? 100 : (task.status === 'in_progress' ? 50 : 0);
+  const progress = task.is_completed ? 100 : 0;
 
   return (
     <div className="flex flex-col gap-3 p-4 bg-[var(--color-surface-container)] border border-[var(--color-surface-variant)] rounded-sm">
@@ -229,7 +229,7 @@ export function WeeklyPage() {
     return `WEEK ${data.week_number}`;
   })() : 'WEEK --';
 
-  const completedCount = mits.filter(t => t.status === 'completed').length;
+  const completedCount = mits.filter(t => t.is_completed).length;
   const goalCompletion = mits.length > 0 ? Math.round((completedCount / mits.length) * 100) : 0;
 
   let focusYield = 0;
@@ -285,7 +285,7 @@ export function WeeklyPage() {
           
           <div className="flex flex-col gap-4 px-8 pt-4">
             {mits.length > 0 ? (
-              mits.map((t, i) => <PriorityCard key={t.id} task={t} index={i} />)
+              mits.map((t) => <PriorityCard key={t.id} task={t} />)
             ) : (
               !loading && (
                 <div className="p-4 border border-dashed border-[var(--color-surface-variant)] text-[var(--color-outline)] font-label-sm text-center">

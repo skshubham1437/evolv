@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"time"
 
 	"evolv-server/database"
 	"evolv-server/models"
@@ -58,9 +59,38 @@ func CreateJournalEntry(w http.ResponseWriter, r *http.Request) {
 func ListJournalEntries(w http.ResponseWriter, r *http.Request) {
 	userID := getUserIDFromCtx(r)
 
-	var entries []models.JournalEntry
-	database.DB.Where("user_id = ?", userID).Order("date desc").Find(&entries)
+	pageStr := r.URL.Query().Get("page")
+	limitStr := r.URL.Query().Get("limit")
 
+	var entries []models.JournalEntry
+	query := database.DB.Where("user_id = ?", userID).Order("date desc")
+
+	if pageStr != "" || limitStr != "" {
+		page := 1
+		limit := 10
+		if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
+			page = p
+		}
+		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 {
+			limit = l
+			if limit > 100 {
+				limit = 100 // cap limit to prevent abuse
+			}
+		}
+		offset := (page - 1) * limit
+
+		var total int64
+		database.DB.Model(&models.JournalEntry{}).Where("user_id = ?", userID).Count(&total)
+
+		w.Header().Set("X-Total-Count", strconv.FormatInt(total, 10))
+		w.Header().Set("X-Total-Pages", strconv.FormatInt((total+int64(limit)-1)/int64(limit), 10))
+		w.Header().Set("X-Page", strconv.Itoa(page))
+		w.Header().Set("X-Limit", strconv.Itoa(limit))
+
+		query = query.Limit(limit).Offset(offset)
+	}
+
+	query.Find(&entries)
 	respond(w, entries)
 }
 
@@ -119,5 +149,35 @@ func UpdateJournalEntry(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respond(w, entry)
+}
+
+// LogEnergy handles POST /api/energy
+func LogEnergy(w http.ResponseWriter, r *http.Request) {
+	userID := getUserIDFromCtx(r)
+	var payload struct {
+		Energy int `json:"energy"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		http.Error(w, `{"error":"Invalid request payload"}`, http.StatusBadRequest)
+		return
+	}
+	if payload.Energy < 1 || payload.Energy > 5 {
+		http.Error(w, `{"error":"Energy must be between 1 and 5"}`, http.StatusBadRequest)
+		return
+	}
+
+	energyLog := models.EnergyLog{
+		UserID:   userID,
+		LoggedAt: time.Now(),
+		Energy:   payload.Energy,
+	}
+
+	if err := database.DB.Create(&energyLog).Error; err != nil {
+		http.Error(w, `{"error":"Failed to create energy log"}`, http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	respond(w, energyLog)
 }
 

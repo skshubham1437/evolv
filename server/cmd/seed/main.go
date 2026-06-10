@@ -12,6 +12,25 @@ import (
 	"github.com/joho/godotenv"
 )
 
+func parseDate(s string) *time.Time {
+	if s == "" || s == "Ongoing" {
+		return nil
+	}
+	t, err := time.Parse("2006-01-02", s)
+	if err == nil {
+		return &t
+	}
+	t, err = time.Parse("January 2, 2006", s)
+	if err == nil {
+		return &t
+	}
+	t, err = time.Parse("January 2, 2006", s+", 2026")
+	if err == nil {
+		return &t
+	}
+	return nil
+}
+
 func main() {
 	_ = godotenv.Load()
 	database.Connect()
@@ -40,22 +59,22 @@ func main() {
 	// ─────────────────────────────────────────────────────────────────────
 	yearlyGoals := []models.Goal{
 		// ── Learning ──
-		{UserID: uid, Title: "Learn & Build Microservices", Description: "Build production-ready microservices using Spring Boot and Go", Priority: "high", DueDate: "2026-12-31", Status: "active"},
-		{UserID: uid, Title: "Master DevOps Skills", Description: "Docker, CI/CD, cloud fundamentals (AWS/Azure), and deploy real projects", Priority: "high", DueDate: "2026-12-31", Status: "active"},
-		{UserID: uid, Title: "Learn System Design & DSA", Description: "System design fundamentals to advanced scalability patterns + DSA for interviews", Priority: "high", DueDate: "2026-12-31", Status: "active"},
+		{UserID: uid, Title: "Learn & Build Microservices", Description: "Build production-ready microservices using Spring Boot and Go", Priority: "high", DueDate: parseDate("2026-12-31"), Status: "active"},
+		{UserID: uid, Title: "Master DevOps Skills", Description: "Docker, CI/CD, cloud fundamentals (AWS/Azure), and deploy real projects", Priority: "high", DueDate: parseDate("2026-12-31"), Status: "active"},
+		{UserID: uid, Title: "Learn System Design & DSA", Description: "System design fundamentals to advanced scalability patterns + DSA for interviews", Priority: "high", DueDate: parseDate("2026-12-31"), Status: "active"},
 
 		// ── Career ──
-		{UserID: uid, Title: "Learn New Skills & Switch Job", Description: "Revise resume, practice DSA, apply to companies, and land a better role", Priority: "high", DueDate: "2026-09-30", Status: "active"},
-		{UserID: uid, Title: "Learn Management Skills", Description: "Management basics, mentoring juniors, guiding peers, leadership positioning", Priority: "medium", DueDate: "2026-12-31", Status: "active"},
+		{UserID: uid, Title: "Learn New Skills & Switch Job", Description: "Revise resume, practice DSA, apply to companies, and land a better role", Priority: "high", DueDate: parseDate("2026-09-30"), Status: "active"},
+		{UserID: uid, Title: "Learn Management Skills", Description: "Management basics, mentoring juniors, guiding peers, leadership positioning", Priority: "medium", DueDate: parseDate("2026-12-31"), Status: "active"},
 
 		// ── Personal Growth ──
-		{UserID: uid, Title: "Build Confidence & Communication", Description: "Work on communication polish, clear writing, grammar, and reduce self-doubt", Priority: "high", DueDate: "2026-12-31", Status: "active"},
+		{UserID: uid, Title: "Build Confidence & Communication", Description: "Work on communication polish, clear writing, grammar, and reduce self-doubt", Priority: "high", DueDate: parseDate("2026-12-31"), Status: "active"},
 
 		// ── Health ──
-		{UserID: uid, Title: "Exercise & Health Consistency", Description: "Exercise 4-5 days/week, eat healthy meals, run 6 km by year end", Priority: "high", DueDate: "2026-12-31", Status: "active"},
+		{UserID: uid, Title: "Exercise & Health Consistency", Description: "Exercise 4-5 days/week, eat healthy meals, run 6 km by year end", Priority: "high", DueDate: parseDate("2026-12-31"), Status: "active"},
 
 		// ── Finance ──
-		{UserID: uid, Title: "Invest More & Wisely", Description: "Learn investing basics, track expenses, start SIP/investment plan", Priority: "medium", DueDate: "2026-12-31", Status: "active"},
+		{UserID: uid, Title: "Invest More & Wisely", Description: "Learn investing basics, track expenses, start SIP/investment plan", Priority: "medium", DueDate: parseDate("2026-12-31"), Status: "active"},
 	}
 
 	// Insert yearly goals and capture IDs
@@ -364,30 +383,30 @@ func main() {
 	// ─────────────────────────────────────────────────────────────────────
 	milestones := []models.Milestone{
 		// Switch Job milestones
-		{GoalID: goalIDs["Learn New Skills & Switch Job"], Quarter: "Q3", TargetDate: "June 7", Title: "Resume finalized", Status: "upcoming"},
-		{GoalID: goalIDs["Learn New Skills & Switch Job"], Quarter: "Q3", TargetDate: "July 15", Title: "Applied to 100+ companies", Status: "upcoming"},
-		{GoalID: goalIDs["Learn New Skills & Switch Job"], Quarter: "Q3", TargetDate: "August 31", Title: "Cleared 2+ interview pipelines", Status: "upcoming"},
-		{GoalID: goalIDs["Learn New Skills & Switch Job"], Quarter: "Q3", TargetDate: "September 30", Title: "Accepted offer at new company", Status: "upcoming"},
+		{GoalID: goalIDs["Learn New Skills & Switch Job"], Quarter: "Q3", TargetDate: parseDate("June 7"), Title: "Resume finalized", Status: "upcoming"},
+		{GoalID: goalIDs["Learn New Skills & Switch Job"], Quarter: "Q3", TargetDate: parseDate("July 15"), Title: "Applied to 100+ companies", Status: "upcoming"},
+		{GoalID: goalIDs["Learn New Skills & Switch Job"], Quarter: "Q3", TargetDate: parseDate("August 31"), Title: "Cleared 2+ interview pipelines", Status: "upcoming"},
+		{GoalID: goalIDs["Learn New Skills & Switch Job"], Quarter: "Q3", TargetDate: parseDate("September 30"), Title: "Accepted offer at new company", Status: "upcoming"},
 
 		// System Design & DSA
-		{GoalID: goalIDs["Learn System Design & DSA"], Quarter: "Q3", TargetDate: "July 31", Title: "50+ LeetCode problems solved", Status: "upcoming"},
-		{GoalID: goalIDs["Learn System Design & DSA"], Quarter: "Q3", TargetDate: "August 31", Title: "100+ LeetCode problems solved", Status: "upcoming"},
-		{GoalID: goalIDs["Learn System Design & DSA"], Quarter: "Q4", TargetDate: "December 31", Title: "150+ problems + 2 system designs completed", Status: "upcoming"},
+		{GoalID: goalIDs["Learn System Design & DSA"], Quarter: "Q3", TargetDate: parseDate("July 31"), Title: "50+ LeetCode problems solved", Status: "upcoming"},
+		{GoalID: goalIDs["Learn System Design & DSA"], Quarter: "Q3", TargetDate: parseDate("August 31"), Title: "100+ LeetCode problems solved", Status: "upcoming"},
+		{GoalID: goalIDs["Learn System Design & DSA"], Quarter: "Q4", TargetDate: parseDate("December 31"), Title: "150+ problems + 2 system designs completed", Status: "upcoming"},
 
 		// Health
-		{GoalID: goalIDs["Exercise & Health Consistency"], Quarter: "Q3", TargetDate: "July 31", Title: "Running 2 km consistently", Status: "upcoming"},
-		{GoalID: goalIDs["Exercise & Health Consistency"], Quarter: "Q3", TargetDate: "September 30", Title: "Running 3 km consistently", Status: "upcoming"},
-		{GoalID: goalIDs["Exercise & Health Consistency"], Quarter: "Q4", TargetDate: "November 30", Title: "Running 5 km continuously", Status: "upcoming"},
-		{GoalID: goalIDs["Exercise & Health Consistency"], Quarter: "Q4", TargetDate: "December 31", Title: "Running 6 km — year-end target achieved!", Status: "upcoming"},
+		{GoalID: goalIDs["Exercise & Health Consistency"], Quarter: "Q3", TargetDate: parseDate("July 31"), Title: "Running 2 km consistently", Status: "upcoming"},
+		{GoalID: goalIDs["Exercise & Health Consistency"], Quarter: "Q3", TargetDate: parseDate("September 30"), Title: "Running 3 km consistently", Status: "upcoming"},
+		{GoalID: goalIDs["Exercise & Health Consistency"], Quarter: "Q4", TargetDate: parseDate("November 30"), Title: "Running 5 km continuously", Status: "upcoming"},
+		{GoalID: goalIDs["Exercise & Health Consistency"], Quarter: "Q4", TargetDate: parseDate("December 31"), Title: "Running 6 km — year-end target achieved!", Status: "upcoming"},
 
 		// DevOps
-		{GoalID: goalIDs["Master DevOps Skills"], Quarter: "Q4", TargetDate: "October 31", Title: "Docker fundamentals learned", Status: "upcoming"},
-		{GoalID: goalIDs["Master DevOps Skills"], Quarter: "Q4", TargetDate: "November 30", Title: "CI/CD pipeline set up for a project", Status: "upcoming"},
-		{GoalID: goalIDs["Master DevOps Skills"], Quarter: "Q4", TargetDate: "December 31", Title: "Project deployed on cloud (AWS/Azure)", Status: "upcoming"},
+		{GoalID: goalIDs["Master DevOps Skills"], Quarter: "Q4", TargetDate: parseDate("October 31"), Title: "Docker fundamentals learned", Status: "upcoming"},
+		{GoalID: goalIDs["Master DevOps Skills"], Quarter: "Q4", TargetDate: parseDate("November 30"), Title: "CI/CD pipeline set up for a project", Status: "upcoming"},
+		{GoalID: goalIDs["Master DevOps Skills"], Quarter: "Q4", TargetDate: parseDate("December 31"), Title: "Project deployed on cloud (AWS/Azure)", Status: "upcoming"},
 
 		// Finance
-		{GoalID: goalIDs["Invest More & Wisely"], Quarter: "Q4", TargetDate: "October 31", Title: "Investing basics learned", Status: "upcoming"},
-		{GoalID: goalIDs["Invest More & Wisely"], Quarter: "Q4", TargetDate: "November 30", Title: "SIP/investment plan started", Status: "upcoming"},
+		{GoalID: goalIDs["Invest More & Wisely"], Quarter: "Q4", TargetDate: parseDate("October 31"), Title: "Investing basics learned", Status: "upcoming"},
+		{GoalID: goalIDs["Invest More & Wisely"], Quarter: "Q4", TargetDate: parseDate("November 30"), Title: "SIP/investment plan started", Status: "upcoming"},
 	}
 
 	for i := range milestones {

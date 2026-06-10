@@ -75,6 +75,15 @@ export function SettingsPage() {
   const [name, setName]   = useState(user?.name || 'Builder');
   const [email, setEmail] = useState(user?.email || 'builder@evolv.net');
   const [saved, setSaved] = useState(false);
+  const [currentPasswordForEmail, setCurrentPasswordForEmail] = useState('');
+  const [emailChanged, setEmailChanged] = useState(false);
+
+  // Change-password form
+  const [cpCurrent, setCpCurrent]   = useState('');
+  const [cpNew, setCpNew]           = useState('');
+  const [cpConfirm, setCpConfirm]   = useState('');
+  const [cpSaving, setCpSaving]     = useState(false);
+  const [cpError, setCpError]       = useState('');
 
   // Sensory preferences
   const [ambientOrbs, setAmbientOrbs]         = useState(true);
@@ -121,25 +130,69 @@ export function SettingsPage() {
       audioState,
     };
 
+    const body: Record<string, string> = {
+      name,
+      preferences: JSON.stringify(prefsObj),
+    };
+
+    if (emailChanged) {
+      if (!currentPasswordForEmail) {
+        showToast('Current password is required to change email.', 'error');
+        return;
+      }
+      body.email = email;
+      body.current_password = currentPasswordForEmail;
+    }
+
     try {
       const updatedUser = await request<any>('http://localhost:8081/api/me', {
         method: 'PATCH',
-        body: JSON.stringify({
-          name,
-          email,
-          preferences: JSON.stringify(prefsObj),
-        }),
+        body: JSON.stringify(body),
       });
 
       updateUser(updatedUser);
       setSaved(true);
+      setEmailChanged(false);
+      setCurrentPasswordForEmail('');
       showToast('Settings saved successfully!', 'success');
       setTimeout(() => setSaved(false), 2000);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      showToast('Failed to save settings.', 'error');
+      showToast(err.message || 'Failed to save settings.', 'error');
     }
   };
+
+  const handleChangePassword = async () => {
+    setCpError('');
+    if (!cpCurrent || !cpNew || !cpConfirm) {
+      setCpError('All fields are required.');
+      return;
+    }
+    if (cpNew !== cpConfirm) {
+      setCpError('New passwords do not match.');
+      return;
+    }
+    if (cpNew.length < 8) {
+      setCpError('New password must be at least 8 characters.');
+      return;
+    }
+    setCpSaving(true);
+    try {
+      await request('http://localhost:8081/api/auth/change-password', {
+        method: 'POST',
+        body: JSON.stringify({ current_password: cpCurrent, new_password: cpNew }),
+      });
+      setCpCurrent('');
+      setCpNew('');
+      setCpConfirm('');
+      showToast('Password updated successfully!', 'success');
+    } catch (err: any) {
+      setCpError(err.message || 'Failed to update password.');
+    } finally {
+      setCpSaving(false);
+    }
+  };
+
 
   return (
     <div className="flex flex-col h-full w-full bg-[var(--color-surface-container-lowest)] text-[var(--color-on-surface)] items-center overflow-hidden">
@@ -189,11 +242,24 @@ export function SettingsPage() {
                     <label className="font-label-sm text-[10px] text-[var(--color-outline)] font-bold uppercase tracking-widest block mb-2">Com-Link (Email)</label>
                     <input
                       value={email}
-                      onChange={e => setEmail(e.target.value)}
+                      onChange={e => { setEmail(e.target.value); setEmailChanged(e.target.value !== user?.email); }}
                       className="w-full bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] focus:border-[var(--color-primary)] text-[var(--color-on-surface)] font-body-md text-[14px] px-4 py-3 transition-colors outline-none"
                       type="email"
                     />
                   </div>
+                  {emailChanged && (
+                    <div>
+                      <label className="font-label-sm text-[10px] text-[var(--color-error)] font-bold uppercase tracking-widest block mb-2">Current Password (required to change email)</label>
+                      <input
+                        value={currentPasswordForEmail}
+                        onChange={e => setCurrentPasswordForEmail(e.target.value)}
+                        className="w-full bg-[var(--color-surface-container)] border border-[var(--color-error)] focus:border-[var(--color-error)] text-[var(--color-on-surface)] font-body-md text-[14px] px-4 py-3 transition-colors outline-none"
+                        type="password"
+                        placeholder="Confirm identity..."
+                        autoComplete="current-password"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             </SettingsSection>
@@ -321,10 +387,63 @@ export function SettingsPage() {
               </div>
             </SettingsSection>
 
+            {/* ── Security ──────────────────────────────────── */}
+            <SettingsSection title="Security Protocol" icon="lock">
+              <div className="space-y-4">
+                <div>
+                  <label className="font-label-sm text-[10px] text-[var(--color-outline)] font-bold uppercase tracking-widest block mb-2">Current Password</label>
+                  <input
+                    value={cpCurrent}
+                    onChange={e => { setCpCurrent(e.target.value); setCpError(''); }}
+                    className="w-full bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] focus:border-[var(--color-primary)] text-[var(--color-on-surface)] font-body-md text-[14px] px-4 py-3 transition-colors outline-none"
+                    type="password"
+                    autoComplete="current-password"
+                    placeholder="••••••••"
+                  />
+                </div>
+                <div>
+                  <label className="font-label-sm text-[10px] text-[var(--color-outline)] font-bold uppercase tracking-widest block mb-2">New Password</label>
+                  <input
+                    value={cpNew}
+                    onChange={e => { setCpNew(e.target.value); setCpError(''); }}
+                    className="w-full bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] focus:border-[var(--color-primary)] text-[var(--color-on-surface)] font-body-md text-[14px] px-4 py-3 transition-colors outline-none"
+                    type="password"
+                    autoComplete="new-password"
+                    placeholder="Min. 8 characters"
+                  />
+                </div>
+                <div>
+                  <label className="font-label-sm text-[10px] text-[var(--color-outline)] font-bold uppercase tracking-widest block mb-2">Confirm New Password</label>
+                  <input
+                    value={cpConfirm}
+                    onChange={e => { setCpConfirm(e.target.value); setCpError(''); }}
+                    className="w-full bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] focus:border-[var(--color-primary)] text-[var(--color-on-surface)] font-body-md text-[14px] px-4 py-3 transition-colors outline-none"
+                    type="password"
+                    autoComplete="new-password"
+                    placeholder="Repeat new password"
+                  />
+                </div>
+                {cpError && (
+                  <p className="text-[var(--color-error)] text-[12px] font-bold font-label-sm">{cpError}</p>
+                )}
+                <button
+                  onClick={handleChangePassword}
+                  disabled={cpSaving}
+                  className="w-full py-3 bg-[var(--color-surface-container-high)] border border-[var(--color-outline-variant)] hover:border-[var(--color-primary)] text-[var(--color-on-surface)] font-label-sm text-[11px] font-bold uppercase tracking-widest transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {cpSaving ? (
+                    <><span className="material-symbols-outlined text-[16px] animate-spin">sync</span> Updating...</>
+                  ) : (
+                    <><span className="material-symbols-outlined text-[16px]">key</span> Update Password</>
+                  )}
+                </button>
+              </div>
+            </SettingsSection>
+
             {/* ── Actions ───────────────────────────────────── */}
             <div className="flex gap-4 mt-4">
               <button
-                onClick={() => { logout(); navigate('/login'); }}
+                onClick={async () => { await logout(); navigate('/login'); }}
                 className="flex-[1] py-4 bg-transparent border border-[var(--color-error)] text-[var(--color-error)] hover:bg-[var(--color-error)] hover:text-black font-label-sm text-[11px] font-bold uppercase tracking-widest transition-colors flex items-center justify-center gap-2"
               >
                 <span className="material-symbols-outlined text-[16px]">logout</span>

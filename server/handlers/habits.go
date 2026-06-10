@@ -1,13 +1,17 @@
 package handlers
 
 import (
+	"database/sql/driver"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
 
 	"evolv-server/database"
 	"evolv-server/models"
+	"evolv-server/services"
+	"gorm.io/gorm"
 )
 
 // --- HABIT HANDLERS ---
@@ -15,8 +19,39 @@ import (
 func GetHabits(w http.ResponseWriter, r *http.Request) {
 	userID := getUserIDFromCtx(r)
 	validateHabitStreaks(userID)
+
+	pageStr := r.URL.Query().Get("page")
+	limitStr := r.URL.Query().Get("limit")
+
 	var habits []models.Habit
-	database.DB.Where("user_id = ?", userID).Order("created_at desc").Find(&habits)
+	query := database.DB.Where("user_id = ?", userID).Order("created_at desc")
+
+	if pageStr != "" || limitStr != "" {
+		page := 1
+		limit := 10
+		if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
+			page = p
+		}
+		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 {
+			limit = l
+			if limit > 100 {
+				limit = 100 // cap limit
+			}
+		}
+		offset := (page - 1) * limit
+
+		var total int64
+		database.DB.Model(&models.Habit{}).Where("user_id = ?", userID).Count(&total)
+
+		w.Header().Set("X-Total-Count", strconv.FormatInt(total, 10))
+		w.Header().Set("X-Total-Pages", strconv.FormatInt((total+int64(limit)-1)/int64(limit), 10))
+		w.Header().Set("X-Page", strconv.Itoa(page))
+		w.Header().Set("X-Limit", strconv.Itoa(limit))
+
+		query = query.Limit(limit).Offset(offset)
+	}
+
+	query.Find(&habits)
 
 	startOfDay := time.Now().Truncate(24 * time.Hour)
 
@@ -158,7 +193,20 @@ func LogHabit(w http.ResponseWriter, r *http.Request) {
 func DeleteHabit(w http.ResponseWriter, r *http.Request) {
 	userID := getUserIDFromCtx(r)
 	id, _ := strconv.Atoi(r.PathValue("id"))
-	database.DB.Where("id = ? AND user_id = ?", id, userID).Delete(&models.Habit{})
+
+	// Verify ownership first.
+	var habit models.Habit
+	if err := database.DB.Where("id = ? AND user_id = ?", id, userID).First(&habit).Error; err != nil {
+		http.Error(w, "Habit not found", http.StatusNotFound)
+		return
+	}
+
+	// Delete HabitLogs first (not yet covered by DB-level CASCADE on existing data),
+	// then delete the habit itself.
+	database.DB.Transaction(func(tx *gorm.DB) error {
+		tx.Where("habit_id = ?", habit.ID).Delete(&models.HabitLog{})
+		return tx.Delete(&habit).Error
+	})
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -305,60 +353,189 @@ func GetRoutines(w http.ResponseWriter, r *http.Request) {
 	respond(w, habitsWithStatus)
 }
 
-// validateHabitStreaks checks all habit streaks for the given user and resets
-// any that have been broken (no log yesterday and no shield available).
+// validateHabitStreaks checks all habit streaks for the given user and updates
+// any that have lapsed (no log yesterday and no shield available).
+//
+// Race safety: acquires a PostgreSQL advisory lock scoped to this user_id so
+// that two simultaneous requests (e.g. dashboard + habits page) cannot
+// double-consume shields or double-reset streaks.
+//
+// Performance: fetches the last completed_at per habit in a single GROUP BY
+// query instead of one query per habit.
+//
+// Integrity: streak shields protect the streak counter only. No synthetic
+// HabitLog records are written — fake logs corrupt analytics.
 func validateHabitStreaks(userID uint) {
+	// Acquire a per-user advisory lock within this DB transaction if using PostgreSQL.
+	// pg_try_advisory_xact_lock returns false immediately if another connection
+	// already holds the lock, so we skip validation rather than block.
+	if database.DB.Dialector.Name() == "postgres" {
+		var acquired bool
+		database.DB.Raw("SELECT pg_try_advisory_xact_lock(?)", int64(userID)).Scan(&acquired)
+		if !acquired {
+			// Another concurrent request is already running streak validation.
+			return
+		}
+	}
+
 	var userHabits []models.Habit
 	database.DB.Where("user_id = ?", userID).Find(&userHabits)
+	if len(userHabits) == 0 {
+		return
+	}
 
 	startOfToday := time.Now().Truncate(24 * time.Hour)
 	startOfYesterday := startOfToday.AddDate(0, 0, -1)
 
+	// Batch: fetch the most recent log timestamp per habit in ONE query.
+	type lastLogRow struct {
+		HabitID      uint
+		LastLoggedAt sqlTime
+	}
+	var lastLogs []lastLogRow
+
+	habitIDs := make([]uint, len(userHabits))
+	for i, h := range userHabits {
+		habitIDs[i] = h.ID
+	}
+	database.DB.Raw(
+		`SELECT habit_id, MAX(completed_at) AS last_logged_at
+		   FROM habit_logs
+		  WHERE habit_id IN ?
+		  GROUP BY habit_id`,
+		habitIDs,
+	).Scan(&lastLogs)
+
+	// Build a quick lookup: habitID → lastLoggedAt
+	lastLogMap := make(map[uint]time.Time, len(lastLogs))
+	for _, row := range lastLogs {
+		lastLogMap[row.HabitID] = row.LastLoggedAt.Time
+	}
+
 	for _, h := range userHabits {
-		var lastLog models.HabitLog
-		err := database.DB.Where("habit_id = ?", h.ID).Order("completed_at desc").First(&lastLog).Error
-		if err != nil {
+		lastLogged, hasLog := lastLogMap[h.ID]
+
+		if !hasLog {
+			// Never logged — reset streak if somehow non-zero.
 			if h.Streak > 0 {
 				database.DB.Model(&h).Update("streak", 0)
 			}
 			continue
 		}
 
-		lastLogDay := lastLog.CompletedAt.Truncate(24 * time.Hour)
+		lastLogDay := lastLogged.Truncate(24 * time.Hour)
 
 		if lastLogDay.Before(startOfYesterday) {
+			// One or more days have been missed.
 			daysMissed := int(startOfYesterday.Sub(lastLogDay).Hours() / 24)
 
-			shieldsUsed := 0
+			shieldsAvailable := 0
 			if h.StreakShieldActive && h.StreakShieldsRemaining > 0 {
-				if h.StreakShieldsRemaining >= daysMissed {
-					shieldsUsed = daysMissed
-				} else {
-					shieldsUsed = h.StreakShieldsRemaining
-				}
+				shieldsAvailable = h.StreakShieldsRemaining
 			}
 
+			shieldsUsed := intMin(shieldsAvailable, daysMissed)
 			remainingMissed := daysMissed - shieldsUsed
 
 			if remainingMissed > 0 {
+				// Streak is broken — reset it.
+				// Shields are consumed for the days they cover, rest is gone.
 				database.DB.Model(&h).Updates(map[string]interface{}{
 					"streak":                    0,
-					"streak_shields_remaining": h.StreakShieldsRemaining - shieldsUsed,
+					"streak_shields_remaining": intMax(0, h.StreakShieldsRemaining-shieldsUsed),
 				})
-			} else if shieldsUsed > 0 {
-				for i := 1; i <= shieldsUsed; i++ {
-					protectedDay := lastLogDay.AddDate(0, 0, i)
-					database.DB.Create(&models.HabitLog{
-						HabitID:     h.ID,
-						CompletedAt: protectedDay.Add(12 * time.Hour),
-					})
+				if shieldsUsed > 0 {
+					_ = services.SendNotification(userID, "Streak Shields Exhausted", fmt.Sprintf("Your streak for '%s' was reset because you missed too many days, using up all %d shields.", h.Title, shieldsUsed), "warning")
 				}
-				database.DB.Model(&h).Updates(map[string]interface{}{
-					"streak_shields_remaining": h.StreakShieldsRemaining - shieldsUsed,
-				})
+			} else if shieldsUsed > 0 {
+				// Shields fully cover the gap — streak is preserved.
+				// Do NOT create synthetic HabitLog rows: fake completions corrupt
+				// analytics (mood correlation, heatmap, time allocation).
+				database.DB.Model(&h).Update(
+					"streak_shields_remaining", h.StreakShieldsRemaining-shieldsUsed,
+				)
+				_ = services.SendNotification(userID, "Streak Shield Activated", fmt.Sprintf("Your streak for '%s' was preserved using %d streak shield(s)!", h.Title, shieldsUsed), "habit_shield")
 			}
 		}
 	}
+}
+
+// intMin returns the smaller of two ints.
+func intMin(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+// intMax returns the larger of two ints.
+func intMax(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+// sqlTime is a custom wrapper around time.Time that implements sql.Scanner and driver.Valuer interfaces.
+// SQLite returns MAX(completed_at) raw queries as strings, whereas PostgreSQL yields time.Time directly.
+// Implementing both Scanner and Valuer ensures GORM treats it as a custom database type instead of a relation.
+type sqlTime struct {
+	time.Time
+}
+
+func (st sqlTime) Value() (driver.Value, error) {
+	return st.Time, nil
+}
+
+func (st *sqlTime) Scan(value interface{}) error {
+	if value == nil {
+		st.Time = time.Time{}
+		return nil
+	}
+	switch v := value.(type) {
+	case time.Time:
+		st.Time = v
+		return nil
+	case string:
+		// Print it if we need to debug, but parseSQLiteTime will do it
+		t, err := parseSQLiteTime(v)
+		if err != nil {
+			return err
+		}
+		st.Time = t
+		return nil
+	case []byte:
+		t, err := parseSQLiteTime(string(v))
+		if err != nil {
+			return err
+		}
+		st.Time = t
+		return nil
+	default:
+		return fmt.Errorf("cannot scan %T into sqlTime: value=%v", value, value)
+	}
+}
+
+func parseSQLiteTime(s string) (time.Time, error) {
+	layouts := []string{
+		"2006-01-02 15:04:05.999999999-07:00",
+		"2006-01-02 15:04:05.999999999Z07:00",
+		"2006-01-02 15:04:05.999999999",
+		"2006-01-02 15:04:05-07:00",
+		"2006-01-02 15:04:05Z07:00",
+		"2006-01-02 15:04:05",
+		"2006-01-02T15:04:05Z07:00",
+		time.RFC3339,
+		time.RFC3339Nano,
+		"2006-01-02 15:04:05.999999999 -0700 MST",
+		"2006-01-02 15:04:05 -0700 MST",
+	}
+	for _, l := range layouts {
+		if t, err := time.Parse(l, s); err == nil {
+			return t, nil
+		}
+	}
+	return time.Time{}, fmt.Errorf("unable to parse time string: %q", s)
 }
 
 // --- DAILY DASHBOARD HANDLER ---

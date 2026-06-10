@@ -1,7 +1,8 @@
 import { useEffect, useState, type FormEvent, useMemo } from 'react';
-import { fetchDashboard, createTask, completeTask, logHabit, fetchMorningBrief, fetchAIInsights, fetchBurnoutRisk, type Task, type Habit, type AIInsight } from '../api';
+import { fetchDashboard, createTask, completeTask, logHabit, fetchMorningBrief, fetchAIInsights, fetchBurnoutRisk, logEnergy, type Task, type Habit, type AIInsight } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
+import { useToast } from '../context/ToastContext';
 
 // ─────────────────────────────────────────────────────────────
 // Unified blueprint item type
@@ -31,12 +32,43 @@ function getGreeting() {
   return 'Good Evening';
 }
 
+// Simple Markdown parser for Morning Briefing
+function FormatDashboardBrief({ text }: { text: string }) {
+  if (!text) return null;
+  const lines = text.split('\n');
+  return (
+    <div className="flex flex-col gap-2">
+      {lines.map((line, idx) => {
+        const clean = line.replace(/\*\*/g, '').trim();
+        if (clean.startsWith('Focus Area:')) {
+          return (
+            <div key={idx} className="font-bold text-[14px] text-[var(--color-on-surface)] not-italic mb-1">
+              {clean}
+            </div>
+          );
+        }
+        if (clean.startsWith('-') || clean.startsWith('*')) {
+          return (
+            <div key={idx} className="flex items-start gap-2 pl-1 not-italic text-[13px] text-[var(--color-on-surface-variant)]">
+              <span className="text-[var(--color-primary)] font-bold mt-1">•</span>
+              <span>{clean.replace(/^[-*]\s*/, '')}</span>
+            </div>
+          );
+        }
+        if (clean === '') return <div key={idx} className="h-1" />;
+        return <p key={idx} className="text-[13px] text-[var(--color-on-surface-variant)] leading-relaxed">{clean}</p>;
+      })}
+    </div>
+  );
+}
+
 function getPriorityCode(priority?: string) {
   if (priority === 'high') return 'P0';
   if (priority === 'medium') return 'P1';
   return 'P2';
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function getPriorityColor(priority?: string) {
   if (priority === 'high') return 'var(--color-error)';
   if (priority === 'medium') return 'var(--color-secondary)';
@@ -96,13 +128,11 @@ function BlueprintRow({
   item,
   onComplete,
   isNew = false,
-  allHabits = [],
   isLast = false,
 }: {
   item: BlueprintItem;
   onComplete: (item: BlueprintItem) => void;
   isNew?: boolean;
-  allHabits?: Habit[];
   isLast?: boolean;
 }) {
   const [animating, setAnimating] = useState(false);
@@ -180,6 +210,7 @@ function BlueprintRow({
 // ─────────────────────────────────────────────────────────────
 export function DashboardPage() {
   const { user } = useAuth();
+  const { showToast } = useToast();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [habits, setHabits] = useState<(Habit & { completed_today: boolean })[]>([]);
   const [loading, setLoading] = useState(true);
@@ -327,7 +358,6 @@ export function DashboardPage() {
               item={item}
               onComplete={handleComplete}
               isNew={item.id === justAddedId}
-              allHabits={habits}
               isLast={idx === items.length - 1}
             />
           ))}
@@ -344,6 +374,13 @@ export function DashboardPage() {
     <div className="flex-1 overflow-y-auto w-full no-scrollbar relative z-10 pb-24 md:pb-0">
       <div className="max-w-[var(--spacing-container-max)] mx-auto px-[var(--spacing-margin-mobile)] md:px-[var(--spacing-margin-desktop)] pt-5 md:pt-8 pb-12 flex flex-col gap-6 relative z-10">
 
+        {/* ── CONNECTION ERROR ALERT ───────────────────────── */}
+        {error && (
+          <div className="border border-[var(--color-error)]/30 bg-[var(--color-error)]/10 px-6 py-3 text-[var(--color-error)] font-mono text-[11px] uppercase tracking-widest flex items-center gap-2 font-bold anim-fade-up">
+            <span className="material-symbols-outlined text-[16px]">warning</span>{error}
+          </div>
+        )}
+
         {/* ── HEADER ─────────────────────────────────────────── */}
         <section className="flex flex-col gap-1">
           <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[var(--color-outline)] flex items-center gap-2">
@@ -358,6 +395,28 @@ export function DashboardPage() {
             Ready for execution. {tasks.filter(t => !t.is_completed).length} tasks queued.
           </p>
         </section>
+
+        {/* ── AI MORNING BRIEF ──────────────────────────────── */}
+        {briefLoading ? (
+          <div className="border border-[var(--color-outline-variant)]/40 bg-[var(--color-surface-container)] p-5 rounded-sm flex flex-col gap-3 animate-pulse">
+            <div className="h-4 bg-[var(--color-surface-container-high)] w-1/4 rounded"></div>
+            <div className="h-3 bg-[var(--color-surface-container-high)] w-full rounded"></div>
+            <div className="h-3 bg-[var(--color-surface-container-high)] w-5/6 rounded"></div>
+          </div>
+        ) : brief ? (
+          <div className="border border-[var(--color-primary)]/20 bg-gradient-to-r from-[var(--color-surface-container)] to-[var(--color-surface-container-high)] p-5 rounded-sm relative overflow-hidden flex flex-col gap-3 anim-fade-up">
+            <div className="absolute right-4 top-4 opacity-5 pointer-events-none select-none">
+              <span className="material-symbols-outlined text-[100px] text-[var(--color-primary)]">psychology</span>
+            </div>
+            <div className="flex items-center gap-2 border-b border-[var(--color-outline-variant)]/50 pb-2">
+              <span className="material-symbols-outlined text-[18px] text-[var(--color-primary)]">psychology</span>
+              <h3 className="font-mono text-[11px] font-bold text-[var(--color-primary)] uppercase tracking-wider">AI Coach Morning Brief</h3>
+            </div>
+            <div className="italic pr-12">
+              <FormatDashboardBrief text={brief} />
+            </div>
+          </div>
+        ) : null}
 
         {/* ── STATS ROW ──────────────────────────────────────── */}
         <div className="flex flex-col gap-4 mt-2">
@@ -414,7 +473,7 @@ export function DashboardPage() {
                <div>
                  <div className="flex items-center gap-2">
                    <h3 className="font-mono text-[12px] font-bold text-[var(--color-on-surface)] uppercase tracking-wider">Burnout Risk</h3>
-                   <span className="font-mono text-[9px] uppercase font-bold px-1.5 py-0.5 border border-[var(--color-secondary)] text-[var(--color-secondary)] bg-[var(--color-secondary)]/10 rounded-sm">
+                   <span className="font-mono text-[9px] uppercase font-bold px-1.5 py-0.5 border border-[var(--color-secondary)] text-[var(--color-secondary)] bg-[var(--color-secondary)]/10 rounded-sm animate-pulse">
                      {burnoutRisk?.risk || 'LOW'}
                    </span>
                  </div>
@@ -456,16 +515,16 @@ export function DashboardPage() {
 
              {/* Blueprint List */}
              {loading ? (
-               <div className="divide-y divide-[var(--color-outline-variant)]/50">
-                 {[...Array(4)].map((_, i) => (
-                   <div key={i} className="h-[52px] animate-pulse bg-[var(--color-surface-container)]/30" />
-                 ))}
-               </div>
+                <div className="divide-y divide-[var(--color-outline-variant)]/50">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="h-[52px] animate-pulse bg-[var(--color-surface-container)]/30" />
+                  ))}
+                </div>
              ) : blueprintItems.length === 0 ? (
-               <div className="text-center py-12 border border-[var(--color-outline-variant)]/50">
-                 <span className="material-symbols-outlined text-[32px] text-[var(--color-outline)] mb-2">check_circle</span>
-                 <p className="text-[14px] text-[var(--color-on-surface-variant)]">Blueprint is empty</p>
-               </div>
+                <div className="text-center py-12 border border-[var(--color-outline-variant)]/50">
+                  <span className="material-symbols-outlined text-[32px] text-[var(--color-outline)] mb-2">check_circle</span>
+                  <p className="text-[14px] text-[var(--color-on-surface-variant)]">Blueprint is empty</p>
+                </div>
              ) : (
                <div>
                  {renderBlueprintGroup('[01] MORNING ROUTINE', morningItems, '07:00 - 09:00')}
@@ -481,15 +540,15 @@ export function DashboardPage() {
                      </summary>
                      <div className="border-t border-[var(--color-outline-variant)] bg-[var(--color-surface-container)]">
                        {doneItems.map((item, idx) => (
-                         <BlueprintRow key={item.id} item={item} onComplete={handleComplete} allHabits={habits} isLast={idx === doneItems.length - 1} />
+                         <BlueprintRow key={item.id} item={item} onComplete={handleComplete} isLast={idx === doneItems.length - 1} />
                        ))}
                      </div>
                    </details>
                  )}
 
                  {pct === 100 && totalCount > 0 && (
-                   <div className="px-4 py-4 mt-6 border border-[var(--color-outline-variant)] bg-[var(--color-primary)]/5 text-center">
-                     <p className="font-mono text-[11px] uppercase tracking-wider text-[var(--color-primary)]">
+                   <div className="px-4 py-4 mt-6 border border-[var(--color-outline-variant)] bg-[var(--color-primary)]/5 text-center animate-pulse">
+                     <p className="font-mono text-[11px] uppercase tracking-wider text-[var(--color-primary)] font-bold">
                        ✓ Blueprint Complete — Outstanding Execution
                      </p>
                    </div>
@@ -508,6 +567,82 @@ export function DashboardPage() {
 
            {/* RIGHT COLUMN */}
            <div className="flex flex-col gap-6">
+             {/* Quick Energy Log Widget */}
+             <div className="border border-[var(--color-outline-variant)] bg-[var(--color-surface-container)] p-5 flex flex-col gap-4 anim-fade-up">
+               <div className="flex justify-between items-center border-b border-[var(--color-outline-variant)]/50 pb-2.5">
+                 <h3 className="font-mono text-[11px] font-bold text-[var(--color-on-surface)] uppercase tracking-widest flex items-center gap-2">
+                   <span className="material-symbols-outlined text-[14px] text-[var(--color-primary)]">bolt</span>
+                   Energy Check-in
+                 </h3>
+                 <span className="font-mono text-[9px] text-[var(--color-outline)] uppercase tracking-widest">Circadian Log</span>
+               </div>
+               
+               <p className="text-[12px] text-[var(--color-on-surface-variant)] leading-snug">
+                 Rate your current battery/focus level to calibrate the circadian heatmap.
+               </p>
+
+               <div className="flex gap-2">
+                 {[1, 2, 3, 4, 5].map((val) => {
+                   const colors = [
+                     'hover:bg-red-500/20 hover:text-red-400 border-red-500/20 text-red-500/50',
+                     'hover:bg-orange-500/20 hover:text-orange-400 border-orange-500/20 text-orange-500/50',
+                     'hover:bg-yellow-500/20 hover:text-yellow-400 border-yellow-500/20 text-yellow-500/50',
+                     'hover:bg-teal-500/20 hover:text-teal-400 border-teal-500/20 text-teal-500/50',
+                     'hover:bg-cyan-500/20 hover:text-cyan-400 border-cyan-500/20 text-cyan-500/50',
+                   ];
+                   return (
+                     <button
+                       key={val}
+                       onClick={async () => {
+                         try {
+                           await logEnergy(val);
+                           showToast(`Energy log registered: Level ${val}/5`, 'success');
+                         } catch (err: any) {
+                           showToast(err.message || 'Failed to log energy', 'error');
+                         }
+                       }}
+                       className={`flex-1 py-2 border font-mono text-[13px] font-bold text-center transition-all ${colors[val - 1]}`}
+                     >
+                       {val}
+                     </button>
+                   );
+                 })}
+               </div>
+             </div>
+
+             {/* AI Coach Insights Widget */}
+             <div className="border border-[var(--color-outline-variant)] bg-[var(--color-surface-container)] p-5 flex flex-col gap-4 anim-fade-up">
+                <div className="flex justify-between items-center border-b border-[var(--color-outline-variant)]/50 pb-2.5">
+                  <h3 className="font-mono text-[11px] font-bold text-[var(--color-on-surface)] uppercase tracking-widest flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[14px] text-[var(--color-secondary)]">insights</span>
+                    Coach Insights
+                  </h3>
+                  <span className="font-mono text-[9px] text-[var(--color-secondary)] uppercase tracking-widest font-bold">Active</span>
+                </div>
+
+                {insightsLoading ? (
+                  <div className="flex flex-col gap-3 animate-pulse">
+                    <div className="h-12 bg-[var(--color-surface-container-high)] rounded" />
+                    <div className="h-12 bg-[var(--color-surface-container-high)] rounded" />
+                  </div>
+                ) : insights.length === 0 ? (
+                  <p className="font-mono text-[10px] text-[var(--color-outline)] uppercase tracking-widest text-center py-4">No recommendations</p>
+                ) : (
+                  <div className="flex flex-col gap-4">
+                    {insights.map((insight, idx) => (
+                      <div key={idx} className="flex flex-col gap-1 border-l-2 border-[var(--color-secondary)] pl-3">
+                        <span className="font-mono text-[9px] uppercase tracking-wider text-[var(--color-secondary)] font-bold">
+                          {insight.category} · {insight.title}
+                        </span>
+                        <p className="text-[12px] text-[var(--color-on-surface-variant)] leading-snug">
+                          {insight.recommendation}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+             </div>
+
              {/* Focus Mode Widget */}
              <div className="border border-[var(--color-outline-variant)] bg-[var(--color-surface-container)] overflow-hidden p-5 flex flex-col">
                 <div className="flex justify-between items-center mb-5">

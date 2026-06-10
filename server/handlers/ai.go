@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -9,6 +10,24 @@ import (
 	"evolv-server/models"
 	"evolv-server/services"
 )
+
+func handleAIError(w http.ResponseWriter, err error, defaultMsg string) {
+	if errors.Is(err, services.ErrCircuitOpen) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusServiceUnavailable)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+	if errors.Is(err, services.ErrAIRateLimited) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusTooManyRequests)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusInternalServerError)
+	json.NewEncoder(w).Encode(map[string]string{"error": defaultMsg})
+}
 
 // ── POST /api/ai/chat ────────────────────────────────────────────────────────
 func AIChat(w http.ResponseWriter, r *http.Request) {
@@ -28,7 +47,7 @@ func AIChat(w http.ResponseWriter, r *http.Request) {
 
 	response, err := services.GenerateChatResponse(r.Context(), prompt)
 	if err != nil {
-		http.Error(w, `{"error":"Failed to generate AI response"}`, http.StatusInternalServerError)
+		handleAIError(w, err, "Failed to generate AI response")
 		return
 	}
 
@@ -56,7 +75,7 @@ func BreakDownGoalHandler(w http.ResponseWriter, r *http.Request) {
 
 	subtasks, err := services.BreakDownGoal(r.Context(), goal.Title, goal.Description)
 	if err != nil {
-		http.Error(w, `{"error":"Failed to break down goal"}`, http.StatusInternalServerError)
+		handleAIError(w, err, "Failed to break down goal")
 		return
 	}
 
@@ -82,7 +101,7 @@ func GetMorningBrief(w http.ResponseWriter, r *http.Request) {
 
 	brief, err := services.GenerateMorningBrief(r.Context(), user.Name, tasks, habits)
 	if err != nil {
-		http.Error(w, `{"error":"Failed to generate morning brief"}`, http.StatusInternalServerError)
+		handleAIError(w, err, "Failed to generate morning brief")
 		return
 	}
 
@@ -103,7 +122,7 @@ func GetAIInsights(w http.ResponseWriter, r *http.Request) {
 
 	insights, err := services.GenerateProductivityInsights(r.Context(), goals, tasks, habits)
 	if err != nil {
-		http.Error(w, `{"error":"Failed to generate insights"}`, http.StatusInternalServerError)
+		handleAIError(w, err, "Failed to generate insights")
 		return
 	}
 
@@ -159,7 +178,7 @@ func GenerateWeeklyReviewHandler(w http.ResponseWriter, r *http.Request) {
 	// Generate review summary
 	summary, err := services.GenerateWeeklyReview(r.Context(), plan, weekScore, tasks, habits, journals)
 	if err != nil {
-		http.Error(w, `{"error":"Failed to generate AI weekly review"}`, http.StatusInternalServerError)
+		handleAIError(w, err, "Failed to generate AI weekly review")
 		return
 	}
 
@@ -222,7 +241,7 @@ func GenerateMonthlyReviewHandler(w http.ResponseWriter, r *http.Request) {
 	// Generate review summary
 	summary, err := services.GenerateMonthlyReview(r.Context(), plan, goals, journals)
 	if err != nil {
-		http.Error(w, `{"error":"Failed to generate AI monthly review"}`, http.StatusInternalServerError)
+		handleAIError(w, err, "Failed to generate AI monthly review")
 		return
 	}
 
@@ -232,4 +251,3 @@ func GenerateMonthlyReviewHandler(w http.ResponseWriter, r *http.Request) {
 
 	respond(w, plan)
 }
-

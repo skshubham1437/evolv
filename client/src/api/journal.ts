@@ -40,3 +40,10 @@ export function updateJournalEntry(id: number, updates: Partial<JournalEntry>): 
     body: JSON.stringify(updates),
   });
 }
+
+export function logEnergy(energy: number): Promise<{ id: number; energy: number; logged_at: string }> {
+  return request(`${API}/energy`, {
+    method: 'POST',
+    body: JSON.stringify({ energy }),
+  });
+}

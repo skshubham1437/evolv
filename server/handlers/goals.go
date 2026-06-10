@@ -7,6 +7,7 @@ import (
 
 	"evolv-server/database"
 	"evolv-server/models"
+	"gorm.io/gorm"
 )
 
 // GetGoals handles GET /api/goals
@@ -54,12 +55,18 @@ func CreateGoal(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	parsedDueDate, err := parseDateString(payload.DueDate)
+	if err != nil {
+		http.Error(w, `{"error":"Invalid due date format"}`, http.StatusBadRequest)
+		return
+	}
+
 	goal := models.Goal{
 		UserID:      userID,
 		Title:       payload.Title,
 		Description: payload.Description,
 		Priority:    payload.Priority,
-		DueDate:     payload.DueDate,
+		DueDate:     parsedDueDate,
 		Progress:    0,
 		Status:      "active",
 		KeyResults:  krs,
@@ -106,7 +113,12 @@ func UpdateGoal(w http.ResponseWriter, r *http.Request) {
 		goal.Priority = *payload.Priority
 	}
 	if payload.DueDate != nil {
-		goal.DueDate = *payload.DueDate
+		parsedDueDate, err := parseDateString(*payload.DueDate)
+		if err != nil {
+			http.Error(w, `{"error":"Invalid due date format"}`, http.StatusBadRequest)
+			return
+		}
+		goal.DueDate = parsedDueDate
 	}
 	if payload.Status != nil {
 		goal.Status = *payload.Status
@@ -122,10 +134,23 @@ func DeleteGoal(w http.ResponseWriter, r *http.Request) {
 	userID := getUserIDFromCtx(r)
 	goalID := r.PathValue("id")
 
-	// Delete key results first (or rely on cascading, but explicit is safer here)
-	database.DB.Where("goal_id = ?", goalID).Delete(&models.KeyResult{})
-	
-	if err := database.DB.Where("id = ? AND user_id = ?", goalID, userID).Delete(&models.Goal{}).Error; err != nil {
+	// SECURITY: Verify ownership before touching any child records.
+	var goal models.Goal
+	if err := database.DB.Where("id = ? AND user_id = ?", goalID, userID).First(&goal).Error; err != nil {
+		http.Error(w, `{"error":"Goal not found"}`, http.StatusNotFound)
+		return
+	}
+
+	// Delete all child records + the goal atomically.
+	if err := database.DB.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("goal_id = ?", goal.ID).Delete(&models.KeyResult{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Where("goal_id = ?", goal.ID).Delete(&models.Milestone{}).Error; err != nil {
+			return err
+		}
+		return tx.Delete(&goal).Error
+	}); err != nil {
 		http.Error(w, `{"error":"Failed to delete goal"}`, http.StatusInternalServerError)
 		return
 	}
@@ -162,21 +187,12 @@ func ToggleKeyResult(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Recalculate progress
-	doneCount := 0
-	for _, kr := range goal.KeyResults {
-		if kr.IsDone {
-			doneCount++
-		}
+	// Recalculate progress using helper
+	if err := UpdateGoalProgress(database.DB, goal.ID); err != nil {
+		http.Error(w, `{"error":"Failed to update progress"}`, http.StatusInternalServerError)
+		return
 	}
-	
-	newProgress := 0
-	if len(goal.KeyResults) > 0 {
-		newProgress = (doneCount * 100) / len(goal.KeyResults)
-	}
-	
-	goal.Progress = newProgress
-	database.DB.Save(&goal)
+	database.DB.First(&goal, goal.ID)
 
 	respond(w, goal)
 }
@@ -216,24 +232,11 @@ func CreateKeyResult(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Recalculate goal progress
-	var allKRs []models.KeyResult
-	database.DB.Where("goal_id = ?", goal.ID).Find(&allKRs)
-
-	doneCount := 0
-	for _, k := range allKRs {
-		if k.IsDone {
-			doneCount++
-		}
+	// Recalculate goal progress using helper
+	if err := UpdateGoalProgress(database.DB, goal.ID); err != nil {
+		http.Error(w, `{"error":"Failed to update progress"}`, http.StatusInternalServerError)
+		return
 	}
-	
-	newProgress := 0
-	if len(allKRs) > 0 {
-		newProgress = (doneCount * 100) / len(allKRs)
-	}
-
-	goal.Progress = newProgress
-	database.DB.Save(&goal)
 
 	w.WriteHeader(http.StatusCreated)
 	respond(w, kr)
@@ -287,12 +290,18 @@ func CreateMilestone(w http.ResponseWriter, r *http.Request) {
 		payload.Status = "upcoming"
 	}
 
+	parsedDate, err := parseDateString(payload.TargetDate)
+	if err != nil {
+		http.Error(w, `{"error":"Invalid target date format"}`, http.StatusBadRequest)
+		return
+	}
+
 	milestone := models.Milestone{
 		GoalID:      goal.ID,
 		Title:       payload.Title,
 		Description: payload.Description,
 		Quarter:     payload.Quarter,
-		TargetDate:  payload.TargetDate,
+		TargetDate:  parsedDate,
 		Status:      payload.Status,
 	}
 	if err := database.DB.Create(&milestone).Error; err != nil {
@@ -344,7 +353,12 @@ func UpdateMilestone(w http.ResponseWriter, r *http.Request) {
 		milestone.Quarter = *payload.Quarter
 	}
 	if payload.TargetDate != nil {
-		milestone.TargetDate = *payload.TargetDate
+		parsedDate, err := parseDateString(*payload.TargetDate)
+		if err != nil {
+			http.Error(w, `{"error":"Invalid target date format"}`, http.StatusBadRequest)
+			return
+		}
+		milestone.TargetDate = parsedDate
 	}
 	if payload.Status != nil {
 		milestone.Status = *payload.Status

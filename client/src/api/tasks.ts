@@ -12,6 +12,10 @@ export interface Task {
   position: number;
   project_id?: number | null;
   parent_task_id?: number | null;
+  goal_id?: number | null;
+  objective_id?: number | null;
+  is_urgent?: boolean;
+  is_important?: boolean;
   tags?: string;
   dependencies?: string;
 }
@@ -50,10 +54,14 @@ export function createTask(
   tags = '',
   dependencies = '',
   due_date?: string,
+  goal_id?: number | null,
+  objective_id?: number | null,
+  is_urgent?: boolean,
+  is_important?: boolean,
 ): Promise<Task> {
   return request(`${API}/tasks`, {
     method: 'POST',
-    body: JSON.stringify({ title, priority, project_id, parent_task_id, tags, dependencies, due_date }),
+    body: JSON.stringify({ title, priority, project_id, parent_task_id, tags, dependencies, due_date, goal_id, objective_id, is_urgent, is_important }),
   });
 }
 

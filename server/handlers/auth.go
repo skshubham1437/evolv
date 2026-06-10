@@ -8,11 +8,49 @@ import (
 	"time"
 
 	"evolv-server/database"
+	"evolv-server/middleware"
 	"evolv-server/models"
 
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
+
+// ── Cookie helpers ────────────────────────────────────────────────────────────
+
+// setSessionCookie writes the JWT into a Secure, HttpOnly, SameSite=Lax cookie.
+// The cookie lives for 72 hours, matching the token expiry.
+func setSessionCookie(w http.ResponseWriter, token string) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     middleware.CookieName,
+		Value:    token,
+		Path:     "/",
+		MaxAge:   int((72 * time.Hour).Seconds()),
+		HttpOnly: true,              // immune to XSS / document.cookie access
+		Secure:   isProduction(),   // HTTPS-only in production
+		SameSite: http.SameSiteLaxMode,
+	})
+}
+
+// clearSessionCookie invalidates the session cookie.
+func clearSessionCookie(w http.ResponseWriter) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     middleware.CookieName,
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   isProduction(),
+		SameSite: http.SameSiteLaxMode,
+	})
+}
+
+// isProduction reports whether the server is running in a production environment.
+func isProduction() bool {
+	env := os.Getenv("APP_ENV")
+	return env == "production" || env == "prod"
+}
+
+// ── Request / Response types ──────────────────────────────────────────────────
 
 type registerRequest struct {
 	Email    string `json:"email"`
@@ -26,11 +64,12 @@ type loginRequest struct {
 }
 
 type authResponse struct {
-	Token string      `json:"token"`
-	User  models.User `json:"user"`
+	User models.User `json:"user"`
 }
 
-// Register creates a new user account.
+// ── Handlers ──────────────────────────────────────────────────────────────────
+
+// Register creates a new user account and sets a session cookie.
 func Register(w http.ResponseWriter, r *http.Request) {
 	var req registerRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -45,8 +84,8 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error":"email, password, and name are required"}`, http.StatusBadRequest)
 		return
 	}
-	if len(req.Password) < 6 {
-		http.Error(w, `{"error":"password must be at least 6 characters"}`, http.StatusBadRequest)
+	if len(req.Password) < 8 {
+		http.Error(w, `{"error":"password must be at least 8 characters"}`, http.StatusBadRequest)
 		return
 	}
 
@@ -75,15 +114,16 @@ func Register(w http.ResponseWriter, r *http.Request) {
 
 	token, err := generateJWT(user.ID)
 	if err != nil {
-		http.Error(w, `{"error":"could not generate token"}`, http.StatusInternalServerError)
+		http.Error(w, `{"error":"could not generate session"}`, http.StatusInternalServerError)
 		return
 	}
 
+	setSessionCookie(w, token)
 	w.WriteHeader(http.StatusCreated)
-	respond(w, authResponse{Token: token, User: user})
+	respond(w, authResponse{User: user})
 }
 
-// Login authenticates a user and returns a JWT.
+// Login authenticates a user and sets a session cookie.
 func Login(w http.ResponseWriter, r *http.Request) {
 	var req loginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -106,11 +146,18 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 	token, err := generateJWT(user.ID)
 	if err != nil {
-		http.Error(w, `{"error":"could not generate token"}`, http.StatusInternalServerError)
+		http.Error(w, `{"error":"could not generate session"}`, http.StatusInternalServerError)
 		return
 	}
 
-	respond(w, authResponse{Token: token, User: user})
+	setSessionCookie(w, token)
+	respond(w, authResponse{User: user})
+}
+
+// Logout clears the session cookie.
+func Logout(w http.ResponseWriter, r *http.Request) {
+	clearSessionCookie(w)
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // GetMe returns the currently authenticated user's profile.
@@ -124,6 +171,8 @@ func GetMe(w http.ResponseWriter, r *http.Request) {
 	respond(w, user)
 }
 
+// UpdateMe updates the authenticated user's profile.
+// Email changes require the current password to be confirmed.
 func UpdateMe(w http.ResponseWriter, r *http.Request) {
 	userID := getUserIDFromCtx(r)
 	var user models.User
@@ -133,41 +182,117 @@ func UpdateMe(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type UpdateRequest struct {
-		Name        *string `json:"name"`
-		Email       *string `json:"email"`
-		Preferences *string `json:"preferences"`
+		Name            *string `json:"name"`
+		Email           *string `json:"email"`
+		CurrentPassword *string `json:"current_password"` // required for email change
+		Preferences     *string `json:"preferences"`
 	}
 
 	var req UpdateRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid body", http.StatusBadRequest)
+		http.Error(w, `{"error":"invalid request body"}`, http.StatusBadRequest)
 		return
 	}
 
-	if req.Name != nil {
-		user.Name = *req.Name
-	}
+	// Email update requires current password re-confirmation.
 	if req.Email != nil {
-		user.Email = *req.Email
+		if req.CurrentPassword == nil || *req.CurrentPassword == "" {
+			http.Error(w, `{"error":"current_password is required to change email"}`, http.StatusBadRequest)
+			return
+		}
+		if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(*req.CurrentPassword)); err != nil {
+			http.Error(w, `{"error":"current password is incorrect"}`, http.StatusForbidden)
+			return
+		}
+		// Check email uniqueness (excluding self).
+		newEmail := strings.TrimSpace(strings.ToLower(*req.Email))
+		var existing models.User
+		if err := database.DB.Where("email = ? AND id != ?", newEmail, userID).First(&existing).Error; err == nil {
+			http.Error(w, `{"error":"email already in use"}`, http.StatusConflict)
+			return
+		}
+		user.Email = newEmail
+	}
+
+	if req.Name != nil {
+		user.Name = strings.TrimSpace(*req.Name)
 	}
 	if req.Preferences != nil {
 		user.Preferences = *req.Preferences
 	}
 
 	if err := database.DB.Save(&user).Error; err != nil {
-		http.Error(w, "Failed to update profile", http.StatusInternalServerError)
+		http.Error(w, `{"error":"failed to update profile"}`, http.StatusInternalServerError)
 		return
 	}
 
 	respond(w, user)
 }
 
+// ChangePassword allows an authenticated user to change their password.
+// Requires the current password for re-authentication.
+func ChangePassword(w http.ResponseWriter, r *http.Request) {
+	userID := getUserIDFromCtx(r)
+
+	var req struct {
+		CurrentPassword string `json:"current_password"`
+		NewPassword     string `json:"new_password"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error":"invalid request body"}`, http.StatusBadRequest)
+		return
+	}
+
+	if req.CurrentPassword == "" || req.NewPassword == "" {
+		http.Error(w, `{"error":"current_password and new_password are required"}`, http.StatusBadRequest)
+		return
+	}
+	if len(req.NewPassword) < 8 {
+		http.Error(w, `{"error":"new_password must be at least 8 characters"}`, http.StatusBadRequest)
+		return
+	}
+	if req.CurrentPassword == req.NewPassword {
+		http.Error(w, `{"error":"new password must differ from current password"}`, http.StatusBadRequest)
+		return
+	}
+
+	var user models.User
+	if err := database.DB.First(&user, userID).Error; err != nil {
+		http.Error(w, `{"error":"user not found"}`, http.StatusNotFound)
+		return
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.CurrentPassword)); err != nil {
+		http.Error(w, `{"error":"current password is incorrect"}`, http.StatusForbidden)
+		return
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		http.Error(w, `{"error":"internal server error"}`, http.StatusInternalServerError)
+		return
+	}
+
+	if err := database.DB.Model(&user).Update("password_hash", string(hash)).Error; err != nil {
+		http.Error(w, `{"error":"failed to update password"}`, http.StatusInternalServerError)
+		return
+	}
+
+	// Re-issue a fresh session token after password change.
+	token, err := generateJWT(user.ID)
+	if err != nil {
+		http.Error(w, `{"error":"password updated but could not refresh session"}`, http.StatusInternalServerError)
+		return
+	}
+	setSessionCookie(w, token)
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// ── JWT generation ────────────────────────────────────────────────────────────
 
 func generateJWT(userID uint) (string, error) {
 	secret := os.Getenv("JWT_SECRET")
-	if secret == "" {
-		secret = "evolv-dev-secret-change-in-production"
-	}
+	// Length guarantee is enforced by the startup check in main.go.
 
 	claims := jwt.MapClaims{
 		"user_id": userID,

@@ -13,7 +13,7 @@ type Goal struct {
 	Title       string         `gorm:"not null" json:"title"`
 	Description string         `gorm:"type:text" json:"description"`
 	Priority    string         `gorm:"default:'medium'" json:"priority"` // low, medium, high
-	DueDate     string         `json:"due_date"`
+	DueDate     *time.Time     `json:"due_date"`
 	Progress    int            `gorm:"default:0" json:"progress"` // 0-100 percentage
 	Status      string         `gorm:"default:'active'" json:"status"` // active, done
 	KeyResults  []KeyResult    `json:"key_results"`
@@ -36,7 +36,7 @@ type Milestone struct {
 	ID          uint      `gorm:"primaryKey" json:"id"`
 	GoalID      uint      `gorm:"not null;index" json:"goal_id"`
 	Quarter     string    `json:"quarter"`
-	TargetDate  string    `json:"date"` // stored as string e.g. "March 15"
+	TargetDate  *time.Time `gorm:"column:date" json:"date"`
 	Title       string    `gorm:"not null" json:"title"`
 	Description string    `gorm:"type:text" json:"description"`
 	Status      string    `gorm:"default:'upcoming'" json:"status"` // done, active, upcoming

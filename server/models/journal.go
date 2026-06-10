@@ -25,3 +25,11 @@ type JournalEntry struct {
 	UpdatedAt time.Time      `json:"updated_at"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
 }
+
+// EnergyLog represents a real-time energy level entry logged by the user.
+type EnergyLog struct {
+	ID       uint      `gorm:"primaryKey" json:"id"`
+	UserID   uint      `gorm:"not null;index" json:"user_id"`
+	LoggedAt time.Time `gorm:"not null;index" json:"logged_at"`
+	Energy   int       `gorm:"not null" json:"energy"` // 1-5 scale
+}

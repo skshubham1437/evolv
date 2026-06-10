@@ -1,14 +1,18 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 
+	"evolv-server/database"
 	"evolv-server/handlers"
 )
 
 func registerUserRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/me", handlers.GetMe)
 	mux.HandleFunc("PATCH /api/me", handlers.UpdateMe)
+	mux.HandleFunc("POST /api/auth/change-password", handlers.ChangePassword)
+	mux.HandleFunc("POST /api/auth/logout", handlers.Logout)
 }
 
 func registerDashboardRoutes(mux *http.ServeMux) {
@@ -40,6 +44,7 @@ func registerJournalRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/journal", handlers.ListJournalEntries)
 	mux.HandleFunc("GET /api/journal/{date}", handlers.GetJournalByDate)
 	mux.HandleFunc("PATCH /api/journal/{id}", handlers.UpdateJournalEntry)
+	mux.HandleFunc("POST /api/energy", handlers.LogEnergy)
 }
 
 func registerVisionRoutes(mux *http.ServeMux) {
@@ -106,8 +111,21 @@ func registerAIRoutes(mux *http.ServeMux) {
 
 func registerPublicRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status":"ok","app":"evolv"}`))
+		sqlDB, err := database.DB.DB()
+		dbStatus := "ok"
+		if err != nil || sqlDB.Ping() != nil {
+			dbStatus = "error"
+		}
+		if dbStatus == "error" {
+			w.WriteHeader(http.StatusServiceUnavailable)
+		} else {
+			w.WriteHeader(http.StatusOK)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprintf(w, `{"status":%q,"db":%q,"app":"evolv"}`,
+			map[bool]string{true: "ok", false: "degraded"}[dbStatus == "ok"],
+			dbStatus,
+		)
 	})
 	mux.HandleFunc("POST /api/auth/register", RateLimitAuth(handlers.Register))
 	mux.HandleFunc("POST /api/auth/login", RateLimitAuth(handlers.Login))
@@ -118,4 +136,10 @@ func registerProjectRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/projects", handlers.CreateProject)
 	mux.HandleFunc("PATCH /api/projects/{id}", handlers.UpdateProject)
 	mux.HandleFunc("DELETE /api/projects/{id}", handlers.DeleteProject)
+}
+
+func registerNotificationRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("GET /api/notifications", handlers.GetNotifications)
+	mux.HandleFunc("PUT /api/notifications/{id}/read", handlers.MarkNotificationAsRead)
+	mux.HandleFunc("PUT /api/notifications/read-all", handlers.MarkAllNotificationsAsRead)
 }

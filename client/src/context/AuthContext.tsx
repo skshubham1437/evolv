@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, type ReactNode, useCallback } from 'react';
-import { API_BASE } from '../api/core';
+import { API_BASE, request } from '../api/core';
 
 interface User {
   id: number;
@@ -11,91 +11,93 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
-  token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   updateUser: (user: User) => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 const API = API_BASE;
-const TOKEN_KEY = 'evolv_token';
-const USER_KEY = 'evolv_user';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Restore session from localStorage on mount
+  // On mount: verify session by calling /api/me.
+  // The httpOnly cookie is sent automatically by the browser.
+  // This replaces the old localStorage token restoration.
   useEffect(() => {
-    const storedToken = localStorage.getItem(TOKEN_KEY);
-    const storedUser = localStorage.getItem(USER_KEY);
-    if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
-    }
-    setIsLoading(false);
+    // Clean up any stale data from the old localStorage-based auth.
+    localStorage.removeItem('evolv_token');
+    localStorage.removeItem('evolv_user');
+
+    fetch(`${API}/me`, { credentials: 'include' })
+      .then(async (res) => {
+        if (res.ok) {
+          const data = await res.json();
+          setUser(data);
+        }
+        // 401 = no active session → user stays null, will see landing/login
+      })
+      .catch(() => {
+        // Network error: treat as unauthenticated
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   }, []);
 
-  const saveSession = (token: string, user: User) => {
-    localStorage.setItem(TOKEN_KEY, token);
-    localStorage.setItem(USER_KEY, JSON.stringify(user));
-    setToken(token);
-    setUser(user);
-  };
-
   const login = useCallback(async (email: string, password: string) => {
-    const res = await fetch(`${API}/auth/login`, {
+    const data = await request<{ user: User }>(`${API}/auth/login`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: 'Login failed' }));
-      throw new Error(err.error || 'Login failed');
-    }
-    const data = await res.json();
-    saveSession(data.token, data.user);
+    setUser(data.user);
     // Fire-and-forget: reschedule overdue tasks on login
     fetch(`${API}/tasks/reschedule`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${data.token}` },
+      credentials: 'include',
     }).catch(() => {});
   }, []);
 
   const register = useCallback(async (name: string, email: string, password: string) => {
-    const res = await fetch(`${API}/auth/register`, {
+    const data = await request<{ user: User }>(`${API}/auth/register`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, email, password }),
     });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: 'Registration failed' }));
-      throw new Error(err.error || 'Registration failed');
-    }
-    const data = await res.json();
-    saveSession(data.token, data.user);
+    setUser(data.user);
   }, []);
 
-  const logout = useCallback(() => {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
-    setToken(null);
+  const logout = useCallback(async () => {
+    try {
+      // Ask the server to clear the httpOnly cookie.
+      await fetch(`${API}/auth/logout`, { method: 'POST', credentials: 'include' });
+    } catch {
+      // Best-effort — clear local state regardless.
+    }
     setUser(null);
   }, []);
 
   const updateUser = useCallback((updatedUser: User) => {
-    localStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
     setUser(updatedUser);
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, token, isAuthenticated: !!token, isLoading, login, register, logout, updateUser }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isAuthenticated: !!user,
+        isLoading,
+        login,
+        register,
+        logout,
+        updateUser,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

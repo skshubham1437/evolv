@@ -1,9 +1,8 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   fetchDashboard, createTask, completeTask, deleteTask, updateTask,
-  fetchProjects, createProject, deleteProject,
-  type Task, type Project,
+  fetchProjects, createProject, deleteProject, fetchGoals,
+  type Task, type Project, type Goal,
 } from '../api';
 import { useToast } from '../context/ToastContext';
 
@@ -30,7 +29,7 @@ function PriorityBadge({ priority }: { priority: Priority }) {
 }
 
 function TaskRow({
-  task, onComplete, onDelete, onChangePriority, idx, projects, allTasks, subtasks = [], onAddSubtask, isTaskBlocked,
+  task, onComplete, onDelete, onChangePriority, idx, projects, allTasks, subtasks = [], onAddSubtask, isTaskBlocked, goals = [], onToggleUrgent, onToggleImportant, onChangeGoal,
 }: {
   task: Task;
   onComplete: (id: number) => void;
@@ -42,6 +41,10 @@ function TaskRow({
   subtasks?: Task[];
   onAddSubtask?: (parentId: number, title: string) => void;
   isTaskBlocked: (task: Task) => { blocked: boolean; blockingTitle?: string };
+  goals?: Goal[];
+  onToggleUrgent?: (id: number) => void;
+  onToggleImportant?: (id: number) => void;
+  onChangeGoal?: (id: number, goalId: number | null) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [completing, setCompleting] = useState(false);
@@ -103,6 +106,24 @@ function TaskRow({
                 </span>
               )}
 
+              {goals.find(g => g.id === task.goal_id) && (
+                <span className="font-label-sm text-[9px] uppercase tracking-widest px-2 py-0.5 border border-[var(--color-primary)]/20 bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-bold truncate max-w-[120px]">
+                  🎯 {goals.find(g => g.id === task.goal_id)?.title}
+                </span>
+              )}
+
+              {task.is_urgent && (
+                <span className="font-label-sm text-[9px] uppercase tracking-widest px-1.5 py-0.5 border border-[var(--color-error)]/25 bg-[var(--color-error)]/10 text-[var(--color-error)] font-bold">
+                  Urgent
+                </span>
+              )}
+
+              {task.is_important && (
+                <span className="font-label-sm text-[9px] uppercase tracking-widest px-1.5 py-0.5 border border-[var(--color-secondary)]/25 bg-[var(--color-secondary)]/10 text-[var(--color-secondary)] font-bold">
+                  Important
+                </span>
+              )}
+
               {blockCheck.blocked && (
                 <span className="material-symbols-outlined text-orange-400 text-[18px] select-none" title={`Blocked by: ${blockCheck.blockingTitle}`}>lock</span>
               )}
@@ -138,6 +159,41 @@ function TaskRow({
                       {PRIORITY_META[p].label}
                     </button>
                   ))}
+                </div>
+
+                <div className="flex items-center gap-6 flex-wrap" onClick={e => e.stopPropagation()}>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={task.is_urgent || false}
+                      onChange={() => onToggleUrgent && onToggleUrgent(task.id)}
+                      className="accent-[var(--color-primary)]"
+                    />
+                    <span className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest font-bold">Urgent</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={task.is_important || false}
+                      onChange={() => onToggleImportant && onToggleImportant(task.id)}
+                      className="accent-[var(--color-primary)]"
+                    />
+                    <span className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest font-bold">Important</span>
+                  </label>
+                  
+                  <div className="flex items-center gap-2">
+                    <span className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest font-bold">Goal:</span>
+                    <select
+                      value={task.goal_id || ''}
+                      onChange={e => onChangeGoal && onChangeGoal(task.id, e.target.value ? Number(e.target.value) : null)}
+                      className="bg-[var(--color-surface-container-high)] text-[11px] text-[var(--color-on-surface)] border border-[var(--color-outline-variant)] px-2 py-1 outline-none font-bold"
+                    >
+                      <option value="">None</option>
+                      {goals.map(g => (
+                        <option key={g.id} value={g.id}>{g.title}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
                 <form
@@ -190,7 +246,6 @@ function TaskRow({
 }
 
 export function TasksPage() {
-  const navigate = useNavigate();
   const { showToast } = useToast();
 
   const [tasks, setTasks]         = useState<Task[]>([]);
@@ -201,6 +256,12 @@ export function TasksPage() {
   const [newPriority, setNewPriority] = useState<Priority>('medium');
   const [showAdd, setShowAdd]     = useState(false);
   const [error, setError]         = useState<string | null>(null);
+
+  const [selectedGoalId, setSelectedGoalId] = useState<number | null>(null);
+  const [newIsUrgent, setNewIsUrgent]       = useState(false);
+  const [newIsImportant, setNewIsImportant] = useState(false);
+  const [goals, setGoals]                   = useState<Goal[]>([]);
+  const [viewMode, setViewMode]             = useState<'queue' | 'eisenhower'>('queue');
 
   const [collapsedProjects, setCollapsedProjects] = useState<Record<number, boolean>>({});
   const [showAddProject, setShowAddProject]       = useState(false);
@@ -219,9 +280,10 @@ export function TasksPage() {
 
   const load = async () => {
     try {
-      const [dashboardData, projectsData] = await Promise.all([fetchDashboard(), fetchProjects()]);
+      const [dashboardData, projectsData, goalsData] = await Promise.all([fetchDashboard(), fetchProjects(), fetchGoals()]);
       setTasks(dashboardData.tasks ?? []);
       setProjects(projectsData ?? []);
+      setGoals(goalsData ?? []);
     } catch {
       setError('Cannot reach the server.');
     } finally { setLoading(false); }
@@ -231,11 +293,50 @@ export function TasksPage() {
     e.preventDefault();
     if (!newTitle.trim()) return;
     try {
-      const t = await createTask(newTitle.trim(), newPriority, selectedProjectId, selectedParentTaskId, newTags.trim(), newDependencyId ? String(newDependencyId) : '');
+      const t = await createTask(
+        newTitle.trim(),
+        newPriority,
+        selectedProjectId,
+        selectedParentTaskId,
+        newTags.trim(),
+        newDependencyId ? String(newDependencyId) : '',
+        undefined,
+        selectedGoalId,
+        null,
+        newIsUrgent,
+        newIsImportant
+      );
       setTasks(p => [t, ...p]);
-      setNewTitle(''); setNewTags(''); setSelectedProjectId(null); setSelectedParentTaskId(null); setNewDependencyId(null); setShowAdd(false);
+      setNewTitle(''); setNewTags(''); setSelectedProjectId(null); setSelectedParentTaskId(null); setNewDependencyId(null); setSelectedGoalId(null); setNewIsUrgent(false); setNewIsImportant(false); setShowAdd(false);
       showToast('Action logged in Priority Queue', 'success');
+      if (selectedGoalId) {
+        fetchGoals().then(setGoals);
+      }
     } catch (e: any) { showToast(e.message || 'Failed to create task', 'error'); }
+  };
+
+  const handleToggleUrgent = async (id: number) => {
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+    const nextVal = !task.is_urgent;
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, is_urgent: nextVal } : t));
+    await updateTask(id, { is_urgent: nextVal });
+  };
+
+  const handleToggleImportant = async (id: number) => {
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+    const nextVal = !task.is_important;
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, is_important: nextVal } : t));
+    await updateTask(id, { is_important: nextVal });
+  };
+
+  const handleChangeGoal = async (id: number, goalId: number | null) => {
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, goal_id: goalId } : t));
+    await updateTask(id, { goal_id: goalId });
+    // Reload goals to refresh progress
+    const goalsData = await fetchGoals();
+    setGoals(goalsData ?? []);
   };
 
   const handleAddProject = async (e: FormEvent) => {
@@ -368,6 +469,25 @@ export function TasksPage() {
                   </span>
                 </button>
               ))}
+              <div className="w-px h-4 bg-[var(--color-outline-variant)]" />
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setViewMode('queue')}
+                  className={`font-label-sm text-[10px] uppercase tracking-widest font-bold px-3 py-1 border transition-colors ${
+                    viewMode === 'queue' ? 'text-[var(--color-primary)] border-[var(--color-primary)]/30 bg-[var(--color-primary)]/10' : 'text-[var(--color-outline)] border-transparent hover:text-[var(--color-on-surface)]'
+                  }`}
+                >
+                  List
+                </button>
+                <button
+                  onClick={() => setViewMode('eisenhower')}
+                  className={`font-label-sm text-[10px] uppercase tracking-widest font-bold px-3 py-1 border transition-colors ${
+                    viewMode === 'eisenhower' ? 'text-[var(--color-primary)] border-[var(--color-primary)]/30 bg-[var(--color-primary)]/10' : 'text-[var(--color-outline)] border-transparent hover:text-[var(--color-on-surface)]'
+                  }`}
+                >
+                  Eisenhower
+                </button>
+              </div>
             </div>
             <div className="flex gap-2">
               <button
@@ -433,7 +553,7 @@ export function TasksPage() {
                     className="w-full bg-transparent border-b border-[var(--color-surface-variant)] pb-1 text-[var(--color-on-surface)] font-body-md outline-none focus:border-[var(--color-primary)]"
                   />
                   
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <select value={selectedProjectId || ''} onChange={e => setSelectedProjectId(e.target.value ? parseInt(e.target.value) : null)}
                       className="w-full bg-transparent border-b border-[var(--color-surface-variant)] pb-1 text-[13px] text-[var(--color-on-surface)] outline-none focus:border-[var(--color-primary)]">
                       <option value="" className="bg-[var(--color-surface-container-high)]">No Project</option>
@@ -449,23 +569,53 @@ export function TasksPage() {
                       <option value="" className="bg-[var(--color-surface-container-high)]">No Dependency</option>
                       {tasks.filter(t => !t.is_completed).map(t => <option key={t.id} value={t.id} className="bg-[var(--color-surface-container-high)]">{t.title}</option>)}
                     </select>
+                    <select value={selectedGoalId || ''} onChange={e => setSelectedGoalId(e.target.value ? parseInt(e.target.value) : null)}
+                      className="w-full bg-transparent border-b border-[var(--color-surface-variant)] pb-1 text-[13px] text-[var(--color-on-surface)] outline-none focus:border-[var(--color-primary)]">
+                      <option value="" className="bg-[var(--color-surface-container-high)]">No Goal</option>
+                      {goals.map(g => <option key={g.id} value={g.id} className="bg-[var(--color-surface-container-high)]">{g.title}</option>)}
+                    </select>
                   </div>
 
                   <div className="flex items-center justify-between mt-2 flex-wrap gap-4">
-                    <div className="flex items-center gap-2">
-                      <span className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest font-bold">Priority:</span>
-                      <div className="flex gap-2">
-                        {(['high', 'medium', 'low'] as Priority[]).map(p => (
-                          <button
-                            type="button" key={p} onClick={() => setNewPriority(p)}
-                            className={`px-3 py-1 font-label-sm text-[10px] uppercase tracking-widest border transition-colors ${newPriority === p ? 'font-bold text-black' : 'text-[var(--color-outline)] border-[var(--color-surface-variant)] hover:border-[var(--color-outline-variant)]'}`}
-                            style={newPriority === p ? { backgroundColor: PRIORITY_META[p].color, borderColor: PRIORITY_META[p].color } : {}}
-                          >
-                            {p}
-                          </button>
-                        ))}
+                    <div className="flex items-center gap-6 flex-wrap">
+                      <div className="flex items-center gap-2">
+                        <span className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest font-bold">Priority:</span>
+                        <div className="flex gap-2">
+                          {(['high', 'medium', 'low'] as Priority[]).map(p => (
+                            <button
+                              type="button" key={p} onClick={() => setNewPriority(p)}
+                              className={`px-3 py-1 font-label-sm text-[10px] uppercase tracking-widest border transition-colors ${newPriority === p ? 'font-bold text-black' : 'text-[var(--color-outline)] border-[var(--color-surface-variant)] hover:border-[var(--color-outline-variant)]'}`}
+                              style={newPriority === p ? { backgroundColor: PRIORITY_META[p].color, borderColor: PRIORITY_META[p].color } : {}}
+                            >
+                              {p}
+                            </button>
+                          ))}
+                        </div>
                       </div>
+
+                      <div className="h-4 w-px bg-[var(--color-outline-variant)]" />
+
+                      <label className="flex items-center gap-2 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={newIsUrgent}
+                          onChange={e => setNewIsUrgent(e.target.checked)}
+                          className="accent-[var(--color-primary)]"
+                        />
+                        <span className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest font-bold">Urgent</span>
+                      </label>
+
+                      <label className="flex items-center gap-2 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={newIsImportant}
+                          onChange={e => setNewIsImportant(e.target.checked)}
+                          className="accent-[var(--color-primary)]"
+                        />
+                        <span className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest font-bold">Important</span>
+                      </label>
                     </div>
+
                     <div className="flex gap-4 items-center">
                       <input
                         value={newTags} onChange={e => setNewTags(e.target.value)}
@@ -487,6 +637,149 @@ export function TasksPage() {
                   <div className="h-24 bg-[var(--color-surface-container)] border border-[var(--color-surface-variant)]" />
                   <div className="h-24 bg-[var(--color-surface-container)] border border-[var(--color-surface-variant)]" />
                 </div>
+              ) : viewMode === 'eisenhower' ? (
+                (() => {
+                  const q1Tasks = filtered.filter(t => t.is_urgent && t.is_important && !t.parent_task_id);
+                  const q2Tasks = filtered.filter(t => !t.is_urgent && t.is_important && !t.parent_task_id);
+                  const q3Tasks = filtered.filter(t => t.is_urgent && !t.is_important && !t.parent_task_id);
+                  const q4Tasks = filtered.filter(t => !t.is_urgent && !t.is_important && !t.parent_task_id);
+
+                  return (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 anim-fade-up">
+                      {/* Q1: Urgent & Important */}
+                      <div className="bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] flex flex-col min-h-[350px]">
+                        <div className="p-4 border-b border-[var(--color-outline-variant)] bg-[var(--color-surface-container-lowest)] flex flex-col gap-1">
+                          <div className="flex items-center justify-between">
+                            <h3 className="font-label-sm text-[11px] font-bold uppercase tracking-widest text-[var(--color-error)] flex items-center gap-1.5">
+                              <span className="w-2 h-2 bg-[var(--color-error)]" />
+                              Q1: Urgent & Important
+                            </h3>
+                            <span className="font-mono text-[10px] px-1.5 py-0.5 border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-high)] text-[var(--color-outline)] font-bold">
+                              {q1Tasks.length}
+                            </span>
+                          </div>
+                          <span className="font-mono text-[9px] text-[var(--color-outline)] uppercase tracking-wider">Do First · Immediate Action Required</span>
+                        </div>
+                        <div className="flex-1 overflow-y-auto no-scrollbar divide-y divide-[var(--color-surface-variant)] p-2">
+                          {q1Tasks.length === 0 ? (
+                            <div className="text-center py-12 font-label-sm text-[10px] uppercase tracking-widest text-[var(--color-outline)] opacity-50">
+                              No actions in this quadrant.
+                            </div>
+                          ) : (
+                            q1Tasks.map((task, idx) => (
+                              <TaskRow
+                                key={task.id} task={task} idx={idx} onComplete={handleComplete} onDelete={handleDelete}
+                                onChangePriority={handlePriority} projects={projects} allTasks={tasks}
+                                subtasks={filtered.filter(t => t.parent_task_id === task.id)}
+                                onAddSubtask={handleAddSubtask} isTaskBlocked={isTaskBlocked}
+                                goals={goals} onToggleUrgent={handleToggleUrgent} onToggleImportant={handleToggleImportant} onChangeGoal={handleChangeGoal}
+                              />
+                            ))
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Q2: Important, Not Urgent */}
+                      <div className="bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] flex flex-col min-h-[350px]">
+                        <div className="p-4 border-b border-[var(--color-outline-variant)] bg-[var(--color-surface-container-lowest)] flex flex-col gap-1">
+                          <div className="flex items-center justify-between">
+                            <h3 className="font-label-sm text-[11px] font-bold uppercase tracking-widest text-[var(--color-secondary)] flex items-center gap-1.5">
+                              <span className="w-2 h-2 bg-[var(--color-secondary)]" />
+                              Q2: Important, Not Urgent
+                            </h3>
+                            <span className="font-mono text-[10px] px-1.5 py-0.5 border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-high)] text-[var(--color-outline)] font-bold">
+                              {q2Tasks.length}
+                            </span>
+                          </div>
+                          <span className="font-mono text-[9px] text-[var(--color-outline)] uppercase tracking-wider">Plan / Schedule · Strategic Development</span>
+                        </div>
+                        <div className="flex-1 overflow-y-auto no-scrollbar divide-y divide-[var(--color-surface-variant)] p-2">
+                          {q2Tasks.length === 0 ? (
+                            <div className="text-center py-12 font-label-sm text-[10px] uppercase tracking-widest text-[var(--color-outline)] opacity-50">
+                              No actions in this quadrant.
+                            </div>
+                          ) : (
+                            q2Tasks.map((task, idx) => (
+                              <TaskRow
+                                key={task.id} task={task} idx={idx} onComplete={handleComplete} onDelete={handleDelete}
+                                onChangePriority={handlePriority} projects={projects} allTasks={tasks}
+                                subtasks={filtered.filter(t => t.parent_task_id === task.id)}
+                                onAddSubtask={handleAddSubtask} isTaskBlocked={isTaskBlocked}
+                                goals={goals} onToggleUrgent={handleToggleUrgent} onToggleImportant={handleToggleImportant} onChangeGoal={handleChangeGoal}
+                              />
+                            ))
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Q3: Urgent, Not Important */}
+                      <div className="bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] flex flex-col min-h-[350px]">
+                        <div className="p-4 border-b border-[var(--color-outline-variant)] bg-[var(--color-surface-container-lowest)] flex flex-col gap-1">
+                          <div className="flex items-center justify-between">
+                            <h3 className="font-label-sm text-[11px] font-bold uppercase tracking-widest text-[var(--color-primary)] flex items-center gap-1.5">
+                              <span className="w-2 h-2 bg-[var(--color-primary)]" />
+                              Q3: Urgent, Not Important
+                            </h3>
+                            <span className="font-mono text-[10px] px-1.5 py-0.5 border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-high)] text-[var(--color-outline)] font-bold">
+                              {q3Tasks.length}
+                            </span>
+                          </div>
+                          <span className="font-mono text-[9px] text-[var(--color-outline)] uppercase tracking-wider">Delegate / Speed · Secondary Actions</span>
+                        </div>
+                        <div className="flex-1 overflow-y-auto no-scrollbar divide-y divide-[var(--color-surface-variant)] p-2">
+                          {q3Tasks.length === 0 ? (
+                            <div className="text-center py-12 font-label-sm text-[10px] uppercase tracking-widest text-[var(--color-outline)] opacity-50">
+                              No actions in this quadrant.
+                            </div>
+                          ) : (
+                            q3Tasks.map((task, idx) => (
+                              <TaskRow
+                                key={task.id} task={task} idx={idx} onComplete={handleComplete} onDelete={handleDelete}
+                                onChangePriority={handlePriority} projects={projects} allTasks={tasks}
+                                subtasks={filtered.filter(t => t.parent_task_id === task.id)}
+                                onAddSubtask={handleAddSubtask} isTaskBlocked={isTaskBlocked}
+                                goals={goals} onToggleUrgent={handleToggleUrgent} onToggleImportant={handleToggleImportant} onChangeGoal={handleChangeGoal}
+                              />
+                            ))
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Q4: Not Urgent & Not Important */}
+                      <div className="bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] flex flex-col min-h-[350px]">
+                        <div className="p-4 border-b border-[var(--color-outline-variant)] bg-[var(--color-surface-container-lowest)] flex flex-col gap-1">
+                          <div className="flex items-center justify-between">
+                            <h3 className="font-label-sm text-[11px] font-bold uppercase tracking-widest text-[var(--color-outline)] flex items-center gap-1.5">
+                              <span className="w-2 h-2 bg-[var(--color-outline)]" />
+                              Q4: Not Urgent & Not Important
+                            </h3>
+                            <span className="font-mono text-[10px] px-1.5 py-0.5 border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-high)] text-[var(--color-outline)] font-bold">
+                              {q4Tasks.length}
+                            </span>
+                          </div>
+                          <span className="font-mono text-[9px] text-[var(--color-outline)] uppercase tracking-wider">Eliminate / Postpone · Backburner</span>
+                        </div>
+                        <div className="flex-1 overflow-y-auto no-scrollbar divide-y divide-[var(--color-surface-variant)] p-2">
+                          {q4Tasks.length === 0 ? (
+                            <div className="text-center py-12 font-label-sm text-[10px] uppercase tracking-widest text-[var(--color-outline)] opacity-50">
+                              No actions in this quadrant.
+                            </div>
+                          ) : (
+                            q4Tasks.map((task, idx) => (
+                              <TaskRow
+                                key={task.id} task={task} idx={idx} onComplete={handleComplete} onDelete={handleDelete}
+                                onChangePriority={handlePriority} projects={projects} allTasks={tasks}
+                                subtasks={filtered.filter(t => t.parent_task_id === task.id)}
+                                onAddSubtask={handleAddSubtask} isTaskBlocked={isTaskBlocked}
+                                goals={goals} onToggleUrgent={handleToggleUrgent} onToggleImportant={handleToggleImportant} onChangeGoal={handleChangeGoal}
+                              />
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()
               ) : (
                 <>
                   {projects.map(proj => {
@@ -535,6 +828,7 @@ export function TasksPage() {
                                   onChangePriority={handlePriority} projects={projects} allTasks={tasks}
                                   subtasks={filtered.filter(t => t.parent_task_id === task.id)}
                                   onAddSubtask={handleAddSubtask} isTaskBlocked={isTaskBlocked}
+                                  goals={goals} onToggleUrgent={handleToggleUrgent} onToggleImportant={handleToggleImportant} onChangeGoal={handleChangeGoal}
                                 />
                               ))
                             )}
@@ -567,6 +861,7 @@ export function TasksPage() {
                                 onChangePriority={handlePriority} projects={projects} allTasks={tasks}
                                 subtasks={filtered.filter(t => t.parent_task_id === task.id)}
                                 onAddSubtask={handleAddSubtask} isTaskBlocked={isTaskBlocked}
+                                goals={goals} onToggleUrgent={handleToggleUrgent} onToggleImportant={handleToggleImportant} onChangeGoal={handleChangeGoal}
                               />
                             ))
                           )}

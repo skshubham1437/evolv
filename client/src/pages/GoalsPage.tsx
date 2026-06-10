@@ -15,6 +15,17 @@ const PRIORITY_META: Record<Priority, { label: string; bg: string; text: string 
   low:    { label: 'P3', bg: 'bg-[var(--color-outline)]', text: 'text-white' },
 };
 
+function formatDate(dateStr?: string) {
+  if (!dateStr || dateStr === 'Ongoing') return 'Ongoing';
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  } catch {
+    return dateStr;
+  }
+}
+
 function ProgressBar({ pct, colorClass = "bg-[var(--color-primary)]" }: { pct: number, colorClass?: string }) {
   return (
     <div className="flex items-center gap-3">
@@ -61,7 +72,7 @@ function GoalCard({
                 {pm.label}
               </span>
               <span className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest font-bold">
-                ETA: {goal.due_date}
+                ETA: {formatDate(goal.due_date)}
               </span>
             </div>
             <h4
@@ -162,7 +173,7 @@ function MilestoneNode({ m, onDelete, onToggleStatus }: { m: Milestone; onDelete
               <span className={`font-label-sm text-[10px] uppercase tracking-widest font-bold block mb-1.5 ${
                 isDone ? 'text-[var(--color-outline)]' : isActive ? 'text-[var(--color-secondary)]' : 'text-[var(--color-outline)]'
               }`}>
-                {m.quarter} · {m.date}
+                {m.quarter} · {formatDate(m.date)}
               </span>
               <h4 className={`text-[15px] font-semibold ${isActive ? 'text-[var(--color-on-surface)]/80' : isDone ? 'text-[var(--color-outline)] line-through' : 'text-[var(--color-on-surface-variant)]'}`}>
                 {m.title}
@@ -271,7 +282,7 @@ export function GoalsPage() {
     try {
       const created = await createGoal({
         title: newTitle.trim(), description: newDesc.trim(), priority: newPriority,
-        due_date: newDue || 'Ongoing', key_results: krs.length > 0 ? krs : ['Define key results']
+        due_date: newDue || '', key_results: krs.length > 0 ? krs : ['Define key results']
       });
       setGoals(gs => [created, ...gs]);
       setActiveGoalId(created.id);
@@ -330,7 +341,7 @@ export function GoalsPage() {
     try {
       await createMilestone(activeGoalId, {
         title: msTitle.trim(), description: msDesc.trim(), quarter: msQuarter,
-        date: msDate.trim() || 'Ongoing', status: msStatus,
+        date: msDate.trim() || '', status: msStatus,
       });
       setMsTitle(''); setMsDesc(''); setMsDate(''); setMsStatus('upcoming'); setShowAddMilestone(false);
       loadMilestones(activeGoalId);
@@ -402,7 +413,7 @@ export function GoalsPage() {
                       </label>
                       <label className="block">
                         <span className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest block mb-2">Target Date</span>
-                        <input value={newDue} onChange={e => setNewDue(e.target.value)} className="w-full bg-transparent border-b border-[var(--color-surface-variant)] pb-1 text-[var(--color-on-surface)] font-body-md outline-none focus:border-[var(--color-primary)]" />
+                        <input type="date" value={newDue} onChange={e => setNewDue(e.target.value)} className="w-full bg-transparent border-b border-[var(--color-surface-variant)] pb-1 text-[var(--color-on-surface)] font-body-md outline-none focus:border-[var(--color-primary)] [color-scheme:dark]" />
                       </label>
                     </div>
                     <label className="block">
@@ -484,7 +495,7 @@ export function GoalsPage() {
                       <select value={msQuarter} onChange={e => setMsQuarter(e.target.value)} className="w-full bg-transparent border-b border-[var(--color-surface-variant)] pb-1 text-[13px] text-[var(--color-on-surface)] outline-none focus:border-[var(--color-secondary)]">
                         {['Q1', 'Q2', 'Q3', 'Q4'].map(q => <option key={q} value={q} className="bg-[var(--color-surface-container-high)]">{q}</option>)}
                       </select>
-                      <input value={msDate} onChange={e => setMsDate(e.target.value)} placeholder="Target Date" className="w-full bg-transparent border-b border-[var(--color-surface-variant)] pb-1 text-[13px] text-[var(--color-on-surface)] outline-none focus:border-[var(--color-secondary)]" />
+                      <input type="date" value={msDate} onChange={e => setMsDate(e.target.value)} className="w-full bg-transparent border-b border-[var(--color-surface-variant)] pb-1 text-[13px] text-[var(--color-on-surface)] outline-none focus:border-[var(--color-secondary)] [color-scheme:dark]" />
                     </div>
                     <div className="flex gap-2 pt-2">
                       {(['upcoming', 'active', 'done'] as const).map(status => (

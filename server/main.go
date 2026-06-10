@@ -1,55 +1,57 @@
 package main
 
 import (
-	"fmt"
-	"log"
+	"context"
+	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 
 	"evolv-server/database"
 	"evolv-server/middleware"
-	"evolv-server/models"
 	"evolv-server/services"
 
 	"github.com/joho/godotenv"
 )
 
 func main() {
+	// Initialize slog default logger. JSON for production, readable text for local development.
+	var slogHandler slog.Handler
+	if os.Getenv("APP_ENV") == "production" || os.Getenv("APP_ENV") == "prod" {
+		slogHandler = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})
+	} else {
+		slogHandler = slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug})
+	}
+	slog.SetDefault(slog.New(slogHandler))
+
 	// Load .env file if exists
 	_ = godotenv.Load()
+
+	// ── Security: fail fast on weak JWT secret ────────────────────────
+	jwtSecret := os.Getenv("JWT_SECRET")
+	if jwtSecret == "" {
+		slog.Error("FATAL: JWT_SECRET environment variable is not set. Set it to a cryptographically random string of at least 32 characters. Example: openssl rand -hex 32")
+		os.Exit(1)
+	}
+	if len(jwtSecret) < 32 {
+		slog.Error("FATAL: JWT_SECRET is too short (minimum 32 characters). A weak secret allows token forgery attacks.")
+		os.Exit(1)
+	}
 
 	// Initialize database connection
 	database.Connect()
 
-	// Auto-migrate models
-	err := database.DB.AutoMigrate(
-		&models.User{},
-		&models.Task{},
-		&models.Habit{},
-		&models.HabitLog{},
-		&models.JournalEntry{},
-		&models.Vision{},
-		&models.Goal{},
-		&models.KeyResult{},
-		&models.Milestone{},
-		&models.FocusArea{},
-		&models.BucketListItem{},
-		&models.WeeklyPlan{},
-		&models.TimeBlock{},
-		&models.QuarterlyObjective{},
-		&models.MonthlyPlan{},
-		&models.Project{},
-	)
-	if err != nil {
-		log.Fatal("Failed to auto-migrate database:", err)
-	}
-	log.Println("Database migration complete")
+	// Apply pending SQL migrations (replaces GORM AutoMigrate).
+	// Migrations are embedded into the binary via go:embed in database/migrate.go.
+	// The server will exit if any migration fails.
+	database.RunMigrations()
 
 	// Init AI
 	if err := services.InitAI(); err != nil {
-		log.Println("Warning: AI initialization failed:", err)
+		slog.Warn("AI initialization failed", "error", err)
 	}
 
 	// Setup Routers (auth required) ---
@@ -68,6 +70,7 @@ func main() {
 	registerMonthlyRoutes(protectedMux)
 	registerAIRoutes(protectedMux)
 	registerProjectRoutes(protectedMux)
+	registerNotificationRoutes(protectedMux)
 
 	// --- Combine ---
 	rootMux := http.NewServeMux()
@@ -78,14 +81,47 @@ func main() {
 	// Protected routes (everything under /api/ except auth)
 	rootMux.Handle("/api/", middleware.JWTAuth(protectedMux))
 
-	// Wrap with CORS middleware
-	handler := corsMiddleware(rootMux)
+	// Prometheus metrics endpoint (publicly scrapable)
+	rootMux.Handle("/metrics", middleware.MetricsHandler())
+
+	// Wrap with MetricsMiddleware, RequestLogger, and CORS middleware
+	handler := middleware.MetricsMiddleware(middleware.RequestLogger(corsMiddleware(rootMux)))
+
+	// Start metrics collectors and background cleanup tasks
+	middleware.StartDBMetricsCollection(30 * time.Second)
+	startRateLimiterCleanup()
 
 	port := "8081"
-	fmt.Printf("🚀 Evolv API running on http://localhost:%s\n", port)
-	if err := http.ListenAndServe(":"+port, handler); err != nil {
-		log.Fatal(err)
+	srv := &http.Server{
+		Addr:         ":" + port,
+		Handler:      handler,
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 60 * time.Second, // 60s to allow long AI responses
+		IdleTimeout:  120 * time.Second,
 	}
+
+	// Start server in background
+	go func() {
+		slog.Info("Evolv API running", "addr", "http://localhost:"+port)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			slog.Error("Server failed to start", "error", err)
+			os.Exit(1)
+		}
+	}()
+
+	// Graceful shutdown on SIGTERM / SIGINT (e.g. docker stop, Ctrl+C).
+	// Gives in-flight requests up to 30 seconds to complete.
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
+	<-quit
+	slog.Info("Shutting down server — draining in-flight requests (max 30s)...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		slog.Error("Graceful shutdown timed out", "error", err)
+	}
+	slog.Info("Server stopped cleanly")
 }
 
 // corsMiddleware allows requests from a configurable origin (ALLOWED_ORIGIN env var).
@@ -98,7 +134,7 @@ func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", origin)
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
 
 		if r.Method == "OPTIONS" {
@@ -130,21 +166,8 @@ const (
 )
 
 // RateLimitAuth wraps a handler with IP-based rate limiting.
+// The cleanup goroutine is started exactly once via startRateLimiterCleanup().
 func RateLimitAuth(next http.HandlerFunc) http.HandlerFunc {
-	// Background cleanup of stale visitors every 5 minutes
-	go func() {
-		for {
-			time.Sleep(5 * time.Minute)
-			authLimiter.mu.Lock()
-			for ip, v := range authLimiter.visitors {
-				if time.Since(v.lastSeen) > 10*time.Minute {
-					delete(authLimiter.visitors, ip)
-				}
-			}
-			authLimiter.mu.Unlock()
-		}
-	}()
-
 	return func(w http.ResponseWriter, r *http.Request) {
 		ip := r.RemoteAddr
 
@@ -174,4 +197,21 @@ func RateLimitAuth(next http.HandlerFunc) http.HandlerFunc {
 
 		next.ServeHTTP(w, r)
 	}
+}
+
+// startRateLimiterCleanup starts a single background goroutine that evicts
+// stale IP entries from the rate limiter map every 5 minutes.
+func startRateLimiterCleanup() {
+	go func() {
+		for {
+			time.Sleep(5 * time.Minute)
+			authLimiter.mu.Lock()
+			for ip, v := range authLimiter.visitors {
+				if time.Since(v.lastSeen) > 10*time.Minute {
+					delete(authLimiter.visitors, ip)
+				}
+			}
+			authLimiter.mu.Unlock()
+		}
+	}()
 }
