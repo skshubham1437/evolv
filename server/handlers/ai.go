@@ -11,7 +11,15 @@ import (
 	"evolv-server/services"
 )
 
-func handleAIError(w http.ResponseWriter, err error, defaultMsg string) {
+func handleAIError(w http.ResponseWriter, r *http.Request, err error, defaultMsg string) {
+	userID := getUserIDFromCtx(r)
+	if userID != 0 {
+		status := services.GetAILimitStatus(userID)
+		w.Header().Set("X-RateLimit-Limit", fmt.Sprintf("%d", status.Burst))
+		w.Header().Set("X-RateLimit-Remaining", fmt.Sprintf("%d", status.Remaining))
+		w.Header().Set("X-RateLimit-Reset", fmt.Sprintf("%.0f", status.ResetSeconds))
+	}
+
 	if errors.Is(err, services.ErrCircuitOpen) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusServiceUnavailable)
@@ -47,7 +55,7 @@ func AIChat(w http.ResponseWriter, r *http.Request) {
 
 	response, err := services.GenerateChatResponse(r.Context(), prompt)
 	if err != nil {
-		handleAIError(w, err, "Failed to generate AI response")
+		handleAIError(w, r, err, "Failed to generate AI response")
 		return
 	}
 
@@ -75,7 +83,7 @@ func BreakDownGoalHandler(w http.ResponseWriter, r *http.Request) {
 
 	subtasks, err := services.BreakDownGoal(r.Context(), goal.Title, goal.Description)
 	if err != nil {
-		handleAIError(w, err, "Failed to break down goal")
+		handleAIError(w, r, err, "Failed to break down goal")
 		return
 	}
 
@@ -101,7 +109,7 @@ func GetMorningBrief(w http.ResponseWriter, r *http.Request) {
 
 	brief, err := services.GenerateMorningBrief(r.Context(), user.Name, tasks, habits)
 	if err != nil {
-		handleAIError(w, err, "Failed to generate morning brief")
+		handleAIError(w, r, err, "Failed to generate morning brief")
 		return
 	}
 
@@ -122,7 +130,7 @@ func GetAIInsights(w http.ResponseWriter, r *http.Request) {
 
 	insights, err := services.GenerateProductivityInsights(r.Context(), goals, tasks, habits)
 	if err != nil {
-		handleAIError(w, err, "Failed to generate insights")
+		handleAIError(w, r, err, "Failed to generate insights")
 		return
 	}
 
@@ -178,7 +186,7 @@ func GenerateWeeklyReviewHandler(w http.ResponseWriter, r *http.Request) {
 	// Generate review summary
 	summary, err := services.GenerateWeeklyReview(r.Context(), plan, weekScore, tasks, habits, journals)
 	if err != nil {
-		handleAIError(w, err, "Failed to generate AI weekly review")
+		handleAIError(w, r, err, "Failed to generate AI weekly review")
 		return
 	}
 
@@ -241,7 +249,7 @@ func GenerateMonthlyReviewHandler(w http.ResponseWriter, r *http.Request) {
 	// Generate review summary
 	summary, err := services.GenerateMonthlyReview(r.Context(), plan, goals, journals)
 	if err != nil {
-		handleAIError(w, err, "Failed to generate AI monthly review")
+		handleAIError(w, r, err, "Failed to generate AI monthly review")
 		return
 	}
 
@@ -250,4 +258,19 @@ func GenerateMonthlyReviewHandler(w http.ResponseWriter, r *http.Request) {
 	database.DB.Save(&plan)
 
 	respond(w, plan)
+}
+
+// GetAILimitStatusHandler handles GET /api/ai/limit-status
+func GetAILimitStatusHandler(w http.ResponseWriter, r *http.Request) {
+	userID := getUserIDFromCtx(r)
+	if userID == 0 {
+		http.Error(w, `{"error":"Unauthorized"}`, http.StatusUnauthorized)
+		return
+	}
+	status := services.GetAILimitStatus(userID)
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-RateLimit-Limit", fmt.Sprintf("%d", status.Burst))
+	w.Header().Set("X-RateLimit-Remaining", fmt.Sprintf("%d", status.Remaining))
+	w.Header().Set("X-RateLimit-Reset", fmt.Sprintf("%.0f", status.ResetSeconds))
+	respond(w, status)
 }

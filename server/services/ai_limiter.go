@@ -76,3 +76,50 @@ func CheckAILimit(userID uint) error {
 	b.tokens--
 	return nil
 }
+
+// AILimitStatus represents the current token bucket state for a user.
+type AILimitStatus struct {
+	Remaining    int     `json:"remaining"`
+	Burst        int     `json:"burst"`
+	ResetSeconds float64 `json:"reset_seconds"`
+}
+
+// GetAILimitStatus returns the current rate limit status for a user.
+func GetAILimitStatus(userID uint) AILimitStatus {
+	aiLimiter.mu.Lock()
+	defer aiLimiter.mu.Unlock()
+
+	b, exists := aiLimiter.buckets[userID]
+	if !exists {
+		return AILimitStatus{
+			Remaining:    int(aiLimiter.burst),
+			Burst:        int(aiLimiter.burst),
+			ResetSeconds: 0,
+		}
+	}
+
+	// Refill tokens based on elapsed time to get accurate current value.
+	elapsed := time.Since(b.lastSeen).Hours()
+	tokens := b.tokens + elapsed*aiLimiter.perHour
+	if tokens > aiLimiter.burst {
+		tokens = aiLimiter.burst
+	}
+
+	remaining := int(tokens)
+	if remaining < 0 {
+		remaining = 0
+	}
+
+	var resetSeconds float64
+	if tokens < aiLimiter.burst {
+		// Time to fully replenish to burst capacity
+		resetSeconds = (aiLimiter.burst - tokens) / (aiLimiter.perHour / 3600)
+	}
+
+	return AILimitStatus{
+		Remaining:    remaining,
+		Burst:        int(aiLimiter.burst),
+		ResetSeconds: resetSeconds,
+	}
+}
+

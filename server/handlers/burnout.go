@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"encoding/json"
-	"errors"
 	"net/http"
 	"time"
 
@@ -50,22 +48,9 @@ func GetBurnoutRisk(w http.ResponseWriter, r *http.Request) {
 		completionRate = float64(doneTasks+doneHabits) / float64(denominator) * 100.0
 	}
 
-	// 3. Call AI service to evaluate risk
 	risk, details, err := services.CalculateBurnoutRisk(r.Context(), moodHistory, energyHistory, completionRate)
 	if err != nil {
-		if errors.Is(err, services.ErrCircuitOpen) {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusServiceUnavailable)
-			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
-			return
-		}
-		if errors.Is(err, services.ErrAIRateLimited) {
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusTooManyRequests)
-			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
-			return
-		}
-		http.Error(w, `{"error":"failed to calculate risk"}`, http.StatusInternalServerError)
+		handleAIError(w, r, err, "failed to calculate risk")
 		return
 	}
 

@@ -105,6 +105,7 @@ func registerAIRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/ai/burnout-risk", handlers.GetBurnoutRisk)
 	mux.HandleFunc("POST /api/ai/weekly-review", handlers.GenerateWeeklyReviewHandler)
 	mux.HandleFunc("POST /api/ai/monthly-review", handlers.GenerateMonthlyReviewHandler)
+	mux.HandleFunc("GET /api/ai/limit-status", handlers.GetAILimitStatusHandler)
 }
 
 func registerPublicRoutes(mux *http.ServeMux) {
