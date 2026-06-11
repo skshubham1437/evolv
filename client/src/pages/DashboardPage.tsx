@@ -3,6 +3,7 @@ import { fetchDashboard, createTask, completeTask, logHabit, fetchMorningBrief, 
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
+import { useAI } from '../context/AIContext';
 
 // ─────────────────────────────────────────────────────────────
 // Unified blueprint item type
@@ -211,6 +212,7 @@ function BlueprintRow({
 export function DashboardPage() {
   const { user } = useAuth();
   const { showToast } = useToast();
+  const { aiEnabled } = useAI();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [habits, setHabits] = useState<(Habit & { completed_today: boolean })[]>([]);
   const [loading, setLoading] = useState(true);
@@ -239,30 +241,36 @@ export function DashboardPage() {
       setLoading(false);
     }
 
-    try {
-      const briefData = await fetchMorningBrief();
-      setBrief(briefData.brief);
-    } catch (e) {
-      console.error('Failed to fetch morning brief', e);
-    } finally {
+    if (aiEnabled) {
+      try {
+        const briefData = await fetchMorningBrief();
+        setBrief(briefData.brief);
+      } catch (e) {
+        console.error('Failed to fetch morning brief', e);
+      } finally {
+        setBriefLoading(false);
+      }
+
+      try {
+        const insightsData = await fetchAIInsights();
+        setInsights(insightsData);
+      } catch (e) {
+        console.error('Failed to fetch insights', e);
+      } finally {
+        setInsightsLoading(false);
+      }
+
+      try {
+        const riskData = await fetchBurnoutRisk();
+        setBurnoutRisk(riskData);
+      } catch (e) {
+        console.error('Failed to fetch burnout risk', e);
+      } finally {
+        setBurnoutLoading(false);
+      }
+    } else {
       setBriefLoading(false);
-    }
-
-    try {
-      const insightsData = await fetchAIInsights();
-      setInsights(insightsData);
-    } catch (e) {
-      console.error('Failed to fetch insights', e);
-    } finally {
       setInsightsLoading(false);
-    }
-
-    try {
-      const riskData = await fetchBurnoutRisk();
-      setBurnoutRisk(riskData);
-    } catch (e) {
-      console.error('Failed to fetch burnout risk', e);
-    } finally {
       setBurnoutLoading(false);
     }
   };
@@ -271,7 +279,7 @@ export function DashboardPage() {
     load();
     window.addEventListener('task-added-globally', load);
     return () => window.removeEventListener('task-added-globally', load);
-  }, []);
+  }, [aiEnabled]);
 
   // ── Build unified blueprint ──────────────────────────────────
   const blueprintItems = useMemo<BlueprintItem[]>(() => {
@@ -397,7 +405,8 @@ export function DashboardPage() {
         </section>
 
         {/* ── AI MORNING BRIEF ──────────────────────────────── */}
-        {briefLoading ? (
+        {aiEnabled && (
+          briefLoading ? (
           <div className="border border-[var(--color-outline-variant)]/40 bg-[var(--color-surface-container)] p-5 rounded-sm flex flex-col gap-3 animate-pulse">
             <div className="h-4 bg-[var(--color-surface-container-high)] w-1/4 rounded"></div>
             <div className="h-3 bg-[var(--color-surface-container-high)] w-full rounded"></div>
@@ -416,7 +425,8 @@ export function DashboardPage() {
               <FormatDashboardBrief text={brief} />
             </div>
           </div>
-        ) : null}
+        ) : null
+        )}
 
         {/* ── STATS ROW ──────────────────────────────────────── */}
         <div className="flex flex-col gap-4 mt-2">
@@ -464,7 +474,7 @@ export function DashboardPage() {
         </div>
 
         {/* ── BURNOUT ASSESSMENT ────────────────────────────── */}
-        {!burnoutLoading && (
+        {aiEnabled && !burnoutLoading && (
           <div className="border border-[var(--color-outline-variant)] bg-[var(--color-surface-container)] p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mt-2">
             <div className="flex items-center gap-4">
                <div className="w-10 h-10 rounded-full border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-high)] flex items-center justify-center shrink-0">
@@ -611,7 +621,8 @@ export function DashboardPage() {
              </div>
 
              {/* AI Coach Insights Widget */}
-             <div className="border border-[var(--color-outline-variant)] bg-[var(--color-surface-container)] p-5 flex flex-col gap-4 anim-fade-up">
+             {aiEnabled && (
+               <div className="border border-[var(--color-outline-variant)] bg-[var(--color-surface-container)] p-5 flex flex-col gap-4 anim-fade-up">
                 <div className="flex justify-between items-center border-b border-[var(--color-outline-variant)]/50 pb-2.5">
                   <h3 className="font-mono text-[11px] font-bold text-[var(--color-on-surface)] uppercase tracking-widest flex items-center gap-2">
                     <span className="material-symbols-outlined text-[14px] text-[var(--color-secondary)]">insights</span>
@@ -641,7 +652,8 @@ export function DashboardPage() {
                     ))}
                   </div>
                 )}
-             </div>
+               </div>
+             )}
 
              {/* Focus Mode Widget */}
              <div className="border border-[var(--color-outline-variant)] bg-[var(--color-surface-container)] overflow-hidden p-5 flex flex-col">

@@ -25,6 +25,7 @@ const SessionSummaryPage = React.lazy(() => import('./pages/SessionSummaryPage')
 const LoginPage = React.lazy(() => import('./pages/auth/LoginPage').then(m => ({ default: m.LoginPage })));
 const RegisterPage = React.lazy(() => import('./pages/auth/RegisterPage').then(m => ({ default: m.RegisterPage })));
 const OnboardingPage = React.lazy(() => import('./pages/auth/OnboardingPage').then(m => ({ default: m.OnboardingPage })));
+const ForgotPasswordPage = React.lazy(() => import('./pages/auth/ForgotPasswordPage').then(m => ({ default: m.ForgotPasswordPage })));
 const ShutdownPage = React.lazy(() => import('./pages/ShutdownPage').then(m => ({ default: m.ShutdownPage })));
 const LandingPage = React.lazy(() => import('./pages/LandingPage').then(m => ({ default: m.LandingPage })));
 
@@ -72,6 +73,7 @@ export default function App() {
                 {/* Public auth routes — no Layout wrapper */}
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
+                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
                 {/* Onboarding — Full screen, protected, but doesn't require onboarding itself */}
                 <Route path="/onboarding" element={

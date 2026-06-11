@@ -29,7 +29,7 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center p-6 relative bg-[var(--color-surface-container-lowest)] text-[var(--color-on-surface)] overflow-hidden font-mono selection:bg-[var(--color-primary)] selection:text-black">
+    <div className="min-h-screen w-full flex items-center justify-center p-6 py-12 relative bg-[var(--color-surface-container-lowest)] text-[var(--color-on-surface)] overflow-y-auto font-mono selection:bg-[var(--color-primary)] selection:text-black">
       {/* Boxy Grid Background */}
       <div className="absolute inset-0 pointer-events-none z-0">
         <div className="absolute inset-0 grid grid-cols-[repeat(auto-fill,minmax(80px,1fr))] grid-rows-[repeat(auto-fill,minmax(80px,1fr))] opacity-[0.04]">
@@ -85,10 +85,19 @@ export function LoginPage() {
             </div>
 
             <div className="space-y-2">
-              <label className="font-mono text-[12px] text-[var(--color-on-surface-variant)] font-bold uppercase tracking-widest block">
-                Security Key (Password)
-              </label>
+              <div className="flex items-center justify-between">
+                <label htmlFor="login-password" className="font-mono text-[12px] text-[var(--color-on-surface-variant)] font-bold uppercase tracking-widest block">
+                  Security Key (Password)
+                </label>
+                <Link
+                  to="/forgot-password"
+                  className="font-mono text-[10px] text-[var(--color-secondary)] hover:text-[var(--color-primary)] uppercase tracking-widest transition-colors"
+                >
+                  Forgot?
+                </Link>
+              </div>
               <input
+                id="login-password"
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}

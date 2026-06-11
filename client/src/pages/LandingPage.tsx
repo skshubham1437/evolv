@@ -112,6 +112,7 @@ export function LandingPage() {
   const [soundPlaying, setSoundPlaying] = useState(false);
   const [activeSound, setActiveSound] = useState('rain');
   const stopAudioRef = useRef<(() => void) | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const toggleSoundscape = () => {
     if (soundPlaying) {
@@ -188,13 +189,70 @@ export function LandingPage() {
             </Link>
             <Link 
               to="/register" 
-              className="px-6 py-2 border-2 border-[var(--color-primary)] bg-[var(--color-primary)] text-black font-mono text-sm font-bold uppercase shadow-[4px_4px_0px_var(--color-on-surface)] hover:bg-[var(--color-primary-fixed)] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all"
+              className="hidden sm:block px-6 py-2 border-2 border-[var(--color-primary)] bg-[var(--color-primary)] text-black font-mono text-sm font-bold uppercase shadow-[4px_4px_0px_var(--color-on-surface)] hover:bg-[var(--color-primary-fixed)] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all"
             >
               Initialize
             </Link>
+            <button
+              onClick={() => setMobileMenuOpen(prev => !prev)}
+              className="md:hidden w-10 h-10 border-2 border-[var(--color-outline-variant)] flex items-center justify-center hover:bg-[var(--color-on-surface)] hover:text-[var(--color-surface-container-lowest)] transition-colors active:translate-y-0.5 active:shadow-none shadow-[2px_2px_0px_var(--color-outline-variant)]"
+              aria-label="Toggle Menu"
+              aria-expanded={mobileMenuOpen}
+            >
+              <span className="material-symbols-outlined text-[20px]">
+                {mobileMenuOpen ? 'close' : 'menu'}
+              </span>
+            </button>
           </div>
         </div>
       </header>
+
+      {/* Mobile Drawer Overlay */}
+      {mobileMenuOpen && (
+        <div 
+          className="md:hidden fixed inset-0 z-40 bg-black/60 transition-opacity duration-200"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Mobile Drawer */}
+      <div 
+        className={`md:hidden fixed top-0 right-0 h-full w-64 bg-[var(--color-surface-container-lowest)] border-l-4 border-[var(--color-on-surface)] z-50 p-6 flex flex-col transition-transform duration-200 transform ${
+          mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
+        <div className="flex justify-between items-center mb-8 pb-4 border-b-2 border-[var(--color-outline-variant)]">
+          <span className="font-mono text-lg font-bold uppercase tracking-tight">Navigation</span>
+          <button 
+            onClick={() => setMobileMenuOpen(false)} 
+            className="w-8 h-8 border-2 border-[var(--color-outline)] flex items-center justify-center hover:bg-[var(--color-on-surface)] hover:text-[var(--color-surface-container-lowest)]"
+            aria-label="Close menu"
+          >
+            <span className="material-symbols-outlined text-[18px]">close</span>
+          </button>
+        </div>
+        <nav className="flex flex-col gap-6 font-mono text-md font-bold uppercase tracking-wider mb-8">
+          <a href="#features" onClick={() => setMobileMenuOpen(false)} className="hover:text-[var(--color-primary)] py-2 border-b border-[var(--color-outline-variant)]">Features</a>
+          <a href="#playground" onClick={() => setMobileMenuOpen(false)} className="hover:text-[var(--color-primary)] py-2 border-b border-[var(--color-outline-variant)]">Engine</a>
+          <a href="#pricing" onClick={() => setMobileMenuOpen(false)} className="hover:text-[var(--color-primary)] py-2 border-b border-[var(--color-outline-variant)]">Pricing</a>
+        </nav>
+        <div className="flex flex-col gap-4 mt-auto">
+          <Link 
+            to="/login" 
+            onClick={() => setMobileMenuOpen(false)}
+            className="w-full text-center py-3 border-2 border-[var(--color-outline)] font-mono text-sm font-bold uppercase hover:bg-[var(--color-on-surface)] hover:text-[var(--color-surface-container-lowest)] transition-colors shadow-[2px_2px_0px_var(--color-outline)] active:translate-y-0.5 active:shadow-none"
+          >
+            Access Node
+          </Link>
+          <Link 
+            to="/register" 
+            onClick={() => setMobileMenuOpen(false)}
+            className="w-full text-center py-3 border-2 border-[var(--color-primary)] bg-[var(--color-primary)] text-black font-mono text-sm font-bold uppercase shadow-[4px_4px_0px_var(--color-on-surface)] hover:bg-[var(--color-primary-fixed)] active:translate-x-1 active:translate-y-1 active:shadow-none transition-all"
+          >
+            Initialize
+          </Link>
+        </div>
+      </div>
 
       <main className="relative z-10 flex flex-col items-center">
 

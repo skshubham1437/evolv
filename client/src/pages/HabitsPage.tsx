@@ -1,6 +1,9 @@
 import { useEffect, useState, useMemo, type FormEvent } from 'react';
 import { fetchHabits, createHabit, logHabit, updateHabit, deleteHabit, fetchHabitsHeatmap, type Habit, type HeatmapDay } from '../api';
 import { Modal } from '../components/ui/Modal';
+import { ConfirmDialog } from '../components/ui/ConfirmDialog';
+import { useToast } from '../context/ToastContext';
+import { Skeleton, SkeletonRow, SkeletonHeatmap } from '../components/ui/Skeleton';
 
 // ── Heatmap ────────────────────────────────────────────────
 function ConsistencyHeatmap({ heatmapData }: { heatmapData: HeatmapDay[] }) {
@@ -264,6 +267,7 @@ function HabitCard({
 
 // ── Main Page ──────────────────────────────────────────────
 export function HabitsPage() {
+  const { showToast } = useToast();
   const [habits, setHabits]       = useState<Habit[]>([]);
   const [heatmapData, setHeatmapData] = useState<HeatmapDay[]>([]);
   const [isModalOpen, setModal]   = useState(false);
@@ -273,6 +277,7 @@ export function HabitsPage() {
   const [newStreakShieldActive, setNewStreakShieldActive] = useState(false);
   const [newStackAfterId, setNewStackAfterId] = useState<number | null>(null);
   const [loading, setLoading]     = useState(true);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
 
   useEffect(() => { load(); }, []);
 
@@ -316,13 +321,20 @@ export function HabitsPage() {
     setHabits(p => p.map(h => h.id === id ? { ...h, streak_shield_active: updated.streak_shield_active, streak_shields_remaining: updated.streak_shields_remaining } : h));
   };
 
-  const handleDelete = async (id: number) => {
-    await deleteHabit(id);
-    setHabits(p => p.filter(h => h.id !== id));
+  const handleDelete = (id: number) => {
+    setDeleteConfirmId(id);
+  };
+
+  const confirmDelete = async (id: number) => {
     try {
+      await deleteHabit(id);
+      setHabits(p => p.filter(h => h.id !== id));
+      showToast('Habit deleted', 'success');
       const heatmap = await fetchHabitsHeatmap();
       setHeatmapData(heatmap || []);
-    } catch (err) {}
+    } catch (err) {
+      showToast('Failed to delete habit', 'error');
+    }
   };
 
   const morning  = habits.filter(h => h.routine_type === 'morning');
@@ -372,70 +384,89 @@ export function HabitsPage() {
               </button>
             </div>
 
-            {/* ── Top stats grid ─────────────────────────────── */}
-            {!loading && (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                <ConsistencyHeatmap heatmapData={heatmapData} />
+            {/* ── Top stats grid & Routine sections ─────────────────────────────── */}
+            {loading ? (
+              <div className="space-y-8">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <div className="lg:col-span-2">
+                    <SkeletonHeatmap />
+                  </div>
+                  <div className="bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] p-6 space-y-4">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-6 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <div className="bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] p-4 px-6">
+                    <Skeleton className="h-4 w-32" />
+                  </div>
+                  <SkeletonRow />
+                  <SkeletonRow />
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                  <ConsistencyHeatmap heatmapData={heatmapData} />
 
-                <section className="bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] p-6">
-                  <h3 className="font-label-sm text-[11px] uppercase tracking-widest text-[var(--color-secondary)] font-bold flex items-center gap-2 mb-6">
-                    <span className="material-symbols-outlined text-[16px]">view_timeline</span>
-                    Today's Pulse
-                  </h3>
-                  
-                  <div className="space-y-6">
-                    <div>
-                      <div className="flex justify-between font-label-sm text-[11px] font-bold uppercase tracking-widest mb-2">
-                        <span className="text-[var(--color-outline)]">Completion</span>
-                        <span className="text-[var(--color-primary)]">{pct}%</span>
+                  <section className="bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] p-6">
+                    <h3 className="font-label-sm text-[11px] uppercase tracking-widest text-[var(--color-secondary)] font-bold flex items-center gap-2 mb-6">
+                      <span className="material-symbols-outlined text-[16px]">view_timeline</span>
+                      Today's Pulse
+                    </h3>
+                    
+                    <div className="space-y-6">
+                      <div>
+                        <div className="flex justify-between font-label-sm text-[11px] font-bold uppercase tracking-widest mb-2">
+                          <span className="text-[var(--color-outline)]">Completion</span>
+                          <span className="text-[var(--color-primary)]">{pct}%</span>
+                        </div>
+                        <div className="h-1.5 bg-[var(--color-surface-variant)] rounded-none overflow-hidden">
+                          <div
+                            className="h-full bg-[var(--color-primary)] transition-all duration-700"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
                       </div>
-                      <div className="h-1.5 bg-[var(--color-surface-variant)] rounded-none overflow-hidden">
-                        <div
-                          className="h-full bg-[var(--color-primary)] transition-all duration-700"
-                          style={{ width: `${pct}%` }}
-                        />
+
+                      <div>
+                        <p className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest mb-3 font-bold">Top Streaks</p>
+                        <div className="space-y-3">
+                          {[...habits].sort((a, b) => b.streak - a.streak).slice(0, 3).map(h => (
+                            <div key={h.id} className="flex items-center justify-between border-b border-[var(--color-surface-variant)] pb-2">
+                              <span className="font-body-md text-[13px] text-[var(--color-on-surface)]/80 font-semibold truncate max-w-[140px]">{h.title}</span>
+                              <span className="flex items-center gap-1 text-[var(--color-primary)] font-label-sm text-[11px] font-bold">
+                                <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>local_fire_department</span>
+                                {h.streak}d
+                              </span>
+                            </div>
+                          ))}
+                          {habits.length === 0 && <p className="text-[var(--color-outline)] text-[12px] font-bold uppercase tracking-widest">NO HABITS YET.</p>}
+                        </div>
                       </div>
                     </div>
+                  </section>
+                </div>
 
-                    <div>
-                      <p className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest mb-3 font-bold">Top Streaks</p>
-                      <div className="space-y-3">
-                        {[...habits].sort((a, b) => b.streak - a.streak).slice(0, 3).map(h => (
-                          <div key={h.id} className="flex items-center justify-between border-b border-[var(--color-surface-variant)] pb-2">
-                            <span className="font-body-md text-[13px] text-[var(--color-on-surface)]/80 font-semibold truncate max-w-[140px]">{h.title}</span>
-                            <span className="flex items-center gap-1 text-[var(--color-primary)] font-label-sm text-[11px] font-bold">
-                              <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>local_fire_department</span>
-                              {h.streak}d
-                            </span>
-                          </div>
-                        ))}
-                        {habits.length === 0 && <p className="text-[var(--color-outline)] text-[12px] font-bold uppercase tracking-widest">NO HABITS YET.</p>}
-                      </div>
+                <div className="flex flex-col gap-6">
+                  <RoutineSection title="Morning Sequence" icon="wb_twilight" habits={morning} allHabits={habits} onLog={handleLog} onMove={handleMove} onDelete={handleDelete} onToggleShield={handleToggleShield}
+                    colorClass="text-[var(--color-primary)]" badgeLabel="Morning" />
+                  <RoutineSection title="Night Sequence" icon="bedtime" habits={night} allHabits={habits} onLog={handleLog} onMove={handleMove} onDelete={handleDelete} onToggleShield={handleToggleShield}
+                    colorClass="text-[var(--color-tertiary)]" badgeLabel="Night" />
+                  <RoutineSection title="Anytime" icon="all_inclusive" habits={anytime} allHabits={habits} onLog={handleLog} onMove={handleMove} onDelete={handleDelete} onToggleShield={handleToggleShield}
+                    colorClass="text-[var(--color-secondary)]" badgeLabel="Flexible" />
+
+                  {habits.length === 0 && (
+                    <div className="text-center py-16 border border-dashed border-[var(--color-surface-variant)]">
+                      <p className="font-label-sm text-[11px] font-bold text-[var(--color-outline)] uppercase tracking-widest mb-4">SYSTEM IDLE. NO HABITS ESTABLISHED.</p>
+                      <button onClick={() => setModal(true)} className="px-6 py-2 bg-[var(--color-primary)] text-black font-label-sm text-[11px] font-bold uppercase tracking-widest hover:bg-[var(--color-primary-fixed)]">
+                        Initialize First Habit
+                      </button>
                     </div>
-                  </div>
-                </section>
-              </div>
-            )}
-
-            {/* ── Routine sections ───────────────────────────── */}
-            {!loading && (
-              <div className="flex flex-col gap-6">
-                <RoutineSection title="Morning Sequence" icon="wb_twilight" habits={morning} allHabits={habits} onLog={handleLog} onMove={handleMove} onDelete={handleDelete} onToggleShield={handleToggleShield}
-                  colorClass="text-[var(--color-primary)]" badgeLabel="Morning" />
-                <RoutineSection title="Night Sequence" icon="bedtime" habits={night} allHabits={habits} onLog={handleLog} onMove={handleMove} onDelete={handleDelete} onToggleShield={handleToggleShield}
-                  colorClass="text-[var(--color-tertiary)]" badgeLabel="Night" />
-                <RoutineSection title="Anytime" icon="all_inclusive" habits={anytime} allHabits={habits} onLog={handleLog} onMove={handleMove} onDelete={handleDelete} onToggleShield={handleToggleShield}
-                  colorClass="text-[var(--color-secondary)]" badgeLabel="Flexible" />
-
-                {habits.length === 0 && (
-                  <div className="text-center py-16 border border-dashed border-[var(--color-surface-variant)]">
-                    <p className="font-label-sm text-[11px] font-bold text-[var(--color-outline)] uppercase tracking-widest mb-4">SYSTEM IDLE. NO HABITS ESTABLISHED.</p>
-                    <button onClick={() => setModal(true)} className="px-6 py-2 bg-[var(--color-primary)] text-black font-label-sm text-[11px] font-bold uppercase tracking-widest hover:bg-[var(--color-primary-fixed)]">
-                      Initialize First Habit
-                    </button>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              </>
             )}
           </div>
         </div>
@@ -499,6 +530,17 @@ export function HabitsPage() {
           </div>
         </form>
       </Modal>
+
+      <ConfirmDialog
+        open={deleteConfirmId !== null}
+        onClose={() => setDeleteConfirmId(null)}
+        onConfirm={() => deleteConfirmId !== null && confirmDelete(deleteConfirmId)}
+        title="Delete Habit"
+        description="Are you sure you want to delete this habit? All progress and streaks will be permanently lost."
+        confirmText="Purge"
+        cancelText="Keep"
+        destructive={true}
+      />
     </div>
   );
 }

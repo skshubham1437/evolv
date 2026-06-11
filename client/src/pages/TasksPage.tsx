@@ -5,6 +5,7 @@ import {
   type Task, type Project, type Goal,
 } from '../api';
 import { useToast } from '../context/ToastContext';
+import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 
 type Filter = 'all' | 'pending' | 'done';
 type Priority = 'low' | 'medium' | 'high';
@@ -249,6 +250,8 @@ export function TasksPage() {
   const { showToast } = useToast();
 
   const [tasks, setTasks]         = useState<Task[]>([]);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  const [deleteProjectConfirmId, setDeleteProjectConfirmId] = useState<number | null>(null);
   const [projects, setProjects]   = useState<Project[]>([]);
   const [loading, setLoading]     = useState(true);
   const [filter, setFilter]       = useState<Filter>('pending');
@@ -350,7 +353,11 @@ export function TasksPage() {
     } catch (e: any) { showToast(e.message || 'Failed to create project', 'error'); }
   };
 
-  const handleDeleteProject = async (id: number) => {
+  const handleDeleteProject = (id: number) => {
+    setDeleteProjectConfirmId(id);
+  };
+
+  const confirmDeleteProject = async (id: number) => {
     try {
       await deleteProject(id);
       setProjects(prev => prev.filter(p => p.id !== id));
@@ -391,9 +398,16 @@ export function TasksPage() {
     setTasks(p => p.map(t => t.id === id ? { ...t, is_completed: true } : t));
   };
 
-  const handleDelete = async (id: number) => {
-    await deleteTask(id);
-    setTasks(p => p.filter(t => t.id !== id));
+  const handleDelete = (id: number) => {
+    setDeleteConfirmId(id);
+  };
+
+  const confirmDeleteTask = async (id: number) => {
+    try {
+      await deleteTask(id);
+      setTasks(p => p.filter(t => t.id !== id));
+      showToast('Task deleted', 'success');
+    } catch (e: any) { showToast(e.message || 'Failed to delete task', 'error'); }
   };
 
   const handlePriority = async (id: number, priority: Priority) => {
@@ -875,6 +889,28 @@ export function TasksPage() {
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={deleteConfirmId !== null}
+        onClose={() => setDeleteConfirmId(null)}
+        onConfirm={() => deleteConfirmId !== null && confirmDeleteTask(deleteConfirmId)}
+        title="Delete Task"
+        description="Are you sure you want to delete this task? This action cannot be undone."
+        confirmText="Purge"
+        cancelText="Keep"
+        destructive={true}
+      />
+
+      <ConfirmDialog
+        open={deleteProjectConfirmId !== null}
+        onClose={() => setDeleteProjectConfirmId(null)}
+        onConfirm={() => deleteProjectConfirmId !== null && confirmDeleteProject(deleteProjectConfirmId)}
+        title="Delete Project"
+        description="Are you sure you want to delete this project? Associated tasks will be detached but retained."
+        confirmText="Purge"
+        cancelText="Keep"
+        destructive={true}
+      />
     </div>
   );
 }

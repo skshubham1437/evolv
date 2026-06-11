@@ -5,7 +5,10 @@ import {
   type Goal, type SubtaskBreakdown, type Milestone
 } from '../api';
 import { Modal } from '../components/ui/Modal';
+import { ConfirmDialog } from '../components/ui/ConfirmDialog';
+import { SkeletonCard, SkeletonRow } from '../components/ui/Skeleton';
 import { useToast } from '../context/ToastContext';
+import { useAI } from '../context/AIContext';
 
 type Priority = 'high' | 'medium' | 'low';
 
@@ -45,6 +48,7 @@ function GoalCard({
   onDelete: (id: string | number) => void;
   onAiBreakdown: (goal: Goal) => void;
 }) {
+  const { aiEnabled } = useAI();
   const [expanded, setExpanded] = useState(idx === 0);
   const pm = PRIORITY_META[goal.priority] || PRIORITY_META['medium'];
   const keyResults = goal.key_results || [];
@@ -101,13 +105,15 @@ function GoalCard({
               <p className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest font-bold">
                 KEY RESULTS · {keyResults.filter(k => k.is_done).length}/{keyResults.length}
               </p>
-              <button
-                onClick={(e) => { e.stopPropagation(); onAiBreakdown(goal); }}
-                className="font-label-sm text-[10px] text-[var(--color-secondary)] hover:text-[var(--color-primary)] transition-colors flex items-center gap-1 uppercase tracking-widest font-bold"
-              >
-                <span className="material-symbols-outlined text-[12px]">auto_awesome</span>
-                AI Breakdown
-              </button>
+              {aiEnabled && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onAiBreakdown(goal); }}
+                  className="font-label-sm text-[10px] text-[var(--color-secondary)] hover:text-[var(--color-primary)] transition-colors flex items-center gap-1 uppercase tracking-widest font-bold"
+                >
+                  <span className="material-symbols-outlined text-[12px]">auto_awesome</span>
+                  AI Breakdown
+                </button>
+              )}
             </div>
             
             <div className="space-y-1.5">
@@ -223,6 +229,9 @@ export function GoalsPage() {
   const [msDate, setMsDate] = useState('');
   const [msStatus, setMsStatus] = useState<'upcoming' | 'active' | 'done'>('upcoming');
 
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | number | null>(null);
+  const [deleteMilestoneConfirmId, setDeleteMilestoneConfirmId] = useState<string | number | null>(null);
+
   useEffect(() => { loadGoals(true); }, []);
 
   const loadGoals = async (shouldSelectFirst = false) => {
@@ -266,7 +275,11 @@ export function GoalsPage() {
     } catch (e) { loadGoals(); }
   };
 
-  const handleDeleteGoal = async (id: string | number) => {
+  const handleDeleteGoal = (id: string | number) => {
+    setDeleteConfirmId(id);
+  };
+
+  const confirmDeleteGoal = async (id: string | number) => {
     try {
       setGoals(gs => gs.filter(g => g.id !== id));
       if (activeGoalId === id) setActiveGoalId(null);
@@ -331,9 +344,17 @@ export function GoalsPage() {
     } catch (e) { showToast('Update failed', 'error'); }
   };
 
-  const handleDeleteMilestone = async (id: string | number) => {
+  const handleDeleteMilestone = (id: string | number) => {
+    setDeleteMilestoneConfirmId(id);
+  };
+
+  const confirmDeleteMilestone = async (id: string | number) => {
     if (!activeGoalId) return;
-    try { await deleteMilestone(activeGoalId, id); loadMilestones(activeGoalId); } catch (e) {}
+    try {
+      await deleteMilestone(activeGoalId, id);
+      loadMilestones(activeGoalId);
+      showToast('Milestone deleted', 'success');
+    } catch (e) { showToast('Failed to delete milestone', 'error'); }
   };
 
   const handleAddMilestone = async () => {
@@ -444,9 +465,9 @@ export function GoalsPage() {
 
               <div className="flex flex-col gap-4">
                 {loading ? (
-                  <div className="animate-pulse space-y-4">
-                    <div className="h-32 bg-[var(--color-surface-container)] border border-[var(--color-surface-variant)]"></div>
-                    <div className="h-32 bg-[var(--color-surface-container)] border border-[var(--color-surface-variant)]"></div>
+                  <div className="space-y-4">
+                    <SkeletonCard />
+                    <SkeletonCard />
                   </div>
                 ) : goals.length === 0 ? (
                   <div className="text-center py-16 opacity-50 font-label-sm text-[11px] text-[var(--color-outline)] uppercase tracking-widest">NO GOALS ESTABLISHED.</div>
@@ -513,8 +534,9 @@ export function GoalsPage() {
               {!activeGoalId ? (
                 <div className="text-center py-16 opacity-50 font-label-sm text-[11px] text-[var(--color-outline)] uppercase tracking-widest">AWAITING GOAL SELECTION.</div>
               ) : loadingMilestones ? (
-                <div className="animate-pulse space-y-6 pl-12">
-                  <div className="h-20 bg-[var(--color-surface-container)] border border-[var(--color-surface-variant)]"></div>
+                <div className="space-y-3 pl-12">
+                  <SkeletonRow />
+                  <SkeletonRow />
                 </div>
               ) : milestones.length === 0 ? (
                 <div className="text-center py-16 opacity-50 font-label-sm text-[11px] text-[var(--color-outline)] uppercase tracking-widest">NO NODES ALLOCATED.</div>
@@ -561,6 +583,28 @@ export function GoalsPage() {
           </div>
         </div>
       </Modal>
+
+      <ConfirmDialog
+        open={deleteConfirmId !== null}
+        onClose={() => setDeleteConfirmId(null)}
+        onConfirm={() => deleteConfirmId !== null && confirmDeleteGoal(deleteConfirmId)}
+        title="Delete Goal"
+        description="Are you sure you want to delete this goal? All key results progress will be permanently lost."
+        confirmText="Purge"
+        cancelText="Keep"
+        destructive={true}
+      />
+
+      <ConfirmDialog
+        open={deleteMilestoneConfirmId !== null}
+        onClose={() => setDeleteMilestoneConfirmId(null)}
+        onConfirm={() => deleteMilestoneConfirmId !== null && confirmDeleteMilestone(deleteMilestoneConfirmId)}
+        title="Delete Milestone"
+        description="Are you sure you want to delete this milestone? This action cannot be undone."
+        confirmText="Purge"
+        cancelText="Keep"
+        destructive={true}
+      />
     </div>
   );
 }

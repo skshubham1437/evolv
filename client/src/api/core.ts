@@ -11,6 +11,8 @@ export function baseHeaders(): Record<string, string> {
   return { 'Content-Type': 'application/json' };
 }
 
+import { getFriendlyErrorMessage } from './errorMessages';
+
 export async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
   const res = await fetch(url, {
     ...options,
@@ -29,7 +31,7 @@ export async function request<T>(url: string, options: RequestInit = {}): Promis
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: 'Request failed' }));
-    throw new Error(err.error || 'Request failed');
+    throw new Error(getFriendlyErrorMessage(res.status, err.error));
   }
 
   if (res.status === 204) return undefined as T;

@@ -41,7 +41,7 @@ export function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center p-6 relative bg-[var(--color-surface-container-lowest)] text-[var(--color-on-surface)] overflow-hidden font-mono selection:bg-[var(--color-primary)] selection:text-black">
+    <div className="min-h-screen w-full flex items-center justify-center p-6 py-12 relative bg-[var(--color-surface-container-lowest)] text-[var(--color-on-surface)] overflow-y-auto font-mono selection:bg-[var(--color-secondary)] selection:text-black">
       {/* Boxy Grid Background */}
       <div className="absolute inset-0 pointer-events-none z-0">
         <div className="absolute inset-0 grid grid-cols-[repeat(auto-fill,minmax(80px,1fr))] grid-rows-[repeat(auto-fill,minmax(80px,1fr))] opacity-[0.04]">

@@ -1,10 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 
-	"evolv-server/database"
 	"evolv-server/handlers"
 )
 
@@ -110,25 +108,11 @@ func registerAIRoutes(mux *http.ServeMux) {
 }
 
 func registerPublicRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
-		sqlDB, err := database.DB.DB()
-		dbStatus := "ok"
-		if err != nil || sqlDB.Ping() != nil {
-			dbStatus = "error"
-		}
-		if dbStatus == "error" {
-			w.WriteHeader(http.StatusServiceUnavailable)
-		} else {
-			w.WriteHeader(http.StatusOK)
-		}
-		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprintf(w, `{"status":%q,"db":%q,"app":"evolv"}`,
-			map[bool]string{true: "ok", false: "degraded"}[dbStatus == "ok"],
-			dbStatus,
-		)
-	})
+	mux.HandleFunc("GET /health", handlers.HealthCheck)
+	mux.HandleFunc("GET /api/health", handlers.HealthCheck)
 	mux.HandleFunc("POST /api/auth/register", RateLimitAuth(handlers.Register))
 	mux.HandleFunc("POST /api/auth/login", RateLimitAuth(handlers.Login))
+	mux.HandleFunc("POST /api/auth/forgot-password", RateLimitAuth(handlers.ForgotPassword))
 }
 
 func registerProjectRoutes(mux *http.ServeMux) {

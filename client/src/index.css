@@ -34,7 +34,7 @@
   --color-on-primary-fixed: #25005a;
   --color-on-background: #e2e2e9;
   --color-on-surface: #e2e2e9;
-  --color-on-surface-variant: #9e97a7;
+  --color-on-surface-variant: #bdb7c8;
   --color-secondary-fixed-dim: #5adace;
   --color-secondary-fixed: #79f7ea;
   --color-error: #ffb4ab;
@@ -47,7 +47,7 @@
   --color-surface-container-low: #16161a;
   --color-primary-fixed: #eaddff;
   --color-on-tertiary: #352d41;
-  --color-outline: #6e6878;
+  --color-outline: #8f8999;
   --color-on-tertiary-container: #41384e;
   --color-tertiary-fixed: #eaddf9;
   --color-secondary-container: #01a89d;
@@ -104,6 +104,17 @@
 }
 
 @layer base {
+  /* ── Global focus-visible for keyboard navigation (WCAG 2.1 SC 2.4.7) ── */
+  :focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+
+  /* Remove focus outline for mouse users only */
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
   body {
     background-color: var(--color-background);
     color: var(--color-on-background);

@@ -8,7 +8,7 @@ interface Message {
 }
 
 export function AiChatPanel() {
-  const { isPanelOpen, closePanel, initialMessage, contextData } = useAI();
+  const { isPanelOpen, closePanel, initialMessage, contextData, aiEnabled } = useAI();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -35,7 +35,7 @@ export function AiChatPanel() {
     }
   }, [messages, isLoading]);
 
-  if (!isPanelOpen) return null;
+  if (!aiEnabled || !isPanelOpen) return null;
 
 
   const handleSend = async (text: string, ctx?: string) => {

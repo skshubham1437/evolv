@@ -45,6 +45,11 @@ func InitAI() error {
 	return nil
 }
 
+// IsAIEnabled reports whether the Gemini AI client is active and configured
+func IsAIEnabled() bool {
+	return aiClient != nil
+}
+
 // sanitizePromptInput strips control characters and defangs injection patterns.
 func sanitizePromptInput(input string, maxLen int) string {
 	if len(input) > maxLen {

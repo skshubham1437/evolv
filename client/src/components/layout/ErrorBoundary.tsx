@@ -71,13 +71,22 @@ export class ErrorBoundary extends Component<Props, State> {
               </details>
             )}
 
-            <button
-              onClick={this.handleReset}
-              className="w-full py-3 bg-[var(--color-error)] hover:brightness-110 text-black font-mono text-[11px] font-bold uppercase tracking-widest flex justify-center items-center gap-2 transition-colors rounded-sm"
-            >
-              <span className="material-symbols-outlined text-[14px]">refresh</span>
-              Restore Session
-            </button>
+            <div className="flex gap-2.5">
+              <button
+                onClick={this.handleReset}
+                className="flex-1 py-3 bg-[var(--color-error)] hover:brightness-110 text-black font-mono text-[11px] font-bold uppercase tracking-widest flex justify-center items-center gap-2 transition-colors rounded-sm"
+              >
+                <span className="material-symbols-outlined text-[14px]">refresh</span>
+                Restore
+              </button>
+              <a
+                href={`mailto:support@evolv.app?subject=Evolv%20Crash%20Report&body=Error:%20${encodeURIComponent(this.state.error?.toString() || '')}`}
+                className="flex-1 py-3 border border-[var(--color-outline-variant)] hover:bg-[var(--color-surface-container-high)] text-[var(--color-on-surface)] font-mono text-[11px] font-bold uppercase tracking-widest flex justify-center items-center gap-2 transition-colors rounded-sm text-center"
+              >
+                <span className="material-symbols-outlined text-[14px]">mail</span>
+                Report
+              </a>
+            </div>
           </div>
         </div>
       );

@@ -21,7 +21,12 @@ export function Layout({ children }: LayoutProps) {
   const { theme, toggleTheme } = useTheme();
   const { showToast } = useToast();
   
-  const [sidebarExpanded, setSidebarExpanded] = useState(false);
+  const [sidebarExpanded, setSidebarExpanded] = useState(() => {
+    try {
+      const saved = localStorage.getItem('evolv_sidebar_expanded');
+      return saved !== null ? saved === 'true' : true; // Default: expanded
+    } catch { return true; }
+  });
   const [moreOpen, setMoreOpen] = useState(false);
   const [quickCaptureOpen, setQuickCaptureOpen] = useState(false);
   
@@ -42,6 +47,15 @@ export function Layout({ children }: LayoutProps) {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  // Persist sidebar state
+  const handleSidebarToggle = () => {
+    setSidebarExpanded(prev => {
+      const next = !prev;
+      try { localStorage.setItem('evolv_sidebar_expanded', String(next)); } catch {}
+      return next;
+    });
+  };
 
   const handleQuickSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,7 +100,7 @@ export function Layout({ children }: LayoutProps) {
 
   return (
     <div className="text-[var(--color-on-surface)] font-body-md h-screen overflow-hidden flex flex-col md:flex-row relative">
-      <Sidebar expanded={sidebarExpanded} onToggle={() => setSidebarExpanded(!sidebarExpanded)} />
+      <Sidebar expanded={sidebarExpanded} onToggle={handleSidebarToggle} />
 
       {/* Main Content Area */}
       <main className={`flex-1 w-full flex flex-col h-screen overflow-hidden transition-[margin] duration-300 ease-in-out ${sidebarExpanded ? 'md:ml-60' : 'md:ml-14'}`}>
@@ -108,16 +122,19 @@ export function Layout({ children }: LayoutProps) {
           {/* Right side actions */}
           <button
             onClick={toggleTheme}
+            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             className="w-8 h-8 flex items-center justify-center text-[var(--color-outline)] hover:text-[var(--color-on-surface-variant)] transition-colors"
-            title={theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
           >
-            <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+            <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }} aria-hidden="true">
               {theme === 'dark' ? 'light_mode' : 'dark_mode'}
             </span>
           </button>
 
-          <button className="w-8 h-8 flex items-center justify-center text-[var(--color-outline)] hover:text-[var(--color-on-surface-variant)] transition-colors relative">
-            <span className="material-symbols-outlined text-[18px]">notifications</span>
+          <button
+            aria-label="Notifications"
+            className="w-8 h-8 flex items-center justify-center text-[var(--color-outline)] hover:text-[var(--color-on-surface-variant)] transition-colors relative"
+          >
+            <span className="material-symbols-outlined text-[18px]" aria-hidden="true">notifications</span>
           </button>
         </header>
 
@@ -130,24 +147,29 @@ export function Layout({ children }: LayoutProps) {
           <div className="flex items-center gap-1">
             <button
               onClick={() => setQuickCaptureOpen(true)}
+              aria-label="Quick capture a task"
               title="Quick Capture"
               className="w-9 h-9 flex items-center justify-center text-[var(--color-outline)] hover:text-[var(--color-on-surface-variant)] transition-colors"
             >
-              <span className="material-symbols-outlined text-[20px]">add</span>
+              <span className="material-symbols-outlined text-[20px]" aria-hidden="true">add</span>
             </button>
 
             <button
               onClick={toggleTheme}
+              aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
               title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
               className="w-9 h-9 flex items-center justify-center text-[var(--color-outline)] hover:text-[var(--color-on-surface-variant)] transition-colors"
             >
-              <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+              <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }} aria-hidden="true">
                 {theme === 'dark' ? 'light_mode' : 'dark_mode'}
               </span>
             </button>
 
-            <button className="w-9 h-9 flex items-center justify-center text-[var(--color-outline)] hover:text-[var(--color-on-surface-variant)] transition-colors relative">
-              <span className="material-symbols-outlined text-[20px]">notifications</span>
+            <button
+              aria-label="Notifications"
+              className="w-9 h-9 flex items-center justify-center text-[var(--color-outline)] hover:text-[var(--color-on-surface-variant)] transition-colors relative"
+            >
+              <span className="material-symbols-outlined text-[20px]" aria-hidden="true">notifications</span>
             </button>
           </div>
         </header>

@@ -136,23 +136,20 @@ Parses custom date formats dynamically, allowing smooth integrations with standa
 
 ```go
 func parseDateString(s string) (*time.Time, error) {
-	if s == "" || s == "Ongoing" {
+	if s == "" || s == "Ongoing" || s == "null" {
 		return nil, nil
 	}
-	// Try RFC3339 format
-	if t, err := time.Parse(time.RFC3339, s); err == nil {
+	// Try YYYY-MM-DD
+	t, err := time.Parse("2006-01-02", s)
+	if err == nil {
 		return &t, nil
 	}
-	// Try YYYY-MM-DD HTML5 format
-	if t, err := time.Parse("2006-01-02", s); err == nil {
+	// Try RFC3339
+	t, err = time.Parse(time.RFC3339, s)
+	if err == nil {
 		return &t, nil
 	}
-	// Try Month Day format (falls back to current year 2026)
-	if t, err := time.Parse("January 2", s); err == nil {
-		y2026 := time.Date(2026, t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
-		return &y2026, nil
-	}
-	return nil, fmt.Errorf("invalid date format: %s", s)
+	return nil, err
 }
 ```
 
@@ -165,32 +162,34 @@ $$\text{Goal Progress \%} = \frac{\text{Completed Key Results} + \text{Completed
 
 ```go
 func UpdateGoalProgress(tx *gorm.DB, goalID uint) error {
-	var goal models.Goal
-	if err := tx.Preload("KeyResults").First(&goal, goalID).Error; err != nil {
+	var krs []models.KeyResult
+	if err := tx.Where("goal_id = ?", goalID).Find(&krs).Error; err != nil {
+		return err
+	}
+	var tasks []models.Task
+	if err := tx.Where("goal_id = ? AND deleted_at IS NULL", goalID).Find(&tasks).Error; err != nil {
 		return err
 	}
 
-	var krCount, krDone int64
-	krCount = int64(len(goal.KeyResults))
-	for _, kr := range goal.KeyResults {
+	totalItems := len(krs) + len(tasks)
+	if totalItems == 0 {
+		return tx.Model(&models.Goal{}).Where("id = ?", goalID).Update("progress", 0).Error
+	}
+
+	doneItems := 0
+	for _, kr := range krs {
 		if kr.IsDone {
-			krDone++
+			doneItems++
+		}
+	}
+	for _, t := range tasks {
+		if t.IsCompleted {
+			doneItems++
 		}
 	}
 
-	var taskCount, taskDone int64
-	tx.Model(&models.Task{}).Where("goal_id = ?", goalID).Count(&taskCount)
-	tx.Model(&models.Task{}).Where("goal_id = ? AND is_completed = true", goalID).Count(&taskDone)
-
-	totalPoints := krCount + taskCount
-	donePoints := krDone + taskDone
-
-	var progress int
-	if totalPoints > 0 {
-		progress = int((float64(donePoints) / float64(totalPoints)) * 100)
-	}
-
-	return tx.Model(&goal).Update("progress", progress).Error;
+	progress := (doneItems * 100) / totalItems
+	return tx.Model(&models.Goal{}).Where("id = ?", goalID).Update("progress", progress).Error
 }
 ```
 

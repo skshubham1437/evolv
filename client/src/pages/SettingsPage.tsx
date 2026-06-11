@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { useToast } from '../context/ToastContext';
 import { request } from '../api';
+import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 
 // ─── Toggle Node ────────────────────────────────────────────
 function ToggleNode({
@@ -73,6 +74,7 @@ export function SettingsPage() {
   const navigate = useNavigate();
 
   const [name, setName]   = useState(user?.name || 'Builder');
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
   const [email, setEmail] = useState(user?.email || 'builder@evolv.net');
   const [saved, setSaved] = useState(false);
   const [currentPasswordForEmail, setCurrentPasswordForEmail] = useState('');
@@ -443,7 +445,7 @@ export function SettingsPage() {
             {/* ── Actions ───────────────────────────────────── */}
             <div className="flex gap-4 mt-4">
               <button
-                onClick={async () => { await logout(); navigate('/login'); }}
+                onClick={() => setShowSignOutConfirm(true)}
                 className="flex-[1] py-4 bg-transparent border border-[var(--color-error)] text-[var(--color-error)] hover:bg-[var(--color-error)] hover:text-black font-label-sm text-[11px] font-bold uppercase tracking-widest transition-colors flex items-center justify-center gap-2"
               >
                 <span className="material-symbols-outlined text-[16px]">logout</span>
@@ -475,6 +477,20 @@ export function SettingsPage() {
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={showSignOutConfirm}
+        onClose={() => setShowSignOutConfirm(false)}
+        onConfirm={async () => {
+          await logout();
+          navigate('/login');
+        }}
+        title="Sign Out"
+        description="Are you sure you want to sign out? You will need to re-authenticate to access your node."
+        confirmText="Sign Out"
+        cancelText="Cancel"
+        destructive={true}
+      />
     </div>
   );
 }
