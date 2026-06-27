@@ -3,6 +3,7 @@ name: Build & Deploy
 on:
   push:
     branches: [main, master]
+  workflow_dispatch:
 
 jobs:
   # ─── CI: Test Backend ──────────────────────────────────
@@ -16,9 +17,14 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.25"
+          go-version: "1.24"
           cache: true
           cache-dependency-path: server/go.sum
+
+      - name: Run Go vet
+        run: |
+          cd server
+          go vet ./...
 
       - name: Run Go Tests
         run: |
@@ -46,7 +52,7 @@ jobs:
       - name: Build (includes tsc type-checks)
         run: cd client && npm run build
 
-  # ─── Build & Push Docker Images ─────────────────────────
+  # ─── Build & Push Docker Images ────────────────────────
   build-and-push:
     name: Build & Push Docker Images
     needs: [test-backend, test-frontend]
@@ -96,6 +102,18 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Copy docker-compose.prod.yml to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.HETZNER_HOST }}
+          username: ${{ secrets.HETZNER_USER }}
+          key: ${{ secrets.HETZNER_SSH_KEY }}
+          source: "docker-compose.prod.yml"
+          target: "/opt/evolv/"
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
         with:
@@ -103,8 +121,28 @@ jobs:
           username: ${{ secrets.HETZNER_USER }}
           key: ${{ secrets.HETZNER_SSH_KEY }}
           script: |
-            cd /opt/evolv
+            set -e
+
+            DEPLOY_DIR="/opt/evolv"
+            cd "$DEPLOY_DIR"
+
+            # Inject env vars for docker compose interpolation
+            export DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}
+
+            # Pull the latest images from Docker Hub
             docker compose -f docker-compose.prod.yml pull
+
+            # Recreate containers with new images, keep other services up
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
-            docker image prune -f
+
+            # Wait for containers to initialise
+            echo "⏳ Waiting for containers to start..."
+            sleep 10
+
             echo "✅ Evolv deployed successfully at $(date)"
+
+            # Prune old dangling images to free disk space
+            docker image prune -f
+            docker images ${{ secrets.DOCKERHUB_USERNAME }}/evolv-server --format "{{.ID}} {{.Tag}}" | grep -v latest | awk '{print $1}' | xargs -r docker rmi -f || true
+            docker images ${{ secrets.DOCKERHUB_USERNAME }}/evolv-client --format "{{.ID}} {{.Tag}}" | grep -v latest | awk '{print $1}' | xargs -r docker rmi -f || true
+            echo "🧹 Old images cleaned up"
