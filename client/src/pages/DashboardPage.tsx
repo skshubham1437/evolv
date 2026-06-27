@@ -239,6 +239,12 @@ export function DashboardPage() {
   const [focusTimeLeft, setFocusTimeLeft] = useState(1500);
   const [focusIsRunning, setFocusIsRunning] = useState(false);
   const focusPercent = (focusTimeLeft / 1500) * 100;
+  
+  // Trig calculations for glowing progress head dot
+  const focusAngle = (focusTimeLeft / 1500) * 360 - 90;
+  const focusRad = (focusAngle * Math.PI) / 180;
+  const focusHeadX = 50 + 42 * Math.cos(focusRad);
+  const focusHeadY = 50 + 42 * Math.sin(focusRad);
 
   useEffect(() => {
     let interval: number | null = null;
@@ -457,7 +463,7 @@ export function DashboardPage() {
         {!loading && tasks.filter(t => !t.is_completed && t.priority === 'high').length > 0 && (() => {
           const focusTask = tasks.filter(t => !t.is_completed && t.priority === 'high')[0];
           return (
-            <div className="focus-card glass-card border-[rgba(255,255,255,0.06)] rounded-2xl p-5 flex items-center justify-between gap-6 anim-fade-up shadow-[0_10px_30px_rgba(0,0,0,0.3)] hover:border-[var(--color-primary)]/30 transition-all duration-300">
+            <div className="focus-card glass-card border-[rgba(255,255,255,0.06)] rounded-2xl p-5 flex items-center justify-between gap-6 anim-fade-up anim-delay-100 shadow-[0_10px_30px_rgba(0,0,0,0.3)] hover:border-[var(--color-primary)]/30 transition-all duration-300">
               <div className="flex items-center gap-4 min-w-0">
                 <div className="w-11 h-11 rounded-xl bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/20 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(210,187,255,0.1)]">
                   <span className="material-symbols-outlined text-[18px] text-[var(--color-primary)]" style={{ fontVariationSettings: "'FILL' 1" }}>adjust</span>
@@ -487,7 +493,7 @@ export function DashboardPage() {
             <div className="h-3 bg-[rgba(255,255,255,0.04)] w-5/6 rounded"></div>
           </div>
         ) : brief ? (
-          <div className="glass-card glow-card rounded-3xl p-8 relative overflow-hidden flex flex-col gap-5 anim-fade-up border-[rgba(255,255,255,0.05)] bg-[var(--color-surface)]/10 backdrop-blur-3xl shadow-[0_12px_40px_rgba(0,0,0,0.4)]">
+          <div className="glass-card glow-card rounded-3xl p-8 relative overflow-hidden flex flex-col gap-5 anim-fade-up anim-delay-200 border-[rgba(255,255,255,0.05)] bg-[var(--color-surface)]/10 backdrop-blur-3xl shadow-[0_12px_40px_rgba(0,0,0,0.4)]">
             <div className="absolute right-8 top-8 opacity-[0.02] pointer-events-none select-none">
               <span className="material-symbols-outlined text-[140px] text-[var(--color-primary)]">psychology</span>
             </div>
@@ -504,7 +510,7 @@ export function DashboardPage() {
 
         {/* ── STATS ROW ──────────────────────────────────────── */}
         <div className="flex flex-col gap-4 mt-2">
-          <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 anim-fade-up">
+          <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 anim-fade-up anim-delay-300">
             {/* Card 1: Execution */}
             <div className="glass-card rounded-2xl p-6 flex items-center justify-between border border-[rgba(255,255,255,0.05)] border-t-[3px] border-t-[var(--color-primary)] hover:border-[var(--color-primary)]/30 hover:scale-[1.02] hover:shadow-[0_8px_30px_rgba(210,187,255,0.06)] transition-all duration-300">
               <div className="flex flex-col gap-1.5">
@@ -599,7 +605,7 @@ export function DashboardPage() {
         )}
 
         {/* ── TWO COLUMN LAYOUT ─────────────────────────────── */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8 mt-4">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8 mt-4 anim-fade-up anim-delay-400">
            
            {/* LEFT COLUMN */}
            <div className="flex flex-col gap-6">
@@ -776,37 +782,91 @@ export function DashboardPage() {
                 <div className="py-4 flex flex-col items-center justify-center relative">
                   {/* SVG Circular Dial */}
                   <div className="relative w-40 h-40 flex items-center justify-center">
-                    <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                      {/* Glow Filter */}
+                    <svg className="w-full h-full transform -rotate-90 overflow-visible" viewBox="0 0 100 100">
+                      {/* Defs and gradients */}
                       <defs>
-                        <filter id="focus-glow" x="-20%" y="-20%" width="140%" height="140%">
-                          <feGaussianBlur stdDeviation="3" result="blur" />
+                        <filter id="focus-glow" x="-25%" y="-25%" width="150%" height="150%">
+                          <feGaussianBlur stdDeviation="1.5" result="blur" />
                           <feComposite in="SourceGraphic" in2="blur" operator="over" />
                         </filter>
+                        <linearGradient id="widget-sweep" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.5" />
+                          <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0" />
+                        </linearGradient>
                       </defs>
-                      {/* Track */}
-                      <circle
-                        cx="50"
-                        cy="50"
-                        r="42"
-                        className="stroke-white/[0.04] fill-none"
-                        strokeWidth="3"
+
+                      {/* 12 Small Hour/Minute Ticks */}
+                      {Array.from({ length: 12 }).map((_, i) => {
+                        const deg = i * 30;
+                        const isQuarter = i % 3 === 0;
+                        return (
+                          <line
+                            key={i}
+                            x1="50"
+                            y1="4.5"
+                            x2="50"
+                            y2={isQuarter ? "7.5" : "6.5"}
+                            stroke={isQuarter ? "rgba(255, 255, 255, 0.25)" : "rgba(255, 255, 255, 0.08)"}
+                            strokeWidth={isQuarter ? "0.8" : "0.5"}
+                            transform={`rotate(${deg} 50 50)`}
+                          />
+                        );
+                      })}
+
+                      {/* Faint Outer Ring */}
+                      <circle cx="50" cy="50" r="47.5" fill="none" stroke="rgba(255, 255, 255, 0.015)" strokeWidth="0.5" />
+
+                      {/* Base Track */}
+                      <circle cx="50" cy="50" r="42" className="stroke-white/[0.04] fill-none" strokeWidth="2.5" />
+
+                      {/* Inner Accent Ring */}
+                      <circle cx="50" cy="50" r="37.5" fill="none" stroke="rgba(255, 255, 255, 0.02)" strokeWidth="1" />
+                      <circle cx="50" cy="50" r="37.5" fill="none" stroke="var(--color-secondary)" strokeWidth="1"
+                        strokeDasharray={2 * Math.PI * 37.5}
+                        strokeDashoffset={2 * Math.PI * 37.5 * (1 - focusPercent / 100)}
+                        opacity="0.3"
+                        style={{
+                          transition: 'stroke-dashoffset 0.5s ease-out',
+                        }}
                       />
-                      {/* Progress with glow */}
+
+                      {/* Main Progress Arc */}
                       <circle
                         cx="50"
                         cy="50"
                         r="42"
                         className="stroke-[var(--color-primary)] fill-none transition-all duration-500 ease-out"
-                        strokeWidth="3.5"
+                        strokeWidth="3"
                         strokeDasharray={2 * Math.PI * 42}
                         strokeDashoffset={2 * Math.PI * 42 * (1 - focusPercent / 100)}
                         strokeLinecap="round"
                         filter="url(#focus-glow)"
-                        style={{
-                          transformOrigin: '50% 50%',
-                        }}
                       />
+
+                      {/* Progress Head Dot */}
+                      {focusPercent > 0.5 && (
+                        <circle
+                          cx={focusHeadX}
+                          cy={focusHeadY}
+                          r="1.8"
+                          fill="var(--color-primary)"
+                          filter="url(#focus-glow)"
+                          style={{
+                            transition: 'cx 0.5s ease-out, cy 0.5s ease-out',
+                          }}
+                        />
+                      )}
+
+                      {/* Rotating Radar Sweep when active */}
+                      {focusIsRunning && (
+                        <circle cx="50" cy="50" r="42" fill="none" stroke="url(#widget-sweep)" strokeWidth="3"
+                          strokeDasharray={`${2 * Math.PI * 42 * 0.12} ${2 * Math.PI * 42}`}
+                          style={{
+                            transformOrigin: '50px 50px',
+                            animation: 'spin 6s linear infinite',
+                          }}
+                        />
+                      )}
                     </svg>
                     
                     {/* Time Text */}
