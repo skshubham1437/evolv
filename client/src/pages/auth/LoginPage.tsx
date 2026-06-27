@@ -29,49 +29,46 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center p-6 py-12 relative bg-[var(--color-surface-container-lowest)] text-[var(--color-on-surface)] overflow-y-auto font-mono selection:bg-[var(--color-primary)] selection:text-black">
-      {/* Boxy Grid Background */}
-      <div className="absolute inset-0 pointer-events-none z-0">
-        <div className="absolute inset-0 grid grid-cols-[repeat(auto-fill,minmax(80px,1fr))] grid-rows-[repeat(auto-fill,minmax(80px,1fr))] opacity-[0.04]">
-          {Array.from({ length: 300 }).map((_, i) => (
-            <div key={i} className="border-r border-b border-[var(--color-on-surface)]" />
-          ))}
-        </div>
+    <div className="min-h-screen w-full flex items-center justify-center p-6 py-12 relative overflow-y-auto bg-ambient-mesh text-[var(--color-on-surface)]">
+      {/* Ambient background blobs */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-[rgba(108,74,176,0.1)] blur-[100px] animate-ambient-pulse" />
+        <div className="absolute -bottom-[15%] -right-[10%] w-[40%] h-[40%] rounded-full bg-[rgba(90,218,206,0.05)] blur-[80px] animate-ambient-pulse" style={{ animationDelay: '4s' }} />
       </div>
 
       <div className="w-full max-w-md relative z-10 flex flex-col gap-8">
         
         {/* Logo */}
         <div className="text-center">
-          <Link to="/" className="inline-block border-2 border-[var(--color-primary)] px-4 py-2 mb-4 bg-[var(--color-primary)]/10 shadow-[4px_4px_0px_var(--color-primary)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all">
-            <h1 className="font-mono text-4xl font-bold tracking-tighter text-[var(--color-primary)] uppercase">
+          <Link to="/" className="inline-block px-4 py-2 mb-2 hover:scale-105 transition-transform">
+            <h1 className="font-title-md text-4xl font-bold tracking-tight text-gradient-primary">
               Evolv
             </h1>
           </Link>
-          <p className="font-mono text-[12px] text-[var(--color-outline)] uppercase tracking-widest font-bold">
-            System Authentication
+          <p className="text-sm text-[var(--color-outline)] font-medium">
+            Welcome back
           </p>
         </div>
 
         {/* Login Card */}
-        <div className="bg-[var(--color-surface-container)] border-4 border-[var(--color-on-surface)] p-8 shadow-[12px_12px_0px_var(--color-on-surface)]">
+        <div className="glass-card glow-card glow-shadow-primary rounded-2xl p-8 shadow-xl">
           
-          <div className="mb-8 border-b-4 border-[var(--color-on-surface)] pb-4">
-            <h2 className="font-mono text-3xl font-bold text-[var(--color-on-surface)] uppercase tracking-tighter">Access Node</h2>
-            <p className="font-mono text-[12px] text-[var(--color-outline)] font-bold uppercase tracking-widest mt-1">Provide credentials to enter</p>
+          <div className="mb-8 border-b border-[var(--glass-border)] pb-4">
+            <h2 className="text-2xl font-bold text-[var(--color-on-surface)] tracking-tight">Sign In</h2>
+            <p className="text-sm text-[var(--color-outline)] mt-1">Enter your credentials to continue</p>
           </div>
 
           {error && (
-            <div className="mb-6 px-4 py-3 bg-[var(--color-error)] text-white text-[12px] font-bold uppercase tracking-widest flex items-center gap-2 border-2 border-[var(--color-error)] shadow-[4px_4px_0px_rgba(255,0,0,0.5)]">
+            <div className="mb-6 px-4 py-3 bg-[var(--color-error)]/10 text-[var(--color-error)] text-sm font-medium rounded-xl flex items-center gap-2 border border-[var(--color-error)]/20">
               <span className="material-symbols-outlined text-[16px]">error</span>
               {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <label className="font-mono text-[12px] text-[var(--color-on-surface-variant)] font-bold uppercase tracking-widest block">
-                Com-Link (Email)
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-[var(--color-on-surface-variant)] block">
+                Email
               </label>
               <input
                 type="email"
@@ -79,19 +76,19 @@ export function LoginPage() {
                 onChange={e => setEmail(e.target.value)}
                 required
                 autoComplete="email"
-                className="w-full px-4 py-3 bg-[var(--color-surface-container-low)] border-2 border-[var(--color-outline-variant)] text-[var(--color-on-surface)] font-mono text-sm placeholder:text-[var(--color-outline)] focus:outline-none focus:border-[var(--color-primary)] focus:shadow-[4px_4px_0px_var(--color-primary)] transition-all"
+                className="input-field w-full"
                 placeholder="you@example.com"
               />
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <label htmlFor="login-password" className="font-mono text-[12px] text-[var(--color-on-surface-variant)] font-bold uppercase tracking-widest block">
-                  Security Key (Password)
+                <label htmlFor="login-password" className="text-sm font-medium text-[var(--color-on-surface-variant)] block">
+                  Password
                 </label>
                 <Link
                   to="/forgot-password"
-                  className="font-mono text-[10px] text-[var(--color-secondary)] hover:text-[var(--color-primary)] uppercase tracking-widest transition-colors"
+                  className="text-xs text-[var(--color-secondary)] hover:text-[var(--color-primary)] transition-colors font-medium"
                 >
                   Forgot?
                 </Link>
@@ -103,7 +100,7 @@ export function LoginPage() {
                 onChange={e => setPassword(e.target.value)}
                 required
                 autoComplete="current-password"
-                className="w-full px-4 py-3 bg-[var(--color-surface-container-low)] border-2 border-[var(--color-outline-variant)] text-[var(--color-on-surface)] font-mono text-sm placeholder:text-[var(--color-outline)] focus:outline-none focus:border-[var(--color-primary)] focus:shadow-[4px_4px_0px_var(--color-primary)] transition-all"
+                className="input-field w-full"
                 placeholder="••••••••"
               />
             </div>
@@ -111,36 +108,28 @@ export function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-4 mt-4 border-2 border-black bg-[var(--color-primary)] text-black font-mono text-sm font-bold uppercase tracking-widest hover:bg-[var(--color-primary-fixed)] shadow-[6px_6px_0px_rgba(0,0,0,1)] active:translate-x-1.5 active:translate-y-1.5 active:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center gap-3"
+              className="btn-gradient w-full mt-4 py-3 text-base rounded-xl flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>
-                  <span className="material-symbols-outlined animate-spin text-[18px]">sync</span>
-                  Authenticating...
+                  <span className="material-symbols-outlined animate-spin text-[20px]">sync</span>
+                  Signing in...
                 </>
               ) : (
-                <>
-                  <span className="material-symbols-outlined text-[18px]">login</span>
-                  Establish Connection
-                </>
+                'Sign In'
               )}
             </button>
           </form>
 
-          <div className="mt-8 text-center pt-6 border-t-2 border-[var(--color-outline-variant)]">
-            <p className="font-mono text-[12px] text-[var(--color-on-surface-variant)] uppercase tracking-widest font-bold">
-              Unregistered Node?{' '}
-              <Link to="/register" className="text-[var(--color-secondary)] hover:bg-[var(--color-secondary)] hover:text-black transition-colors font-bold px-2 py-1 ml-1 border-2 border-transparent hover:border-black">
-                Initialize System
+          <div className="mt-8 text-center pt-6 border-t border-[var(--glass-border)]">
+            <p className="text-sm text-[var(--color-on-surface-variant)]">
+              Don't have an account?{' '}
+              <Link to="/register" className="text-[var(--color-secondary)] hover:underline font-medium ml-1">
+                Create one
               </Link>
             </p>
           </div>
         </div>
-
-        {/* Footer */}
-        <p className="text-center font-mono text-[10px] text-[var(--color-outline)] font-bold uppercase tracking-[0.2em]">
-          V2.0 Core · Encrypted
-        </p>
       </div>
     </div>
   );

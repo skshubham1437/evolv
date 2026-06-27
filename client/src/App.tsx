@@ -28,6 +28,7 @@ const OnboardingPage = React.lazy(() => import('./pages/auth/OnboardingPage').th
 const ForgotPasswordPage = React.lazy(() => import('./pages/auth/ForgotPasswordPage').then(m => ({ default: m.ForgotPasswordPage })));
 const ShutdownPage = React.lazy(() => import('./pages/ShutdownPage').then(m => ({ default: m.ShutdownPage })));
 const LandingPage = React.lazy(() => import('./pages/LandingPage').then(m => ({ default: m.LandingPage })));
+const SharedOverviewPage = React.lazy(() => import('./pages/SharedOverviewPage').then(m => ({ default: m.SharedOverviewPage })));
 
 function LoadingIndicator() {
   return (
@@ -64,8 +65,9 @@ export default function App() {
     <ErrorBoundary>
       <ToastProvider>
         <AIProvider>
-          <div className="w-full h-screen bg-[var(--color-background)] overflow-hidden font-body-md text-[var(--color-on-background)] selection:bg-[var(--color-primary)]/30">
-            <Suspense fallback={<LoadingIndicator />}>
+          <div className="w-full h-screen bg-ambient-mesh overflow-hidden font-body-md text-[var(--color-on-background)] selection:bg-[var(--color-primary)]/30 relative">
+            <div className="relative z-10 w-full h-full">
+              <Suspense fallback={<LoadingIndicator />}>
               <Routes>
                 {/* Dynamic path routing on root / */}
                 <Route path="/" element={<HomeRoute />} />
@@ -74,6 +76,7 @@ export default function App() {
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
                 <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="/shared/:token" element={<SharedOverviewPage />} />
 
                 {/* Onboarding — Full screen, protected, but doesn't require onboarding itself */}
                 <Route path="/onboarding" element={
@@ -110,7 +113,8 @@ export default function App() {
                   }
                 />
               </Routes>
-            </Suspense>
+              </Suspense>
+            </div>
           </div>
           <AiChatPanel />
         </AIProvider>

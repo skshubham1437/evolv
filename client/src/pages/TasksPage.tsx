@@ -21,8 +21,8 @@ function PriorityBadge({ priority }: { priority: Priority }) {
   const code = priority === 'high' ? 'P0' : priority === 'medium' ? 'P1' : 'P2';
   return (
     <span
-      className="font-mono text-[10px] font-bold px-1.5 py-0.5 border"
-      style={{ color: m.color, borderColor: `color-mix(in srgb, ${m.color} 30%, transparent)` }}
+      className="font-mono text-[9px] font-bold px-2.5 py-0.5 border rounded-full uppercase tracking-widest"
+      style={{ color: m.color, borderColor: `color-mix(in srgb, ${m.color} 20%, transparent)`, backgroundColor: `color-mix(in srgb, ${m.color} 8%, transparent)` }}
     >
       {code}
     </span>
@@ -63,33 +63,36 @@ function TaskRow({
   const blockCheck = isTaskBlocked(task);
 
   return (
-    <div className="anim-fade-up w-full" style={{ animationDelay: `${idx * 30}ms` }}>
+    <div className="anim-fade-up w-full" style={{ animationDelay: `${idx * 20}ms` }}>
       <div
-        className={`group flex flex-col gap-2 p-4 transition-colors duration-150 border-b border-[var(--color-surface-variant)] hover:bg-[var(--color-surface-container-high)] relative ${
-          task.is_completed ? 'opacity-40' : expanded ? 'bg-[var(--color-surface-container-high)]' : 'bg-[var(--color-surface-container)]'
-        } ${completing ? 'opacity-60' : ''}`}
+        className={`group flex flex-col gap-2 p-4 transition-all duration-300 border-b border-[rgba(255,255,255,0.04)] relative ${
+          task.is_completed ? 'opacity-35' : expanded ? 'bg-white/[0.02]' : 'bg-transparent'
+        } ${completing ? 'opacity-60' : ''} hover:bg-white/[0.015]`}
       >
-        {expanded && !task.is_completed && <div className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--color-primary)]" />}
+        {expanded && !task.is_completed && <div className="absolute left-0 top-[20%] bottom-[20%] w-[3px] bg-[var(--color-primary)] rounded-r-full glow-shadow-primary" />}
         <div className="flex items-start gap-4">
           <button
             onClick={handleComplete}
             disabled={task.is_completed}
-            className={`shrink-0 mt-0.5 w-5 h-5 border flex items-center justify-center transition-colors ${
+            className={`shrink-0 mt-1 w-5 h-5 rounded-md border flex items-center justify-center transition-all duration-300 relative overflow-hidden ${
               task.is_completed
-                ? 'border-[var(--color-outline-variant)] bg-[var(--color-outline-variant)]/20 text-[var(--color-outline)]'
-                : 'border-[var(--color-outline-variant)] hover:border-[var(--color-primary)] text-transparent hover:text-[var(--color-primary)]'
+                ? 'border-[var(--color-outline-variant)] bg-[var(--color-outline-variant)]/20 text-[var(--color-outline)] shadow-sm'
+                : 'border-[rgba(255,255,255,0.15)] hover:border-[var(--color-primary)] hover:bg-[var(--color-primary)]/5 hover:scale-105 active:scale-95 text-transparent hover:text-[var(--color-primary)]/40'
             }`}
           >
-            {task.is_completed && <span className="material-symbols-outlined text-[14px]">check</span>}
-            {!task.is_completed && <span className="material-symbols-outlined text-[14px] opacity-0 group-hover:opacity-100 transition-opacity">check</span>}
+            {task.is_completed ? (
+              <span className="material-symbols-outlined text-[12px]">check</span>
+            ) : (
+              <span className="material-symbols-outlined text-[12px] opacity-0 group-hover:opacity-100 transition-opacity">check</span>
+            )}
           </button>
 
-          <div className="flex-1 min-w-0" onClick={() => !task.is_completed && setExpanded(e => !e)}>
+          <div className="flex-1 min-w-0 cursor-pointer" onClick={() => !task.is_completed && setExpanded(e => !e)}>
             <div className="flex items-center gap-2 flex-wrap mb-1">
-              <p className={`font-body-md text-[15px] font-semibold leading-snug transition-colors ${
+              <p className={`font-body-md text-[15px] font-semibold tracking-wide leading-snug transition-colors ${
                 task.is_completed
                   ? 'line-through text-[var(--color-outline)] decoration-[var(--color-outline)]/50'
-                  : 'text-[var(--color-on-surface)]/80 group-hover:text-[var(--color-primary)]'
+                  : 'text-[var(--color-on-surface)] group-hover:text-[var(--color-primary)]'
               }`}>
                 {task.title}
               </p>
@@ -97,7 +100,7 @@ function TaskRow({
               <PriorityBadge priority={task.priority as Priority} />
               
               {project && (
-                <span className="font-label-sm text-[9px] uppercase tracking-widest px-2 py-0.5 border font-bold"
+                <span className="font-mono text-[9px] uppercase tracking-widest px-2 py-0.5 border rounded-full font-bold"
                   style={{
                     color: project.color,
                     backgroundColor: `color-mix(in srgb, ${project.color} 10%, transparent)`,
@@ -108,19 +111,19 @@ function TaskRow({
               )}
 
               {goals.find(g => g.id === task.goal_id) && (
-                <span className="font-label-sm text-[9px] uppercase tracking-widest px-2 py-0.5 border border-[var(--color-primary)]/20 bg-[var(--color-primary)]/10 text-[var(--color-primary)] font-bold truncate max-w-[120px]">
+                <span className="font-mono text-[9px] uppercase tracking-widest px-2 py-0.5 border border-[var(--color-primary)]/20 bg-[var(--color-primary)]/10 text-[var(--color-primary)] rounded-full font-bold truncate max-w-[120px]">
                   🎯 {goals.find(g => g.id === task.goal_id)?.title}
                 </span>
               )}
 
               {task.is_urgent && (
-                <span className="font-label-sm text-[9px] uppercase tracking-widest px-1.5 py-0.5 border border-[var(--color-error)]/25 bg-[var(--color-error)]/10 text-[var(--color-error)] font-bold">
+                <span className="font-mono text-[9px] uppercase tracking-widest px-2.5 py-0.5 border border-[var(--color-error)]/25 bg-[var(--color-error)]/10 text-[var(--color-error)] rounded-full font-bold">
                   Urgent
                 </span>
               )}
 
               {task.is_important && (
-                <span className="font-label-sm text-[9px] uppercase tracking-widest px-1.5 py-0.5 border border-[var(--color-secondary)]/25 bg-[var(--color-secondary)]/10 text-[var(--color-secondary)] font-bold">
+                <span className="font-mono text-[9px] uppercase tracking-widest px-2.5 py-0.5 border border-[var(--color-secondary)]/25 bg-[var(--color-secondary)]/10 text-[var(--color-secondary)] rounded-full font-bold">
                   Important
                 </span>
               )}
@@ -133,7 +136,7 @@ function TaskRow({
             {tagList.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-2">
                 {tagList.map(tag => (
-                  <span key={tag} className="font-label-sm text-[9px] uppercase tracking-wider bg-[var(--color-surface-container-high)] text-[var(--color-outline)] border border-[var(--color-outline-variant)]/20 px-2 py-0.5 font-bold">
+                  <span key={tag} className="font-mono text-[9px] uppercase tracking-wider bg-white/[0.02] text-[var(--color-outline)] border border-[rgba(255,255,255,0.06)] px-2 py-0.5 rounded-md font-bold">
                     #{tag}
                   </span>
                 ))}
@@ -141,20 +144,20 @@ function TaskRow({
             )}
 
             {expanded && !task.is_completed && (
-              <div className="mt-4 border-t border-[var(--color-outline-variant)] pt-3 flex flex-col gap-3 anim-fade-up">
+              <div className="mt-4 border-t border-[rgba(255,255,255,0.04)] pt-4 flex flex-col gap-4 anim-fade-up">
                 <div className="flex items-center gap-3 flex-wrap">
-                  <span className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest font-bold">Priority:</span>
+                  <span className="font-mono text-[10px] text-[var(--color-outline)] uppercase tracking-widest font-bold">Priority:</span>
                   {(['high', 'medium', 'low'] as Priority[]).map(p => (
                     <button
                       key={p}
                       onClick={e => { e.stopPropagation(); onChangePriority(task.id, p); }}
-                      className={`px-3 py-1 font-label-sm text-[10px] uppercase tracking-widest border transition-all ${
-                        task.priority === p ? 'opacity-100 font-bold' : 'opacity-50 hover:opacity-80'
+                      className={`px-3 py-1 rounded-lg font-mono text-[10px] uppercase tracking-widest border transition-all ${
+                        task.priority === p ? 'opacity-100 font-bold' : 'opacity-40 hover:opacity-85'
                       }`}
                       style={{
                         color: PRIORITY_META[p].color,
                         backgroundColor: task.priority === p ? PRIORITY_META[p].bg : 'transparent',
-                        borderColor: task.priority === p ? PRIORITY_META[p].color : 'var(--color-outline-variant)',
+                        borderColor: task.priority === p ? PRIORITY_META[p].color : 'rgba(255,255,255,0.1)',
                       }}
                     >
                       {PRIORITY_META[p].label}
@@ -163,35 +166,35 @@ function TaskRow({
                 </div>
 
                 <div className="flex items-center gap-6 flex-wrap" onClick={e => e.stopPropagation()}>
-                  <label className="flex items-center gap-2 cursor-pointer">
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
                     <input
                       type="checkbox"
                       checked={task.is_urgent || false}
                       onChange={() => onToggleUrgent && onToggleUrgent(task.id)}
-                      className="accent-[var(--color-primary)]"
+                      className="accent-[var(--color-primary)] rounded"
                     />
-                    <span className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest font-bold">Urgent</span>
+                    <span className="font-mono text-[10px] text-[var(--color-outline)] uppercase tracking-widest font-bold">Urgent</span>
                   </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
                     <input
                       type="checkbox"
                       checked={task.is_important || false}
                       onChange={() => onToggleImportant && onToggleImportant(task.id)}
-                      className="accent-[var(--color-primary)]"
+                      className="accent-[var(--color-primary)] rounded"
                     />
-                    <span className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest font-bold">Important</span>
+                    <span className="font-mono text-[10px] text-[var(--color-outline)] uppercase tracking-widest font-bold">Important</span>
                   </label>
                   
                   <div className="flex items-center gap-2">
-                    <span className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest font-bold">Goal:</span>
+                    <span className="font-mono text-[10px] text-[var(--color-outline)] uppercase tracking-widest font-bold">Goal:</span>
                     <select
                       value={task.goal_id || ''}
                       onChange={e => onChangeGoal && onChangeGoal(task.id, e.target.value ? Number(e.target.value) : null)}
-                      className="bg-[var(--color-surface-container-high)] text-[11px] text-[var(--color-on-surface)] border border-[var(--color-outline-variant)] px-2 py-1 outline-none font-bold"
+                      className="glass-card bg-[var(--color-surface)]/40 rounded-lg text-[11px] text-[var(--color-on-surface)] border border-[rgba(255,255,255,0.06)] px-2.5 py-1.5 outline-none font-bold"
                     >
-                      <option value="">None</option>
+                      <option value="" className="bg-[var(--color-surface-container)]">None</option>
                       {goals.map(g => (
-                        <option key={g.id} value={g.id}>{g.title}</option>
+                        <option key={g.id} value={g.id} className="bg-[var(--color-surface-container)]">{g.title}</option>
                       ))}
                     </select>
                   </div>
@@ -208,14 +211,14 @@ function TaskRow({
                     }
                   }}
                   onClick={e => e.stopPropagation()}
-                  className="flex gap-2 mt-1.5"
+                  className="flex gap-3 mt-1.5"
                 >
                   <input
                     name="subtaskTitle"
                     placeholder="Add subtask outcome…"
-                    className="flex-1 bg-transparent border-b border-[var(--color-surface-variant)] pb-1 text-[13px] text-[var(--color-on-surface)] outline-none placeholder:text-[var(--color-outline)] focus:border-[var(--color-primary)]"
+                    className="flex-1 bg-transparent border-b border-[rgba(255,255,255,0.08)] pb-1.5 text-[13px] text-[var(--color-on-surface)] outline-none placeholder:text-[var(--color-outline)] focus:border-[var(--color-primary)] transition-colors"
                   />
-                  <button type="submit" className="px-4 py-1.5 bg-[var(--color-primary)] text-black font-bold font-label-sm text-[10px] uppercase tracking-widest hover:bg-[var(--color-primary-fixed)] transition-colors">
+                  <button type="submit" className="px-5 py-2 rounded-xl bg-[var(--color-primary)] text-black font-bold font-mono text-[10px] uppercase tracking-widest hover:opacity-90 active:scale-[0.98] transition-all">
                     Add
                   </button>
                 </form>
@@ -224,7 +227,7 @@ function TaskRow({
           </div>
 
           <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity no-print">
-            <button onClick={() => onDelete(task.id)} className="w-8 h-8 flex items-center justify-center text-[var(--color-outline)] hover:text-[var(--color-error)] hover:bg-[var(--color-error)]/10 transition-colors" title="Delete task">
+            <button onClick={() => onDelete(task.id)} className="w-8 h-8 rounded-lg flex items-center justify-center text-[var(--color-outline)] hover:text-[var(--color-error)] hover:bg-[var(--color-error)]/10 transition-all" title="Delete task">
               <span className="material-symbols-outlined text-[18px]">delete</span>
             </button>
           </div>
@@ -232,12 +235,13 @@ function TaskRow({
       </div>
 
       {subtasks.length > 0 && (
-        <div className="pl-4 border-l border-[var(--color-outline-variant)] ml-6 flex flex-col">
+        <div className="pl-4 border-l border-[rgba(255,255,255,0.06)] ml-6 flex flex-col">
           {subtasks.map((sub, sidx) => (
             <TaskRow
               key={sub.id} task={sub} idx={sidx} onComplete={onComplete} onDelete={onDelete}
               onChangePriority={onChangePriority} projects={projects} allTasks={allTasks}
               subtasks={allTasks.filter(t => t.parent_task_id === sub.id)} onAddSubtask={onAddSubtask} isTaskBlocked={isTaskBlocked}
+              goals={goals} onToggleUrgent={onToggleUrgent} onToggleImportant={onToggleImportant} onChangeGoal={onChangeGoal}
             />
           ))}
         </div>
@@ -427,34 +431,34 @@ export function TasksPage() {
   ];
 
   return (
-    <div className="flex flex-col h-full w-full bg-[var(--color-surface-container-lowest)] text-[var(--color-on-surface)] items-center overflow-hidden">
-      <div className="flex flex-col h-full w-full max-w-[var(--spacing-container-max)] border-x border-[var(--color-outline-variant)] relative">
+    <div className="flex flex-col h-full w-full bg-transparent text-[var(--color-on-surface)] items-center overflow-hidden">
+      <div className="flex flex-col h-full w-full max-w-[var(--spacing-container-max)] border-x border-[rgba(255,255,255,0.06)] relative">
         
         {/* Top Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between px-8 py-6 border-b border-[var(--color-outline-variant)] shrink-0 bg-[var(--color-surface-container-lowest)] gap-4">
+        <div className="flex flex-col md:flex-row md:items-end justify-between px-8 py-6 border-b border-[rgba(255,255,255,0.06)] shrink-0 bg-transparent gap-4">
           <div>
-            <h2 className="font-title-md text-[32px] font-medium tracking-tight text-[var(--color-primary-fixed)]">
+            <h2 className="text-[36px] font-black tracking-tighter text-[var(--color-on-surface)] leading-none select-none">
               Priority Queue
             </h2>
-            <p className="font-label-sm text-[11px] text-[var(--color-outline)] uppercase tracking-widest mt-1 font-bold">
-              TASK MANAGEMENT • PROJECT CONTAINERS
+            <p className="font-mono text-[9px] text-[var(--color-outline)] uppercase tracking-[0.25em] mt-2.5">
+              TASK MANAGEMENT // PROJECT CONTAINERS
             </p>
           </div>
           
           <div className="flex items-center gap-10">
             <div className="flex flex-col items-end">
-              <span className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest mb-1 font-bold">Pending</span>
-              <span className="font-label-sm text-[28px] text-[var(--color-on-surface)] font-normal tracking-tight leading-none">{pending}</span>
+              <span className="font-mono text-[9px] text-[var(--color-outline)] uppercase tracking-widest mb-1 font-bold">Pending</span>
+              <span className="font-mono text-[24px] text-[var(--color-on-surface)] font-bold tracking-tight leading-none">{pending}</span>
             </div>
-            <div className="w-px h-10 bg-[var(--color-outline-variant)] self-center" />
+            <div className="w-px h-8 bg-[rgba(255,255,255,0.08)] self-center" />
             <div className="flex flex-col items-end">
-              <span className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest mb-1 font-bold">Completed</span>
-              <span className="font-label-sm text-[28px] text-[var(--color-on-surface)] font-normal tracking-tight leading-none">{done}</span>
+              <span className="font-mono text-[9px] text-[var(--color-outline)] uppercase tracking-widest mb-1 font-bold">Completed</span>
+              <span className="font-mono text-[24px] text-[var(--color-on-surface)] font-bold tracking-tight leading-none">{done}</span>
             </div>
-            <div className="w-px h-10 bg-[var(--color-outline-variant)] self-center" />
+            <div className="w-px h-8 bg-[rgba(255,255,255,0.08)] self-center" />
             <div className="flex flex-col items-end">
-              <span className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest mb-1 font-bold">Completion</span>
-              <span className="font-label-sm text-[28px] text-[var(--color-primary)] font-normal tracking-tight leading-none">{pct}%</span>
+              <span className="font-mono text-[9px] text-[var(--color-outline)] uppercase tracking-widest mb-1 font-bold">Completion</span>
+              <span className="font-mono text-[24px] text-[var(--color-primary)] font-bold tracking-tight leading-none">{pct}%</span>
             </div>
           </div>
         </div>
@@ -465,29 +469,29 @@ export function TasksPage() {
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto no-scrollbar bg-[var(--color-surface-container-low)]">
+        <div className="flex-1 overflow-y-auto no-scrollbar bg-transparent">
           {/* Controls Bar */}
-          <div className="flex items-center justify-between border-b border-[var(--color-outline-variant)] bg-[var(--color-surface-container-lowest)] px-8 py-4 shrink-0">
+          <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.06)] bg-white/[0.01] backdrop-blur-md px-8 py-4 shrink-0">
             <div className="flex items-center gap-6">
               {TABS.map(tab => (
                 <button
                   key={tab.id}
                   onClick={() => setFilter(tab.id)}
-                  className={`font-label-sm text-[11px] uppercase tracking-widest font-bold flex items-center gap-1.5 transition-colors ${
+                  className={`font-mono text-[10px] uppercase tracking-widest font-bold flex items-center gap-2 transition-colors ${
                     filter === tab.id ? 'text-[var(--color-primary)]' : 'text-[var(--color-outline)] hover:text-[var(--color-on-surface)]'
                   }`}
                 >
                   {tab.label}
-                  <span className={`px-1.5 py-0.5 border text-[9px] ${filter === tab.id ? 'border-[var(--color-primary)]/30 bg-[var(--color-primary)]/10' : 'border-[var(--color-outline-variant)] bg-[var(--color-surface-container-high)]'}`}>
+                  <span className={`px-2 py-0.5 border text-[9px] rounded-full ${filter === tab.id ? 'border-[var(--color-primary)]/30 bg-[var(--color-primary)]/10' : 'border-[rgba(255,255,255,0.08)] bg-white/[0.01]'}`}>
                     {tab.count}
                   </span>
                 </button>
               ))}
-              <div className="w-px h-4 bg-[var(--color-outline-variant)]" />
+              <div className="w-px h-4 bg-[rgba(255,255,255,0.08)]" />
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setViewMode('queue')}
-                  className={`font-label-sm text-[10px] uppercase tracking-widest font-bold px-3 py-1 border transition-colors ${
+                  className={`font-mono text-[9px] uppercase tracking-widest font-bold px-3 py-1.5 border rounded-full transition-colors ${
                     viewMode === 'queue' ? 'text-[var(--color-primary)] border-[var(--color-primary)]/30 bg-[var(--color-primary)]/10' : 'text-[var(--color-outline)] border-transparent hover:text-[var(--color-on-surface)]'
                   }`}
                 >
@@ -495,7 +499,7 @@ export function TasksPage() {
                 </button>
                 <button
                   onClick={() => setViewMode('eisenhower')}
-                  className={`font-label-sm text-[10px] uppercase tracking-widest font-bold px-3 py-1 border transition-colors ${
+                  className={`font-mono text-[9px] uppercase tracking-widest font-bold px-3 py-1.5 border rounded-full transition-colors ${
                     viewMode === 'eisenhower' ? 'text-[var(--color-primary)] border-[var(--color-primary)]/30 bg-[var(--color-primary)]/10' : 'text-[var(--color-outline)] border-transparent hover:text-[var(--color-on-surface)]'
                   }`}
                 >
@@ -506,15 +510,15 @@ export function TasksPage() {
             <div className="flex gap-2">
               <button
                 onClick={() => setShowAddProject(v => !v)}
-                className="font-label-sm text-[10px] text-[var(--color-secondary)] uppercase tracking-widest font-bold flex items-center gap-1 border border-[var(--color-secondary)]/30 px-4 py-1.5 hover:bg-[var(--color-secondary)]/10 transition-colors"
+                className="font-mono text-[9px] text-[var(--color-secondary)] uppercase tracking-widest font-bold flex items-center gap-1.5 border border-[var(--color-secondary)]/25 px-4 py-2 rounded-full hover:bg-[var(--color-secondary)]/10 transition-all active:scale-95"
               >
                 <span className="material-symbols-outlined text-[14px]">{showAddProject ? 'close' : 'folder_open'}</span>
                 {showAddProject ? 'Cancel' : 'Project'}
               </button>
               <button
                 onClick={() => setShowAdd(v => !v)}
-                className={`font-label-sm text-[10px] uppercase tracking-widest font-bold flex items-center gap-1 px-4 py-1.5 transition-colors border ${
-                  showAdd ? 'border-[var(--color-outline-variant)] text-[var(--color-outline)] hover:text-[var(--color-on-surface)]' : 'border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-black'
+                className={`font-mono text-[9px] uppercase tracking-widest font-bold flex items-center gap-1.5 px-4 py-2 rounded-full transition-all active:scale-95 border ${
+                  showAdd ? 'border-[rgba(255,255,255,0.1)] text-[var(--color-outline)] hover:text-[var(--color-on-surface)] bg-white/[0.01]' : 'border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-black shadow-[0_0_12px_rgba(210,187,255,0.15)]'
                 }`}
               >
                 <span className="material-symbols-outlined text-[14px]">{showAdd ? 'close' : 'add'}</span>
@@ -525,28 +529,28 @@ export function TasksPage() {
 
           <div className="p-8 pb-32">
             {showAddProject && (
-              <form onSubmit={handleAddProject} className="bg-[var(--color-surface-container)] border border-[var(--color-secondary)]/30 p-6 mb-8 relative">
-                <div className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--color-secondary)]" />
-                <h4 className="font-label-sm text-[10px] text-[var(--color-secondary)] uppercase tracking-widest font-bold mb-4">Define Project Container</h4>
-                <div className="flex flex-col gap-4">
+              <form onSubmit={handleAddProject} className="glass-card rounded-2xl p-6 mb-8 relative border-[rgba(255,255,255,0.05)] bg-[var(--color-surface)]/20 shadow-lg anim-fade-up">
+                <div className="absolute left-0 top-[20%] bottom-[20%] w-[3px] bg-[var(--color-secondary)] rounded-r-full glow-shadow-secondary" />
+                <h4 className="font-mono text-[10px] text-[var(--color-secondary)] uppercase tracking-[0.2em] font-bold mb-5">Define Project Container</h4>
+                <div className="flex flex-col gap-5">
                   <input
                     autoFocus
                     value={newProjectTitle} onChange={e => setNewProjectTitle(e.target.value)}
                     placeholder="Project Title *"
-                    className="w-full bg-transparent border-b border-[var(--color-surface-variant)] pb-1 text-[var(--color-on-surface)] font-body-md outline-none focus:border-[var(--color-secondary)]"
+                    className="w-full bg-transparent border-b border-[rgba(255,255,255,0.08)] pb-1.5 text-[var(--color-on-surface)] font-body-md outline-none focus:border-[var(--color-secondary)] transition-colors"
                   />
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between flex-wrap gap-4">
                     <div className="flex items-center gap-2">
-                      <span className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest font-bold mr-2">Color:</span>
+                      <span className="font-mono text-[10px] text-[var(--color-outline)] uppercase tracking-widest font-bold mr-2">Color:</span>
                       {["#D2BBFF", "#5ADACE", "#FF8DA1", "#F5D0A9", "#A8E6CF"].map(c => (
                         <button
                           type="button" key={c} onClick={() => setNewProjectColor(c)}
-                          className={`w-5 h-5 border transition-all ${newProjectColor === c ? 'border-white scale-110' : 'border-transparent'}`}
+                          className={`w-5 h-5 rounded-full border transition-all ${newProjectColor === c ? 'border-white scale-110' : 'border-transparent opacity-60'}`}
                           style={{ backgroundColor: c }}
                         />
                       ))}
                     </div>
-                    <button type="submit" disabled={!newProjectTitle.trim()} className="px-5 py-1.5 bg-[var(--color-secondary)] text-black font-label-sm text-[10px] font-bold disabled:opacity-50 uppercase tracking-widest hover:brightness-110 transition-colors">
+                    <button type="submit" disabled={!newProjectTitle.trim()} className="px-5 py-2 bg-[var(--color-secondary)] text-black font-mono text-[10px] font-bold disabled:opacity-30 uppercase tracking-widest hover:brightness-110 active:scale-[0.98] transition-all rounded-xl shadow-[0_0_12px_rgba(90,218,206,0.15)]">
                       Establish
                     </button>
                   </div>
@@ -555,50 +559,65 @@ export function TasksPage() {
             )}
 
             {showAdd && (
-              <form onSubmit={handleAdd} className="bg-[var(--color-surface-container)] border border-[var(--color-primary)]/30 p-6 mb-8 relative">
-                <div className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--color-primary)]" />
-                <h4 className="font-label-sm text-[10px] text-[var(--color-primary)] uppercase tracking-widest font-bold mb-4">Queue New Action</h4>
+              <form onSubmit={handleAdd} className="glass-card rounded-2xl p-6 mb-8 relative border-[rgba(255,255,255,0.05)] bg-[var(--color-surface)]/20 shadow-lg anim-fade-up">
+                <div className="absolute left-0 top-[20%] bottom-[20%] w-[3px] bg-[var(--color-primary)] rounded-r-full glow-shadow-primary" />
+                <h4 className="font-mono text-[10px] text-[var(--color-primary)] uppercase tracking-[0.2em] font-bold mb-5">Queue New Action</h4>
                 
-                <div className="flex flex-col gap-5">
+                <div className="flex flex-col gap-6">
                   <input
                     autoFocus
                     value={newTitle} onChange={e => setNewTitle(e.target.value)}
                     placeholder="Action Title *"
-                    className="w-full bg-transparent border-b border-[var(--color-surface-variant)] pb-1 text-[var(--color-on-surface)] font-body-md outline-none focus:border-[var(--color-primary)]"
+                    className="w-full bg-transparent border-b border-[rgba(255,255,255,0.08)] pb-1.5 text-[var(--color-on-surface)] font-body-md outline-none focus:border-[var(--color-primary)] transition-colors"
                   />
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <select value={selectedProjectId || ''} onChange={e => setSelectedProjectId(e.target.value ? parseInt(e.target.value) : null)}
-                      className="w-full bg-transparent border-b border-[var(--color-surface-variant)] pb-1 text-[13px] text-[var(--color-on-surface)] outline-none focus:border-[var(--color-primary)]">
-                      <option value="" className="bg-[var(--color-surface-container-high)]">No Project</option>
-                      {projects.map(p => <option key={p.id} value={p.id} className="bg-[var(--color-surface-container-high)]">{p.title}</option>)}
-                    </select>
-                    <select value={selectedParentTaskId || ''} onChange={e => setSelectedParentTaskId(e.target.value ? parseInt(e.target.value) : null)}
-                      className="w-full bg-transparent border-b border-[var(--color-surface-variant)] pb-1 text-[13px] text-[var(--color-on-surface)] outline-none focus:border-[var(--color-primary)]">
-                      <option value="" className="bg-[var(--color-surface-container-high)]">Top-level Task</option>
-                      {tasks.filter(t => !t.is_completed && !t.parent_task_id).map(t => <option key={t.id} value={t.id} className="bg-[var(--color-surface-container-high)]">{t.title}</option>)}
-                    </select>
-                    <select value={newDependencyId || ''} onChange={e => setNewDependencyId(e.target.value ? parseInt(e.target.value) : null)}
-                      className="w-full bg-transparent border-b border-[var(--color-surface-variant)] pb-1 text-[13px] text-[var(--color-on-surface)] outline-none focus:border-[var(--color-primary)]">
-                      <option value="" className="bg-[var(--color-surface-container-high)]">No Dependency</option>
-                      {tasks.filter(t => !t.is_completed).map(t => <option key={t.id} value={t.id} className="bg-[var(--color-surface-container-high)]">{t.title}</option>)}
-                    </select>
-                    <select value={selectedGoalId || ''} onChange={e => setSelectedGoalId(e.target.value ? parseInt(e.target.value) : null)}
-                      className="w-full bg-transparent border-b border-[var(--color-surface-variant)] pb-1 text-[13px] text-[var(--color-on-surface)] outline-none focus:border-[var(--color-primary)]">
-                      <option value="" className="bg-[var(--color-surface-container-high)]">No Goal</option>
-                      {goals.map(g => <option key={g.id} value={g.id} className="bg-[var(--color-surface-container-high)]">{g.title}</option>)}
-                    </select>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="flex flex-col gap-1">
+                      <span className="font-mono text-[8px] text-[var(--color-outline)] uppercase tracking-wider mb-0.5">Project</span>
+                      <select value={selectedProjectId || ''} onChange={e => setSelectedProjectId(e.target.value ? parseInt(e.target.value) : null)}
+                        className="w-full bg-[var(--color-surface)]/40 border border-[rgba(255,255,255,0.06)] rounded-lg p-2.5 text-[12px] text-[var(--color-on-surface)] outline-none focus:border-[var(--color-primary)] font-bold">
+                        <option value="" className="bg-[var(--color-surface-container)]">No Project</option>
+                        {projects.map(p => <option key={p.id} value={p.id} className="bg-[var(--color-surface-container)]">{p.title}</option>)}
+                      </select>
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <span className="font-mono text-[8px] text-[var(--color-outline)] uppercase tracking-wider mb-0.5">Parent Task</span>
+                      <select value={selectedParentTaskId || ''} onChange={e => setSelectedParentTaskId(e.target.value ? parseInt(e.target.value) : null)}
+                        className="w-full bg-[var(--color-surface)]/40 border border-[rgba(255,255,255,0.06)] rounded-lg p-2.5 text-[12px] text-[var(--color-on-surface)] outline-none focus:border-[var(--color-primary)] font-bold">
+                        <option value="" className="bg-[var(--color-surface-container)]">Top-level Task</option>
+                        {tasks.filter(t => !t.is_completed && !t.parent_task_id).map(t => <option key={t.id} value={t.id} className="bg-[var(--color-surface-container)]">{t.title}</option>)}
+                      </select>
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <span className="font-mono text-[8px] text-[var(--color-outline)] uppercase tracking-wider mb-0.5">Dependency</span>
+                      <select value={newDependencyId || ''} onChange={e => setNewDependencyId(e.target.value ? parseInt(e.target.value) : null)}
+                        className="w-full bg-[var(--color-surface)]/40 border border-[rgba(255,255,255,0.06)] rounded-lg p-2.5 text-[12px] text-[var(--color-on-surface)] outline-none focus:border-[var(--color-primary)] font-bold">
+                        <option value="" className="bg-[var(--color-surface-container)]">No Dependency</option>
+                        {tasks.filter(t => !t.is_completed).map(t => <option key={t.id} value={t.id} className="bg-[var(--color-surface-container)]">{t.title}</option>)}
+                      </select>
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <span className="font-mono text-[8px] text-[var(--color-outline)] uppercase tracking-wider mb-0.5">Core Goal</span>
+                      <select value={selectedGoalId || ''} onChange={e => setSelectedGoalId(e.target.value ? parseInt(e.target.value) : null)}
+                        className="w-full bg-[var(--color-surface)]/40 border border-[rgba(255,255,255,0.06)] rounded-lg p-2.5 text-[12px] text-[var(--color-on-surface)] outline-none focus:border-[var(--color-primary)] font-bold">
+                        <option value="" className="bg-[var(--color-surface-container)]">No Goal</option>
+                        {goals.map(g => <option key={g.id} value={g.id} className="bg-[var(--color-surface-container)]">{g.title}</option>)}
+                      </select>
+                    </div>
                   </div>
 
-                  <div className="flex items-center justify-between mt-2 flex-wrap gap-4">
+                  <div className="flex items-center justify-between mt-2 flex-wrap gap-4 border-t border-[rgba(255,255,255,0.04)] pt-4">
                     <div className="flex items-center gap-6 flex-wrap">
-                      <div className="flex items-center gap-2">
-                        <span className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest font-bold">Priority:</span>
+                      <div className="flex items-center gap-3">
+                        <span className="font-mono text-[9px] text-[var(--color-outline)] uppercase tracking-widest font-bold">Priority:</span>
                         <div className="flex gap-2">
                           {(['high', 'medium', 'low'] as Priority[]).map(p => (
                             <button
                               type="button" key={p} onClick={() => setNewPriority(p)}
-                              className={`px-3 py-1 font-label-sm text-[10px] uppercase tracking-widest border transition-colors ${newPriority === p ? 'font-bold text-black' : 'text-[var(--color-outline)] border-[var(--color-surface-variant)] hover:border-[var(--color-outline-variant)]'}`}
+                              className={`px-3 py-1 font-mono text-[9px] uppercase tracking-widest rounded-lg border transition-all ${newPriority === p ? 'font-bold text-black' : 'text-[var(--color-outline)] border-[rgba(255,255,255,0.1)] hover:border-[rgba(255,255,255,0.2)]'}`}
                               style={newPriority === p ? { backgroundColor: PRIORITY_META[p].color, borderColor: PRIORITY_META[p].color } : {}}
                             >
                               {p}
@@ -607,16 +626,16 @@ export function TasksPage() {
                         </div>
                       </div>
 
-                      <div className="h-4 w-px bg-[var(--color-outline-variant)]" />
+                      <div className="h-4 w-px bg-[rgba(255,255,255,0.06)] animate-pulse" />
 
                       <label className="flex items-center gap-2 cursor-pointer select-none">
                         <input
                           type="checkbox"
                           checked={newIsUrgent}
                           onChange={e => setNewIsUrgent(e.target.checked)}
-                          className="accent-[var(--color-primary)]"
+                          className="accent-[var(--color-primary)] rounded"
                         />
-                        <span className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest font-bold">Urgent</span>
+                        <span className="font-mono text-[10px] text-[var(--color-outline)] uppercase tracking-widest font-bold">Urgent</span>
                       </label>
 
                       <label className="flex items-center gap-2 cursor-pointer select-none">
@@ -624,9 +643,9 @@ export function TasksPage() {
                           type="checkbox"
                           checked={newIsImportant}
                           onChange={e => setNewIsImportant(e.target.checked)}
-                          className="accent-[var(--color-primary)]"
+                          className="accent-[var(--color-primary)] rounded"
                         />
-                        <span className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest font-bold">Important</span>
+                        <span className="font-mono text-[10px] text-[var(--color-outline)] uppercase tracking-widest font-bold">Important</span>
                       </label>
                     </div>
 
@@ -634,9 +653,9 @@ export function TasksPage() {
                       <input
                         value={newTags} onChange={e => setNewTags(e.target.value)}
                         placeholder="Tags (csv)…"
-                        className="w-32 bg-transparent border-b border-[var(--color-surface-variant)] pb-1 text-[13px] text-[var(--color-on-surface)] outline-none focus:border-[var(--color-primary)]"
+                        className="w-32 bg-transparent border-b border-[rgba(255,255,255,0.08)] pb-1 text-[13px] text-[var(--color-on-surface)] outline-none focus:border-[var(--color-primary)] transition-colors"
                       />
-                      <button type="submit" disabled={!newTitle.trim()} className="px-6 py-2 bg-[var(--color-primary)] text-black font-label-sm text-[11px] font-bold disabled:opacity-50 uppercase tracking-widest hover:bg-[var(--color-primary-fixed)] transition-colors">
+                      <button type="submit" disabled={!newTitle.trim()} className="px-6 py-2.5 rounded-xl bg-[var(--color-primary)] text-black font-mono text-[10px] font-bold disabled:opacity-30 uppercase tracking-widest hover:brightness-110 active:scale-[0.98] transition-all shadow-[0_0_15px_rgba(210,187,255,0.2)]">
                         Deploy Task
                       </button>
                     </div>
@@ -661,22 +680,22 @@ export function TasksPage() {
                   return (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 anim-fade-up">
                       {/* Q1: Urgent & Important */}
-                      <div className="bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] flex flex-col min-h-[350px]">
-                        <div className="p-4 border-b border-[var(--color-outline-variant)] bg-[var(--color-surface-container-lowest)] flex flex-col gap-1">
+                      <div className="glass-card rounded-2xl flex flex-col min-h-[350px] overflow-hidden border-[rgba(255,255,255,0.05)] shadow-lg hover:border-[var(--color-error)]/20 transition-all duration-300">
+                        <div className="p-4 px-5 border-b border-[rgba(255,255,255,0.06)] bg-white/[0.02] flex flex-col gap-1.5">
                           <div className="flex items-center justify-between">
-                            <h3 className="font-label-sm text-[11px] font-bold uppercase tracking-widest text-[var(--color-error)] flex items-center gap-1.5">
-                              <span className="w-2 h-2 bg-[var(--color-error)]" />
+                            <h3 className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-error)] flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-error)] animate-pulse shadow-[0_0_8px_rgba(255,180,171,0.5)]" />
                               Q1: Urgent & Important
                             </h3>
-                            <span className="font-mono text-[10px] px-1.5 py-0.5 border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-high)] text-[var(--color-outline)] font-bold">
+                            <span className="font-mono text-[9px] px-2 py-0.5 border border-[rgba(255,255,255,0.08)] bg-white/[0.01] text-[var(--color-outline)] font-bold rounded-full">
                               {q1Tasks.length}
                             </span>
                           </div>
-                          <span className="font-mono text-[9px] text-[var(--color-outline)] uppercase tracking-wider">Do First · Immediate Action Required</span>
+                          <span className="font-mono text-[9px] text-[var(--color-outline)] uppercase tracking-wider opacity-60">Do First · Immediate Action Required</span>
                         </div>
-                        <div className="flex-1 overflow-y-auto no-scrollbar divide-y divide-[var(--color-surface-variant)] p-2">
+                        <div className="flex-1 overflow-y-auto no-scrollbar divide-y divide-[rgba(255,255,255,0.04)] p-2">
                           {q1Tasks.length === 0 ? (
-                            <div className="text-center py-12 font-label-sm text-[10px] uppercase tracking-widest text-[var(--color-outline)] opacity-50">
+                            <div className="text-center py-16 font-mono text-[9px] uppercase tracking-widest text-[var(--color-outline)] opacity-50">
                               No actions in this quadrant.
                             </div>
                           ) : (
@@ -694,22 +713,22 @@ export function TasksPage() {
                       </div>
 
                       {/* Q2: Important, Not Urgent */}
-                      <div className="bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] flex flex-col min-h-[350px]">
-                        <div className="p-4 border-b border-[var(--color-outline-variant)] bg-[var(--color-surface-container-lowest)] flex flex-col gap-1">
+                      <div className="glass-card rounded-2xl flex flex-col min-h-[350px] overflow-hidden border-[rgba(255,255,255,0.05)] shadow-lg hover:border-[var(--color-secondary)]/20 transition-all duration-300">
+                        <div className="p-4 px-5 border-b border-[rgba(255,255,255,0.06)] bg-white/[0.02] flex flex-col gap-1.5">
                           <div className="flex items-center justify-between">
-                            <h3 className="font-label-sm text-[11px] font-bold uppercase tracking-widest text-[var(--color-secondary)] flex items-center gap-1.5">
-                              <span className="w-2 h-2 bg-[var(--color-secondary)]" />
+                            <h3 className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-secondary)] flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-secondary)] animate-pulse shadow-[0_0_8px_rgba(90,218,206,0.5)]" />
                               Q2: Important, Not Urgent
                             </h3>
-                            <span className="font-mono text-[10px] px-1.5 py-0.5 border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-high)] text-[var(--color-outline)] font-bold">
+                            <span className="font-mono text-[9px] px-2 py-0.5 border border-[rgba(255,255,255,0.08)] bg-white/[0.01] text-[var(--color-outline)] font-bold rounded-full">
                               {q2Tasks.length}
                             </span>
                           </div>
-                          <span className="font-mono text-[9px] text-[var(--color-outline)] uppercase tracking-wider">Plan / Schedule · Strategic Development</span>
+                          <span className="font-mono text-[9px] text-[var(--color-outline)] uppercase tracking-wider opacity-60">Plan / Schedule · Strategic Development</span>
                         </div>
-                        <div className="flex-1 overflow-y-auto no-scrollbar divide-y divide-[var(--color-surface-variant)] p-2">
+                        <div className="flex-1 overflow-y-auto no-scrollbar divide-y divide-[rgba(255,255,255,0.04)] p-2">
                           {q2Tasks.length === 0 ? (
-                            <div className="text-center py-12 font-label-sm text-[10px] uppercase tracking-widest text-[var(--color-outline)] opacity-50">
+                            <div className="text-center py-16 font-mono text-[9px] uppercase tracking-widest text-[var(--color-outline)] opacity-50">
                               No actions in this quadrant.
                             </div>
                           ) : (
@@ -727,22 +746,22 @@ export function TasksPage() {
                       </div>
 
                       {/* Q3: Urgent, Not Important */}
-                      <div className="bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] flex flex-col min-h-[350px]">
-                        <div className="p-4 border-b border-[var(--color-outline-variant)] bg-[var(--color-surface-container-lowest)] flex flex-col gap-1">
+                      <div className="glass-card rounded-2xl flex flex-col min-h-[350px] overflow-hidden border-[rgba(255,255,255,0.05)] shadow-lg hover:border-[var(--color-primary)]/20 transition-all duration-300">
+                        <div className="p-4 px-5 border-b border-[rgba(255,255,255,0.06)] bg-white/[0.02] flex flex-col gap-1.5">
                           <div className="flex items-center justify-between">
-                            <h3 className="font-label-sm text-[11px] font-bold uppercase tracking-widest text-[var(--color-primary)] flex items-center gap-1.5">
-                              <span className="w-2 h-2 bg-[var(--color-primary)]" />
+                            <h3 className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-primary)] flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-primary)] animate-pulse shadow-[0_0_8px_rgba(210,187,255,0.5)]" />
                               Q3: Urgent, Not Important
                             </h3>
-                            <span className="font-mono text-[10px] px-1.5 py-0.5 border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-high)] text-[var(--color-outline)] font-bold">
+                            <span className="font-mono text-[9px] px-2 py-0.5 border border-[rgba(255,255,255,0.08)] bg-white/[0.01] text-[var(--color-outline)] font-bold rounded-full">
                               {q3Tasks.length}
                             </span>
                           </div>
-                          <span className="font-mono text-[9px] text-[var(--color-outline)] uppercase tracking-wider">Delegate / Speed · Secondary Actions</span>
+                          <span className="font-mono text-[9px] text-[var(--color-outline)] uppercase tracking-wider opacity-60">Delegate / Speed · Secondary Actions</span>
                         </div>
-                        <div className="flex-1 overflow-y-auto no-scrollbar divide-y divide-[var(--color-surface-variant)] p-2">
+                        <div className="flex-1 overflow-y-auto no-scrollbar divide-y divide-[rgba(255,255,255,0.04)] p-2">
                           {q3Tasks.length === 0 ? (
-                            <div className="text-center py-12 font-label-sm text-[10px] uppercase tracking-widest text-[var(--color-outline)] opacity-50">
+                            <div className="text-center py-16 font-mono text-[9px] uppercase tracking-widest text-[var(--color-outline)] opacity-50">
                               No actions in this quadrant.
                             </div>
                           ) : (
@@ -760,22 +779,22 @@ export function TasksPage() {
                       </div>
 
                       {/* Q4: Not Urgent & Not Important */}
-                      <div className="bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] flex flex-col min-h-[350px]">
-                        <div className="p-4 border-b border-[var(--color-outline-variant)] bg-[var(--color-surface-container-lowest)] flex flex-col gap-1">
+                      <div className="glass-card rounded-2xl flex flex-col min-h-[350px] overflow-hidden border-[rgba(255,255,255,0.05)] shadow-lg hover:border-[var(--color-outline)]/20 transition-all duration-300">
+                        <div className="p-4 px-5 border-b border-[rgba(255,255,255,0.06)] bg-white/[0.02] flex flex-col gap-1.5">
                           <div className="flex items-center justify-between">
-                            <h3 className="font-label-sm text-[11px] font-bold uppercase tracking-widest text-[var(--color-outline)] flex items-center gap-1.5">
-                              <span className="w-2 h-2 bg-[var(--color-outline)]" />
+                            <h3 className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-outline)] flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-outline)] animate-pulse" />
                               Q4: Not Urgent & Not Important
                             </h3>
-                            <span className="font-mono text-[10px] px-1.5 py-0.5 border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-high)] text-[var(--color-outline)] font-bold">
+                            <span className="font-mono text-[9px] px-2 py-0.5 border border-[rgba(255,255,255,0.08)] bg-white/[0.01] text-[var(--color-outline)] font-bold rounded-full">
                               {q4Tasks.length}
                             </span>
                           </div>
-                          <span className="font-mono text-[9px] text-[var(--color-outline)] uppercase tracking-wider">Eliminate / Postpone · Backburner</span>
+                          <span className="font-mono text-[9px] text-[var(--color-outline)] uppercase tracking-wider opacity-60">Eliminate / Postpone · Backburner</span>
                         </div>
-                        <div className="flex-1 overflow-y-auto no-scrollbar divide-y divide-[var(--color-surface-variant)] p-2">
+                        <div className="flex-1 overflow-y-auto no-scrollbar divide-y divide-[rgba(255,255,255,0.04)] p-2">
                           {q4Tasks.length === 0 ? (
-                            <div className="text-center py-12 font-label-sm text-[10px] uppercase tracking-widest text-[var(--color-outline)] opacity-50">
+                            <div className="text-center py-16 font-mono text-[9px] uppercase tracking-widest text-[var(--color-outline)] opacity-50">
                               No actions in this quadrant.
                             </div>
                           ) : (
@@ -801,14 +820,14 @@ export function TasksPage() {
                     const isCollapsed = collapsedProjects[proj.id] ?? false;
 
                     return (
-                      <div key={proj.id} className="bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)]">
+                      <div key={proj.id} className="glass-card rounded-2xl overflow-hidden border-[rgba(255,255,255,0.05)] shadow-lg mb-6">
                         <div 
-                          className="flex items-center justify-between p-4 px-5 border-b border-[var(--color-surface-variant)] bg-[var(--color-surface-container-lowest)] cursor-pointer group"
+                          className="flex items-center justify-between p-4 px-5 border-b border-[rgba(255,255,255,0.06)] bg-white/[0.02] cursor-pointer group"
                           onClick={() => setCollapsedProjects(prev => ({ ...prev, [proj.id]: !isCollapsed }))}
                         >
                           <div className="flex items-center gap-3">
-                            <span className="w-2.5 h-2.5 rounded-none" style={{ backgroundColor: proj.color }} />
-                            <h3 className="font-label-sm text-[11px] font-bold text-[var(--color-on-surface)] uppercase tracking-widest group-hover:text-[var(--color-primary)] transition-colors flex items-center gap-2">
+                            <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: proj.color }} />
+                            <h3 className="font-mono text-[10px] font-bold text-[var(--color-on-surface)] uppercase tracking-[0.2em] group-hover:text-[var(--color-primary)] transition-colors flex items-center gap-2">
                               {proj.title}
                               <span className="material-symbols-outlined text-[14px] text-[var(--color-outline)] transition-transform duration-200" style={{ transform: isCollapsed ? 'rotate(-90deg)' : 'none' }}>
                                 expand_more
@@ -816,7 +835,7 @@ export function TasksPage() {
                             </h3>
                           </div>
                           <div className="flex items-center gap-4 no-print">
-                            <span className="font-label-sm text-[9px] uppercase tracking-widest text-[var(--color-outline)] font-bold">
+                            <span className="font-mono text-[9px] uppercase tracking-widest text-[var(--color-outline)] font-bold">
                               {projTasks.length} {projTasks.length === 1 ? 'Action' : 'Actions'}
                             </span>
                             <button
@@ -830,9 +849,9 @@ export function TasksPage() {
                         </div>
 
                         {!isCollapsed && (
-                          <div className="flex flex-col">
+                          <div className="flex flex-col divide-y divide-[rgba(255,255,255,0.04)]">
                             {projTasks.length === 0 ? (
-                              <div className="text-center py-6 font-label-sm text-[10px] uppercase tracking-widest text-[var(--color-outline)] opacity-50">
+                              <div className="text-center py-8 font-mono text-[9px] uppercase tracking-widest text-[var(--color-outline)] opacity-50">
                                 NO ACTIVE TASKS.
                               </div>
                             ) : (
@@ -856,16 +875,16 @@ export function TasksPage() {
                     const standaloneTasks = filtered.filter(t => !t.project_id && !t.parent_task_id);
                     if (standaloneTasks.length === 0 && projects.length > 0) return null;
                     return (
-                      <div className="bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] mt-4">
-                        <div className="p-4 px-5 border-b border-[var(--color-surface-variant)] bg-[var(--color-surface-container-lowest)]">
-                          <h3 className="font-label-sm text-[11px] font-bold text-[var(--color-outline)] uppercase tracking-widest flex items-center gap-2">
-                            <span className="material-symbols-outlined text-[14px]">inbox</span>
+                      <div className="glass-card rounded-2xl overflow-hidden mt-4 border-[rgba(255,255,255,0.05)] shadow-lg">
+                        <div className="p-4 px-5 border-b border-[rgba(255,255,255,0.06)] bg-white/[0.02]">
+                          <h3 className="font-mono text-[10px] font-bold text-[var(--color-outline)] uppercase tracking-[0.2em] flex items-center gap-2">
+                            <span className="material-symbols-outlined text-[14px] text-[var(--color-primary)]">inbox</span>
                             Standalone Actions
                           </h3>
                         </div>
-                        <div className="flex flex-col">
+                        <div className="flex flex-col divide-y divide-[rgba(255,255,255,0.04)]">
                           {standaloneTasks.length === 0 ? (
-                            <div className="text-center py-8 font-label-sm text-[10px] uppercase tracking-widest text-[var(--color-outline)] opacity-50">
+                            <div className="text-center py-10 font-mono text-[9px] uppercase tracking-widest text-[var(--color-outline)] opacity-50">
                               INBOX ZERO.
                             </div>
                           ) : (

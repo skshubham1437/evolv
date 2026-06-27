@@ -192,16 +192,16 @@ export function ShutdownPage() {
   }
 
   return (
-    <div className="flex flex-col h-full w-full bg-[var(--color-surface-container-lowest)] text-[var(--color-on-surface)] items-center overflow-hidden">
-      <div className="flex flex-col h-full w-full max-w-[var(--spacing-container-max)] border-x border-[var(--color-outline-variant)] relative">
+    <div className="flex flex-col h-full w-full bg-transparent text-[var(--color-on-surface)] items-center overflow-hidden">
+      <div className="flex flex-col h-full w-full max-w-[var(--spacing-container-max)] border-x border-[rgba(255,255,255,0.06)] relative">
 
         {/* ── Header ─────────────────────────────────────── */}
-        <header className="flex flex-col md:flex-row md:items-end justify-between px-8 py-6 border-b border-[var(--color-outline-variant)] shrink-0 bg-[var(--color-surface-container-lowest)] gap-4">
+        <header className="flex flex-col md:flex-row md:items-end justify-between px-8 py-6 border-b border-[rgba(255,255,255,0.06)] shrink-0 bg-transparent gap-4">
           <div>
-            <h2 className="font-title-md text-[32px] font-medium tracking-tight text-[var(--color-primary-fixed)]">
+            <h2 className="text-[36px] font-black tracking-tighter text-[var(--color-on-surface)] leading-none select-none">
               EOD Shutdown
             </h2>
-            <p className="font-label-sm text-[11px] text-[var(--color-outline)] uppercase tracking-widest mt-1 font-bold">
+            <p className="font-mono text-[9px] text-[var(--color-outline)] uppercase tracking-[0.25em] mt-2.5">
               SYSTEM HIBERNATION PROTOCOL
             </p>
           </div>
@@ -210,15 +210,15 @@ export function ShutdownPage() {
             {[1, 2, 3].map((s) => (
               <div 
                 key={s}
-                className={`h-2 transition-colors ${
-                  step >= s ? 'bg-[var(--color-primary)] w-8' : 'bg-[var(--color-surface-variant)] w-4'
+                className={`h-1.5 transition-all duration-300 rounded-full ${
+                  step >= s ? 'bg-[var(--color-primary)] w-8 shadow-[0_0_8px_rgba(210,187,255,0.2)]' : 'bg-white/[0.08] w-4'
                 }`}
               />
             ))}
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto no-scrollbar bg-[var(--color-surface-container-low)] pb-32">
+        <div className="flex-1 overflow-y-auto no-scrollbar bg-transparent pb-32">
           <main className="w-full max-w-3xl mx-auto p-8 flex flex-col gap-8">
             
             {/* STEP 1: Reflect on Today */}
@@ -226,31 +226,31 @@ export function ShutdownPage() {
               <div className="flex flex-col gap-8 animate-fade-in">
                 
                 {/* Stats */}
-                <section className="bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] p-6">
-                  <h3 className="font-label-sm text-[11px] font-bold uppercase tracking-widest text-[var(--color-on-surface)] flex items-center gap-2 mb-6 border-b border-[var(--color-surface-variant)] pb-2">
-                    <span className="material-symbols-outlined text-[16px] text-[var(--color-primary)]">query_stats</span>
+                <section className="glass-card rounded-2xl p-6 border-[rgba(255,255,255,0.05)] shadow-md bg-white/[0.005]">
+                  <h3 className="font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-on-surface)] font-bold flex items-center gap-2 mb-6 border-b border-[rgba(255,255,255,0.04)] pb-2.5">
+                    <span className="material-symbols-outlined text-[16px] text-[var(--color-primary)]">monitoring</span>
                     Today's Accomplishment Summary
                   </h3>
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-[var(--color-surface-container-low)] border border-[var(--color-outline-variant)] p-4 flex flex-col items-center">
-                      <span className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest font-bold mb-1">Tasks Executed</span>
-                      <span className="font-title-md text-[28px] text-[var(--color-primary)] leading-none">{tasksCompleted}<span className="text-[16px] text-[var(--color-outline)] opacity-50">/{tasks.length}</span></span>
+                    <div className="bg-white/[0.01] border border-[rgba(255,255,255,0.06)] rounded-xl p-4 flex flex-col items-center">
+                      <span className="font-mono text-[9px] text-[var(--color-outline)] uppercase tracking-widest font-bold mb-2.5">Tasks Executed</span>
+                      <span className="font-mono text-[24px] font-bold text-[var(--color-primary)] leading-none">{tasksCompleted}<span className="text-[14px] text-[var(--color-outline)] opacity-50">/{tasks.length}</span></span>
                     </div>
-                    <div className="bg-[var(--color-surface-container-low)] border border-[var(--color-outline-variant)] p-4 flex flex-col items-center">
-                      <span className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest font-bold mb-1">Habits Hit</span>
-                      <span className="font-title-md text-[28px] text-[var(--color-secondary)] leading-none">{habitsCompleted}<span className="text-[16px] text-[var(--color-outline)] opacity-50">/{habits.length}</span></span>
+                    <div className="bg-white/[0.01] border border-[rgba(255,255,255,0.06)] rounded-xl p-4 flex flex-col items-center">
+                      <span className="font-mono text-[9px] text-[var(--color-outline)] uppercase tracking-widest font-bold mb-2.5">Habits Hit</span>
+                      <span className="font-mono text-[24px] font-bold text-[var(--color-secondary)] leading-none">{habitsCompleted}<span className="text-[14px] text-[var(--color-outline)] opacity-50">/{habits.length}</span></span>
                     </div>
-                    <div className="col-span-2 bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/30 p-4 flex items-center justify-between">
-                      <span className="font-label-sm text-[11px] font-bold uppercase tracking-widest text-[var(--color-primary)]">Execution Rate</span>
-                      <span className="font-title-md text-[24px] text-[var(--color-primary)]">{completionRate}%</span>
+                    <div className="col-span-2 bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/30 rounded-xl p-4 flex items-center justify-between shadow-[inset_0_0_12px_rgba(210,187,255,0.05)]">
+                      <span className="font-mono text-[9px] font-bold uppercase tracking-widest text-[var(--color-primary)]">Execution Rate</span>
+                      <span className="font-mono text-[20px] font-bold text-[var(--color-primary)]">{completionRate}%</span>
                     </div>
                   </div>
                 </section>
 
                 {/* Mood & Energy */}
                 <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] p-6 flex flex-col gap-6">
-                    <h3 className="font-label-sm text-[11px] font-bold uppercase tracking-widest text-[var(--color-on-surface)] flex items-center gap-2 border-b border-[var(--color-surface-variant)] pb-2">
+                  <div className="glass-card rounded-2xl p-6 flex flex-col gap-6 border-[rgba(255,255,255,0.05)] shadow-md bg-white/[0.005]">
+                    <h3 className="font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-on-surface)] font-bold flex items-center gap-2 border-b border-[rgba(255,255,255,0.04)] pb-2.5">
                       <span className="material-symbols-outlined text-[16px] text-[var(--color-secondary)]">sentiment_satisfied</span>
                       State of Mind
                     </h3>
@@ -261,32 +261,32 @@ export function ShutdownPage() {
                           <button
                             key={m.val}
                             onClick={() => setMood(m.val)}
-                            className={`flex flex-col items-center gap-2 p-3 border transition-colors ${
+                            className={`flex flex-col items-center gap-2 p-3 border rounded-xl transition-all duration-300 active:scale-[0.95] ${
                               isSelected 
-                                ? 'bg-[var(--color-primary)] border-[var(--color-primary)] text-black'
-                                : 'bg-[var(--color-surface-container-low)] border-[var(--color-outline-variant)] text-[var(--color-outline)] hover:text-[var(--color-on-surface)] hover:bg-[var(--color-surface-container-high)]'
+                                ? 'bg-[var(--color-primary)] border-[var(--color-primary)] text-black shadow-[0_0_16px_rgba(210,187,255,0.25)] scale-[1.04] animate-status-pulse'
+                                : 'bg-white/[0.01] border-[rgba(255,255,255,0.08)] text-[var(--color-outline)] hover:text-[var(--color-on-surface)] hover:bg-white/[0.03]'
                             }`}
                           >
                             <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: isSelected ? "'FILL' 1" : "'FILL' 0" }}>{m.icon}</span>
-                            <span className="font-label-sm text-[9px] uppercase font-bold tracking-widest">{m.label}</span>
+                            <span className="font-mono text-[8px] uppercase font-bold tracking-widest">{m.label}</span>
                           </button>
                         );
                       })}
                     </div>
                   </div>
 
-                  <div className="bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] p-6 flex flex-col justify-center gap-6">
-                    <div className="flex justify-between items-center border-b border-[var(--color-surface-variant)] pb-2">
-                      <h3 className="font-label-sm text-[11px] font-bold uppercase tracking-widest text-[var(--color-on-surface)] flex items-center gap-2">
+                  <div className="glass-card rounded-2xl p-6 flex flex-col justify-center gap-6 border-[rgba(255,255,255,0.05)] shadow-md bg-white/[0.005]">
+                    <div className="flex justify-between items-center border-b border-[rgba(255,255,255,0.04)] pb-2.5">
+                      <h3 className="font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-on-surface)] font-bold flex items-center gap-2">
                         <span className="material-symbols-outlined text-[16px] text-[var(--color-secondary)]">bolt</span>
                         Energy Level
                       </h3>
-                      <span className="font-label-sm text-[13px] text-[var(--color-secondary)] font-bold">{energy}/5</span>
+                      <span className="font-mono text-[11px] text-[var(--color-secondary)] font-bold">{energy}/5</span>
                     </div>
-                    <div className="relative h-6 flex items-center group cursor-pointer border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-lowest)] p-1">
-                      <div className="w-full h-full relative flex">
+                    <div className="relative h-6 flex items-center group cursor-pointer border border-[rgba(255,255,255,0.08)] bg-white/[0.01] p-1 rounded-lg overflow-hidden">
+                      <div className="w-full h-full relative flex rounded-md overflow-hidden">
                         {[1, 2, 3, 4, 5].map(v => (
-                          <div key={v} className="flex-1 border-r border-[var(--color-surface-container)] last:border-r-0 h-full relative">
+                          <div key={v} className="flex-1 border-r border-black/20 last:border-r-0 h-full relative">
                             {energy >= v && <div className="absolute inset-0 bg-[var(--color-secondary)] opacity-80" />}
                           </div>
                         ))}
@@ -297,7 +297,7 @@ export function ShutdownPage() {
                         />
                       </div>
                     </div>
-                    <div className="flex justify-between font-label-sm text-[10px] text-[var(--color-outline)] font-bold uppercase tracking-widest">
+                    <div className="flex justify-between font-mono text-[8px] text-[var(--color-outline)] font-bold uppercase tracking-widest opacity-60">
                       <span>Exhausted</span>
                       <span>Supercharged</span>
                     </div>
@@ -306,14 +306,14 @@ export function ShutdownPage() {
 
                 {/* Wins & Gratitude */}
                 <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] p-6 flex flex-col gap-4">
-                    <h3 className="font-label-sm text-[11px] font-bold uppercase tracking-widest text-[var(--color-primary)] flex items-center gap-2 border-b border-[var(--color-surface-variant)] pb-2">
+                  <div className="glass-card rounded-2xl p-6 flex flex-col gap-4 border-[rgba(255,255,255,0.05)] shadow-md bg-white/[0.005]">
+                    <h3 className="font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-primary)] flex items-center gap-2 border-b border-[rgba(255,255,255,0.04)] pb-2.5">
                       <span className="material-symbols-outlined text-[16px]">workspace_premium</span>
                       Today's Wins
                     </h3>
                     <div className="flex flex-col gap-2">
                       {wins.map((win, i) => (
-                        <div key={i} className="flex items-start justify-between gap-3 p-2 border border-[var(--color-primary)]/30 bg-[var(--color-surface-container-low)] transition-colors group">
+                        <div key={i} className="flex items-start justify-between gap-3 p-2 border border-[var(--color-primary)]/20 bg-white/[0.01] rounded-xl transition-colors group">
                           <span className="font-body-md text-[13px] text-[var(--color-on-surface)] leading-snug">{win}</span>
                           <button onClick={() => removeWin(i)} className="opacity-0 group-hover:opacity-100 transition-opacity text-[var(--color-primary)] shrink-0">
                             <span className="material-symbols-outlined text-[16px]">close</span>
@@ -321,28 +321,28 @@ export function ShutdownPage() {
                         </div>
                       ))}
                     </div>
-                    <div className="flex items-center border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-low)]">
+                    <div className="flex items-center border border-[rgba(255,255,255,0.08)] bg-white/[0.01] rounded-xl overflow-hidden">
                       <input
                         value={newWin}
                         onChange={e => setNewWin(e.target.value)}
                         onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addWin(); } }}
                         placeholder="Log a triumph..."
-                        className="flex-1 bg-transparent px-3 py-2 text-[13px] text-[var(--color-on-surface)] outline-none placeholder:text-[var(--color-outline)]"
+                        className="flex-1 bg-transparent px-3 py-2 text-[13px] text-[var(--color-on-surface)] outline-none placeholder:text-[var(--color-outline)] font-mono"
                       />
-                      <button onClick={addWin} className="w-8 h-8 flex items-center justify-center bg-[var(--color-primary)]/10 text-[var(--color-primary)] border-l border-[var(--color-outline-variant)] transition-colors hover:bg-[var(--color-primary)] hover:text-black">
+                      <button onClick={addWin} className="w-8 h-8 flex items-center justify-center bg-[var(--color-primary)]/10 text-[var(--color-primary)] border-l border-[rgba(255,255,255,0.08)] transition-colors hover:bg-[var(--color-primary)] hover:text-black">
                         <span className="material-symbols-outlined text-[16px]">add</span>
                       </button>
                     </div>
                   </div>
 
-                  <div className="bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] p-6 flex flex-col gap-4">
-                    <h3 className="font-label-sm text-[11px] font-bold uppercase tracking-widest text-[var(--color-secondary)] flex items-center gap-2 border-b border-[var(--color-surface-variant)] pb-2">
+                  <div className="glass-card rounded-2xl p-6 flex flex-col gap-4 border-[rgba(255,255,255,0.05)] shadow-md bg-white/[0.005]">
+                    <h3 className="font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-secondary)] flex items-center gap-2 border-b border-[rgba(255,255,255,0.04)] pb-2.5">
                       <span className="material-symbols-outlined text-[16px]">favorite</span>
                       Gratitude
                     </h3>
                     <div className="flex flex-col gap-2">
                       {gratitude.map((g, i) => (
-                        <div key={i} className="flex items-start justify-between gap-3 p-2 border border-[var(--color-secondary)]/30 bg-[var(--color-surface-container-low)] transition-colors group">
+                        <div key={i} className="flex items-start justify-between gap-3 p-2 border border-[var(--color-secondary)]/20 bg-white/[0.01] rounded-xl transition-colors group">
                           <span className="font-body-md text-[13px] text-[var(--color-on-surface)] leading-snug">{g}</span>
                           <button onClick={() => removeGratitude(i)} className="opacity-0 group-hover:opacity-100 transition-opacity text-[var(--color-secondary)] shrink-0">
                             <span className="material-symbols-outlined text-[16px]">close</span>
@@ -350,15 +350,15 @@ export function ShutdownPage() {
                         </div>
                       ))}
                     </div>
-                    <div className="flex items-center border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-low)]">
+                    <div className="flex items-center border border-[rgba(255,255,255,0.08)] bg-white/[0.01] rounded-xl overflow-hidden">
                       <input
                         value={newGratitude}
                         onChange={e => setNewGratitude(e.target.value)}
                         onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addGratitude(); } }}
                         placeholder="Log gratitude..."
-                        className="flex-1 bg-transparent px-3 py-2 text-[13px] text-[var(--color-on-surface)] outline-none placeholder:text-[var(--color-outline)]"
+                        className="flex-1 bg-transparent px-3 py-2 text-[13px] text-[var(--color-on-surface)] outline-none placeholder:text-[var(--color-outline)] font-mono"
                       />
-                      <button onClick={addGratitude} className="w-8 h-8 flex items-center justify-center bg-[var(--color-secondary)]/10 text-[var(--color-secondary)] border-l border-[var(--color-outline-variant)] transition-colors hover:bg-[var(--color-secondary)] hover:text-black">
+                      <button onClick={addGratitude} className="w-8 h-8 flex items-center justify-center bg-[var(--color-secondary)]/10 text-[var(--color-secondary)] border-l border-[rgba(255,255,255,0.08)] transition-colors hover:bg-[var(--color-secondary)] hover:text-black">
                         <span className="material-symbols-outlined text-[16px]">add</span>
                       </button>
                     </div>
@@ -366,8 +366,8 @@ export function ShutdownPage() {
                 </section>
 
                 {/* Freeform Journaling */}
-                <section className="bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] p-6 flex flex-col gap-4 focus-within:border-[var(--color-primary)] transition-colors">
-                  <h3 className="font-label-sm text-[11px] font-bold uppercase tracking-widest text-[var(--color-primary)] flex items-center gap-2 border-b border-[var(--color-surface-variant)] pb-2">
+                <section className="glass-card rounded-2xl p-6 flex flex-col gap-4 focus-within:border-[var(--color-primary)]/40 transition-colors border-[rgba(255,255,255,0.05)] shadow-md bg-white/[0.005]">
+                  <h3 className="font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-primary)] flex items-center gap-2 border-b border-[rgba(255,255,255,0.04)] pb-2.5">
                     <span className="material-symbols-outlined text-[16px]">menu_book</span>
                     Evening Log
                   </h3>
@@ -382,7 +382,7 @@ export function ShutdownPage() {
 
                 <button
                   onClick={saveReflection}
-                  className="w-full py-4 bg-[var(--color-primary)] text-black font-label-sm text-[12px] font-bold uppercase tracking-widest hover:bg-[var(--color-primary-fixed)] transition-colors flex items-center justify-center gap-2"
+                  className="btn-gradient w-full py-4 text-black font-mono text-[10px] font-bold uppercase tracking-widest hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2 rounded-xl shadow-[0_0_15px_rgba(210,187,255,0.2)]"
                 >
                   Commit Log & Proceed
                   <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
@@ -393,20 +393,20 @@ export function ShutdownPage() {
             {/* STEP 2: Plan Tomorrow */}
             {step === 2 && (
               <div className="flex flex-col gap-8 animate-fade-in">
-                <section className="bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] p-6 flex flex-col gap-6">
-                  <h3 className="font-label-sm text-[11px] font-bold uppercase tracking-widest text-[var(--color-on-surface)] flex items-center gap-2 border-b border-[var(--color-surface-variant)] pb-2">
+                <section className="glass-card rounded-2xl p-6 flex flex-col gap-6 border-[rgba(255,255,255,0.05)] shadow-md bg-white/[0.005]">
+                  <h3 className="font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-on-surface)] flex items-center gap-2 border-b border-[rgba(255,255,255,0.04)] pb-2.5">
                     <span className="material-symbols-outlined text-[16px] text-[var(--color-secondary)]">next_week</span>
                     Tomorrow's Itinerary
                   </h3>
 
                   <div className="flex flex-col gap-2">
                     {tomorrowTasks.length === 0 ? (
-                      <p className="text-[var(--color-outline)] font-label-sm text-[10px] font-bold uppercase tracking-widest text-center py-6 border border-dashed border-[var(--color-outline-variant)]">
+                      <p className="text-[var(--color-outline)] font-mono text-[9px] font-bold uppercase tracking-widest text-center py-6 border border-dashed border-[rgba(255,255,255,0.08)] rounded-xl opacity-60">
                         No operations scheduled for tomorrow.
                       </p>
                     ) : (
                       tomorrowTasks.map(t => (
-                        <div key={t.id} className="flex items-center gap-3 px-4 py-3 bg-[var(--color-surface-container-low)] border border-[var(--color-outline-variant)]">
+                        <div key={t.id} className="flex items-center gap-3 px-4 py-3 bg-white/[0.01] border border-[rgba(255,255,255,0.06)] rounded-xl">
                           <span className="material-symbols-outlined text-[var(--color-outline)] text-[18px]">radio_button_unchecked</span>
                           <span className="font-body-md text-[14px] text-[var(--color-on-surface)] truncate">{t.title}</span>
                         </div>
@@ -415,8 +415,8 @@ export function ShutdownPage() {
                   </div>
                 </section>
 
-                <section className="bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] p-6 flex flex-col gap-4">
-                  <h3 className="font-label-sm text-[11px] font-bold uppercase tracking-widest text-[var(--color-primary)] flex items-center gap-2 border-b border-[var(--color-surface-variant)] pb-2">
+                <section className="glass-card rounded-2xl p-6 flex flex-col gap-4 border-[rgba(255,255,255,0.05)] shadow-md bg-white/[0.005]">
+                  <h3 className="font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-primary)] flex items-center gap-2 border-b border-[rgba(255,255,255,0.04)] pb-2.5">
                     <span className="material-symbols-outlined text-[16px]">add_task</span>
                     Schedule New Operation
                   </h3>
@@ -426,12 +426,12 @@ export function ShutdownPage() {
                       value={newTomorrowTaskTitle}
                       onChange={e => setNewTomorrowTaskTitle(e.target.value)}
                       placeholder="e.g. Finalize architecture review"
-                      className="flex-1 bg-[var(--color-surface-container-low)] border border-[var(--color-outline-variant)] px-4 py-3 text-[13px] text-[var(--color-on-surface)] outline-none focus:border-[var(--color-primary)] transition-colors placeholder:text-[var(--color-outline)]"
+                      className="flex-1 bg-white/[0.01] border border-[rgba(255,255,255,0.08)] rounded-xl px-4 py-3 text-[13px] text-[var(--color-on-surface)] outline-none focus:border-[var(--color-primary)]/40 transition-all placeholder:text-[var(--color-outline)]"
                     />
                     <button
                       type="submit"
                       disabled={submittingTomorrowTask || !newTomorrowTaskTitle.trim()}
-                      className="px-6 py-3 bg-[var(--color-primary)] text-black font-label-sm text-[11px] font-bold uppercase tracking-widest hover:bg-[var(--color-primary-fixed)] transition-colors disabled:opacity-50 shrink-0"
+                      className="btn-gradient px-6 py-3 text-black font-mono text-[10px] font-bold uppercase tracking-widest hover:brightness-110 active:scale-95 transition-all disabled:opacity-30 shrink-0 rounded-xl"
                     >
                       Add
                     </button>
@@ -442,14 +442,14 @@ export function ShutdownPage() {
                   <button
                     type="button"
                     onClick={() => setStep(1)}
-                    className="flex-1 py-4 bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] text-[var(--color-outline)] hover:text-[var(--color-on-surface)] hover:bg-[var(--color-surface-container-high)] transition-colors font-label-sm text-[11px] font-bold uppercase tracking-widest text-center"
+                    className="flex-1 py-4 glass-card border border-[rgba(255,255,255,0.08)] rounded-xl text-[var(--color-outline)] hover:text-[var(--color-on-surface)] hover:bg-white/[0.03] transition-all font-mono text-[10px] font-bold uppercase tracking-widest text-center active:scale-95"
                   >
                     Back
                   </button>
                   <button
                     type="button"
                     onClick={handleCompleteShutdown}
-                    className="flex-[2] py-4 bg-[var(--color-secondary)] text-black font-label-sm text-[11px] font-bold uppercase tracking-widest hover:bg-[var(--color-secondary-fixed)] transition-colors flex items-center justify-center gap-2"
+                    className="flex-[2] py-4 bg-[var(--color-secondary)] hover:brightness-110 text-black font-mono text-[10px] font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 rounded-xl shadow-[0_0_15px_rgba(90,218,206,0.2)] active:scale-95"
                   >
                     Initiate Hibernation
                     <span className="material-symbols-outlined text-[18px]">power_settings_new</span>
@@ -464,26 +464,26 @@ export function ShutdownPage() {
                 
                 {/* Offline visual */}
                 <div className="relative w-32 h-32 flex items-center justify-center">
-                  <div className="absolute inset-0 bg-[var(--color-surface-container-high)] border-2 border-[var(--color-primary)]/50 rotate-45" />
+                  <div className="absolute inset-0 glass-card rounded-3xl border-[var(--color-primary)]/30 rotate-45 animate-pulse-slow bg-white/[0.002]" />
                   <span className="material-symbols-outlined text-[var(--color-primary)] text-[48px] relative z-10 animate-pulse">power_settings_new</span>
                 </div>
 
                 <div className="flex flex-col items-center text-center gap-4 max-w-sm">
-                  <h2 className="font-title-md text-[24px] text-[var(--color-on-surface)] tracking-tight">
+                  <h2 className="text-[28px] font-black tracking-tighter text-[var(--color-on-surface)] leading-none select-none">
                     System Offline
                   </h2>
-                  <div className="h-px w-16 bg-[var(--color-primary)]" />
-                  <p className="font-mono text-[12px] text-[var(--color-outline)] uppercase leading-relaxed mt-2">
-                    EVENING LOG PARSED. TOMORROW'S ARCHITECTURE COMPILED. CORE HIBERNATION ACTIVE.
+                  <div className="h-[2px] w-12 bg-[var(--color-primary)] glow-shadow-primary rounded-full mt-2" />
+                  <p className="font-mono text-[9px] text-[var(--color-outline)] uppercase tracking-wider leading-relaxed mt-2.5">
+                    EVENING LOG PARSED // TOMORROW'S ARCHITECTURE COMPILED // CORE HIBERNATION ACTIVE
                   </p>
-                  <p className="font-label-sm text-[11px] text-[var(--color-primary)] font-bold uppercase tracking-widest mt-2">
+                  <p className="font-mono text-[10px] text-[var(--color-primary)] font-bold uppercase tracking-widest mt-2">
                     Rest well, {user?.name || 'Operator'}.
                   </p>
                 </div>
 
                 <button
                   onClick={handleReturnToDashboard}
-                  className="mt-8 px-8 py-4 bg-[var(--color-surface-container)] border border-[var(--color-primary)] text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-black transition-colors font-label-sm text-[11px] font-bold uppercase tracking-widest flex items-center gap-2"
+                  className="mt-8 px-8 py-4 glass-card rounded-xl border border-[var(--color-primary)]/30 text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-black transition-all font-mono text-[9px] font-bold uppercase tracking-widest flex items-center gap-2 active:scale-95 shadow-[0_0_12px_rgba(210,187,255,0.12)] animate-pulse"
                 >
                   Confirm & Disconnect
                   <span className="material-symbols-outlined text-[16px]">lock</span>

@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"net/http"
+	"os"
 
 	"evolv-server/database"
 	"evolv-server/services"
@@ -23,5 +24,5 @@ func HealthCheck(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}
 
-	fmt.Fprintf(w, `{"status":"ok","db":%q,"app":"evolv","ai_enabled":%t}`, dbStatus, services.IsAIEnabled())
+	fmt.Fprintf(w, `{"status":"ok","db":%q,"app":"evolv","ai_enabled":%t,"vapid_public_key":%q}`, dbStatus, services.IsAIEnabled(), os.Getenv("VAPID_PUBLIC_KEY"))
 }

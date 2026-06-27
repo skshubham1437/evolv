@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import { useToast } from '../context/ToastContext';
 import { useAI } from '../context/AIContext';
+import { RadialProgress } from '../components/ui/RadialProgress';
 
 // ─────────────────────────────────────────────────────────────
 // Unified blueprint item type
@@ -28,9 +29,11 @@ interface BlueprintItem {
 // ─────────────────────────────────────────────────────────────
 function getGreeting() {
   const h = new Date().getHours();
-  if (h < 12) return 'Good Morning';
-  if (h < 17) return 'Good Afternoon';
-  return 'Good Evening';
+  if (h < 5)  return { text: 'Burning the midnight oil', emoji: '🌙' };
+  if (h < 12) return { text: 'Good Morning', emoji: '☀️' };
+  if (h < 17) return { text: 'Good Afternoon', emoji: '🌤️' };
+  if (h < 21) return { text: 'Good Evening', emoji: '🌆' };
+  return { text: 'Good Night', emoji: '🌙' };
 }
 
 // Simple Markdown parser for Morning Briefing
@@ -137,9 +140,11 @@ function BlueprintRow({
   isLast?: boolean;
 }) {
   const [animating, setAnimating] = useState(false);
+  const [popped, setPopped] = useState(false);
 
   const handleClick = () => {
     if (item.done) return;
+    setPopped(true);
     setAnimating(true);
     setTimeout(() => {
       onComplete(item);
@@ -153,51 +158,60 @@ function BlueprintRow({
 
   return (
     <div
-      className={`group flex items-center gap-3 px-4 py-3 transition-colors duration-150 hover-row
-        ${!isLast ? 'border-b border-[var(--color-outline-variant)]/50' : ''}
-        ${item.done ? 'opacity-40' : ''}
+      className={`group flex items-center gap-3 px-5 py-3.5 transition-colors duration-150 relative overflow-hidden
+        ${!isLast ? 'border-b border-[rgba(255,255,255,0.04)]' : ''}
+        ${item.done ? 'opacity-35' : ''}
         ${isNew ? 'bg-[var(--color-primary)]/5' : ''}
         ${animating ? 'opacity-50' : ''}
+        hover:bg-white/[0.02]
       `}
     >
       {/* Checkbox / Complete button */}
       <button
         onClick={handleClick}
         disabled={item.done}
-        className={`w-5 h-5 border flex items-center justify-center shrink-0 transition-colors
+        aria-label={`Mark ${item.title} as complete`}
+        className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-all duration-300 relative overflow-hidden
           ${item.done
-            ? 'border-[var(--color-outline-variant)] bg-[var(--color-outline-variant)]/20 text-[var(--color-outline)]'
-            : 'border-[var(--color-outline-variant)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] text-transparent'
+            ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/20 text-[var(--color-primary)] shadow-[0_0_10px_rgba(210,187,255,0.4)]'
+            : 'border-[rgba(255,255,255,0.15)] hover:border-[var(--color-primary)] hover:bg-[var(--color-primary)]/5 hover:scale-105 active:scale-95 text-transparent hover:text-[var(--color-primary)]/40'
           }
         `}
       >
-        {item.done && <span className="material-symbols-outlined text-[14px]">check</span>}
-        {!item.done && <span className="material-symbols-outlined text-[14px] opacity-0 group-hover:opacity-100 transition-opacity">check</span>}
+        {item.done ? (
+          <span className={`material-symbols-outlined text-[12px] ${popped ? 'anim-check-pop' : ''}`}>check</span>
+        ) : (
+          <span className="material-symbols-outlined text-[12px] opacity-0 group-hover:opacity-100 transition-opacity">check</span>
+        )}
       </button>
 
       {/* Priority / Type badge */}
       <span
-        className="font-mono text-[10px] font-semibold tracking-wide w-8 text-center shrink-0"
-        style={{ color: item.done ? 'var(--color-outline)' : (item.type === 'task' ? getPriorityColor(item.priority) : 'var(--color-primary)') }}
+        className="font-mono text-[9px] font-bold tracking-wider px-1.5 py-0.5 border rounded shrink-0 w-12 text-center"
+        style={{ 
+          color: item.done ? 'var(--color-outline)' : (item.type === 'task' ? getPriorityColor(item.priority) : 'var(--color-primary)'),
+          borderColor: item.done ? 'rgba(255,255,255,0.04)' : `color-mix(in srgb, ${item.type === 'task' ? getPriorityColor(item.priority) : 'var(--color-primary)'} 20%, transparent)`,
+          backgroundColor: item.done ? 'transparent' : `color-mix(in srgb, ${item.type === 'task' ? getPriorityColor(item.priority) : 'var(--color-primary)'} 5%, transparent)`
+        }}
       >
-        {item.type === 'task' ? getPriorityCode(item.priority) : '⚡'}
+        {item.type === 'task' ? `[${getPriorityCode(item.priority)}]` : '[⚡]'}
       </span>
 
       {/* Title */}
-      <span className={`flex-1 text-[14px] truncate ${item.done ? 'line-through text-[var(--color-outline)]' : 'text-[var(--color-on-surface)]'}`}>
+      <span className={`flex-1 text-[13px] tracking-wide font-medium truncate transition-all duration-300 ${item.done ? 'line-through text-[var(--color-outline)] opacity-50' : 'text-[var(--color-on-surface)]'}`}>
         {item.title}
       </span>
 
       {/* Meta tags */}
       <div className="flex items-center gap-2 shrink-0">
         {item.type === 'habit' && routineLabel && (
-          <span className="font-mono text-[9px] uppercase tracking-wider text-[var(--color-outline)] hidden sm:inline">
+          <span className="font-mono text-[9px] uppercase tracking-wider text-[var(--color-outline)] opacity-70 hidden sm:inline">
             {routineLabel}
           </span>
         )}
         {item.type === 'habit' && item.streak !== undefined && item.streak > 0 && (
-          <span className="font-mono text-[10px] text-[#f97316] flex items-center gap-0.5">
-            <span className="material-symbols-outlined text-[12px]">local_fire_department</span>
+          <span className="font-mono text-[9px] text-[#f97316] flex items-center gap-0.5 font-bold">
+            <span className="material-symbols-outlined text-[11px]" style={{ fontVariationSettings: "'FILL' 1" }}>local_fire_department</span>
             {item.streak}
           </span>
         )}
@@ -220,6 +234,32 @@ export function DashboardPage() {
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [showAddTask, setShowAddTask] = useState(false);
   const [justAddedId, setJustAddedId] = useState<string | null>(null);
+
+  // Focus Mode Widget states
+  const [focusTimeLeft, setFocusTimeLeft] = useState(1500);
+  const [focusIsRunning, setFocusIsRunning] = useState(false);
+  const focusPercent = (focusTimeLeft / 1500) * 100;
+
+  useEffect(() => {
+    let interval: number | null = null;
+    if (focusIsRunning && focusTimeLeft > 0) {
+      interval = window.setInterval(() => {
+        setFocusTimeLeft(t => t - 1);
+      }, 1000);
+    } else if (focusTimeLeft === 0) {
+      setFocusIsRunning(false);
+      showToast('Focus session complete!', 'success');
+    }
+    return () => {
+      if (interval) window.clearInterval(interval);
+    };
+  }, [focusIsRunning, focusTimeLeft, showToast]);
+
+  const formatFocusTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  };
 
   const [brief, setBrief] = useState<string>('');
   const [briefLoading, setBriefLoading] = useState<boolean>(true);
@@ -354,12 +394,12 @@ export function DashboardPage() {
   const renderBlueprintGroup = (title: string, items: BlueprintItem[], timeLabel: string) => {
     if (items.length === 0) return null;
     return (
-      <div className="mb-6">
-        <div className="flex justify-between items-center mb-3">
-          <span className="font-mono text-[10px] text-[var(--color-outline)] uppercase tracking-[0.14em] font-semibold">{title}</span>
-          <span className="font-mono text-[9px] bg-[var(--color-surface-container-high)] text-[var(--color-outline)] px-2 py-0.5 rounded-sm">{timeLabel}</span>
+      <div className="mb-8">
+        <div className="flex justify-between items-center mb-3.5 px-1">
+          <span className="font-mono text-[9px] text-[var(--color-outline)] uppercase tracking-[0.25em] font-bold">{title}</span>
+          <span className="font-mono text-[9px] border border-[rgba(255,255,255,0.06)] bg-white/[0.02] text-[var(--color-outline)] px-2.5 py-0.5 rounded-full">{timeLabel}</span>
         </div>
-        <div className="bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)]">
+        <div className="glass-card rounded-2xl border-[rgba(255,255,255,0.05)] overflow-hidden shadow-lg">
           {items.map((item, idx) => (
             <BlueprintRow
               key={item.id}
@@ -390,38 +430,72 @@ export function DashboardPage() {
         )}
 
         {/* ── HEADER ─────────────────────────────────────────── */}
-        <section className="flex flex-col gap-1">
-          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[var(--color-outline)] flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-secondary)]"></span>
-            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })} // SYSTEM ONLINE
-          </p>
-          <h2 className="font-title-md text-[32px] md:text-[36px] text-[var(--color-on-surface)] font-medium tracking-tight mt-1">
-            {getGreeting()},{' '}
-            <span className="text-[var(--color-primary)] font-serif italic">{user?.name || 'Builder'}</span>
+        <section className="flex flex-col gap-1 anim-fade-up border-b border-[rgba(255,255,255,0.06)] pb-8 mb-4">
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-secondary)] animate-pulse glow-shadow-secondary"></span>
+            <p className="font-mono text-[9px] uppercase tracking-[0.25em] text-[var(--color-outline)]">
+              {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })} // SYSTEM ONLINE
+            </p>
+          </div>
+          <h2 className="text-[40px] md:text-[52px] font-black tracking-tighter text-[var(--color-on-surface)] leading-none mt-4 select-none">
+            {getGreeting().emoji} {getGreeting().text}, <span className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)]">{user?.name || 'Builder'}</span>
           </h2>
-          <p className="text-[13px] text-[var(--color-on-surface-variant)] mt-1">
-            Ready for execution. {tasks.filter(t => !t.is_completed).length} tasks queued.
+          <p className="text-[13px] text-[var(--color-on-surface-variant)] mt-4 flex items-center gap-3 flex-wrap font-medium">
+            <span className="flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[14px] text-[var(--color-outline)]">task_alt</span>
+              <strong className="text-[var(--color-on-surface)]">{tasks.filter(t => !t.is_completed).length}</strong> tasks queued
+            </span>
+            <span className="text-[rgba(255,255,255,0.15)]">·</span>
+            <span className="flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[14px] text-[var(--color-outline)]">bolt</span>
+              <strong className="text-[var(--color-on-surface)]">{habits.filter(h => !h.completed_today).length}</strong> habits remaining
+            </span>
           </p>
         </section>
+
+        {/* ── TODAY'S FOCUS CARD ─────────────────────────────── */}
+        {!loading && tasks.filter(t => !t.is_completed && t.priority === 'high').length > 0 && (() => {
+          const focusTask = tasks.filter(t => !t.is_completed && t.priority === 'high')[0];
+          return (
+            <div className="focus-card glass-card border-[rgba(255,255,255,0.06)] rounded-2xl p-5 flex items-center justify-between gap-6 anim-fade-up shadow-[0_10px_30px_rgba(0,0,0,0.3)] hover:border-[var(--color-primary)]/30 transition-all duration-300">
+              <div className="flex items-center gap-4 min-w-0">
+                <div className="w-11 h-11 rounded-xl bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/20 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(210,187,255,0.1)]">
+                  <span className="material-symbols-outlined text-[18px] text-[var(--color-primary)]" style={{ fontVariationSettings: "'FILL' 1" }}>adjust</span>
+                </div>
+                <div className="min-w-0">
+                  <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-[var(--color-primary)] mb-1">Today's Focus</p>
+                  <p className="text-[16px] font-bold text-[var(--color-on-surface)] truncate">{focusTask.title}</p>
+                </div>
+              </div>
+              <Link
+                to="/focus"
+                className="shrink-0 h-10 px-5 rounded-full bg-[var(--color-primary)] text-[var(--color-on-primary)] font-mono text-[10px] uppercase tracking-widest font-bold flex items-center gap-2 hover:opacity-90 active:scale-95 transition-all shadow-[0_0_15px_rgba(210,187,255,0.2)]"
+              >
+                <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>
+                Start Mode
+              </Link>
+            </div>
+          );
+        })()}
 
         {/* ── AI MORNING BRIEF ──────────────────────────────── */}
         {aiEnabled && (
           briefLoading ? (
-          <div className="border border-[var(--color-outline-variant)]/40 bg-[var(--color-surface-container)] p-5 rounded-sm flex flex-col gap-3 animate-pulse">
-            <div className="h-4 bg-[var(--color-surface-container-high)] w-1/4 rounded"></div>
-            <div className="h-3 bg-[var(--color-surface-container-high)] w-full rounded"></div>
-            <div className="h-3 bg-[var(--color-surface-container-high)] w-5/6 rounded"></div>
+          <div className="glass-card rounded-3xl p-8 flex flex-col gap-4 animate-pulse">
+            <div className="h-4 bg-[rgba(255,255,255,0.04)] w-1/4 rounded"></div>
+            <div className="h-3 bg-[rgba(255,255,255,0.04)] w-full rounded"></div>
+            <div className="h-3 bg-[rgba(255,255,255,0.04)] w-5/6 rounded"></div>
           </div>
         ) : brief ? (
-          <div className="border border-[var(--color-primary)]/20 bg-gradient-to-r from-[var(--color-surface-container)] to-[var(--color-surface-container-high)] p-5 rounded-sm relative overflow-hidden flex flex-col gap-3 anim-fade-up">
-            <div className="absolute right-4 top-4 opacity-5 pointer-events-none select-none">
-              <span className="material-symbols-outlined text-[100px] text-[var(--color-primary)]">psychology</span>
+          <div className="glass-card glow-card rounded-3xl p-8 relative overflow-hidden flex flex-col gap-5 anim-fade-up border-[rgba(255,255,255,0.05)] bg-[var(--color-surface)]/10 backdrop-blur-3xl shadow-[0_12px_40px_rgba(0,0,0,0.4)]">
+            <div className="absolute right-8 top-8 opacity-[0.02] pointer-events-none select-none">
+              <span className="material-symbols-outlined text-[140px] text-[var(--color-primary)]">psychology</span>
             </div>
-            <div className="flex items-center gap-2 border-b border-[var(--color-outline-variant)]/50 pb-2">
-              <span className="material-symbols-outlined text-[18px] text-[var(--color-primary)]">psychology</span>
-              <h3 className="font-mono text-[11px] font-bold text-[var(--color-primary)] uppercase tracking-wider">AI Coach Morning Brief</h3>
+            <div className="flex items-center gap-3 border-b border-[rgba(255,255,255,0.06)] pb-4">
+              <span className="material-symbols-outlined text-[22px] text-[var(--color-primary)]" style={{ fontVariationSettings: "'FILL' 1" }}>psychology</span>
+              <h3 className="font-mono text-[10px] font-bold tracking-[0.25em] text-[var(--color-primary)] uppercase">AI Coach Morning Brief</h3>
             </div>
-            <div className="italic pr-12">
+            <div className="text-[14px] text-[var(--color-on-surface-variant)] leading-relaxed pr-6">
               <FormatDashboardBrief text={brief} />
             </div>
           </div>
@@ -430,69 +504,95 @@ export function DashboardPage() {
 
         {/* ── STATS ROW ──────────────────────────────────────── */}
         <div className="flex flex-col gap-4 mt-2">
-          <section className="grid grid-cols-2 md:grid-cols-4 border border-[var(--color-outline-variant)] bg-[var(--color-surface-container)] divide-x divide-[var(--color-outline-variant)]">
-            <div className="p-5">
-              <p className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-outline)] mb-1">Execution</p>
-              <div className="flex items-baseline gap-1">
-                <span className="text-[36px] font-light leading-none text-[var(--color-on-surface)]">{pct}</span>
-                <span className="text-[14px] text-[var(--color-outline)]">%</span>
+          <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 anim-fade-up">
+            {/* Card 1: Execution */}
+            <div className="glass-card rounded-2xl p-6 flex items-center justify-between border border-[rgba(255,255,255,0.05)] border-t-[3px] border-t-[var(--color-primary)] hover:border-[var(--color-primary)]/30 hover:scale-[1.02] hover:shadow-[0_8px_30px_rgba(210,187,255,0.06)] transition-all duration-300">
+              <div className="flex flex-col gap-1.5">
+                <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--color-outline)]">Execution</span>
+                <span className="text-[36px] font-black tracking-tight text-[var(--color-on-surface)] leading-none">{pct}%</span>
+                <span className="font-mono text-[9px] text-[var(--color-outline)] opacity-70">Daily progress</span>
+              </div>
+              <RadialProgress value={pct} size={64} strokeWidth={4} sublabel="today" />
+            </div>
+
+            {/* Card 2: Active Tasks */}
+            <div className="glass-card rounded-2xl p-6 flex items-center justify-between border border-[rgba(255,255,255,0.05)] border-t-[3px] border-t-[var(--color-secondary)] hover:border-[var(--color-secondary)]/30 hover:scale-[1.02] hover:shadow-[0_8px_30px_rgba(90,218,206,0.06)] transition-all duration-300">
+              <div className="flex flex-col gap-1.5">
+                <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--color-outline)]">Active Tasks</span>
+                <div className="flex items-baseline gap-1 mt-1">
+                  <span className="text-[36px] font-black tracking-tight text-[var(--color-on-surface)] leading-none">{String(tasks.filter(t => !t.is_completed).length).padStart(2, '0')}</span>
+                  <span className="font-mono text-[10px] text-[var(--color-outline)]">/ {tasks.length}</span>
+                </div>
+                <span className="font-mono text-[9px] text-[var(--color-outline)] opacity-70">Tasks in queue</span>
+              </div>
+              <div className="w-11 h-11 rounded-xl bg-[var(--color-secondary)]/10 border border-[var(--color-secondary)]/20 flex items-center justify-center text-[var(--color-secondary)] shadow-[0_0_15px_rgba(90,218,206,0.1)]">
+                <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>task_alt</span>
               </div>
             </div>
-            <div className="p-5">
-              <p className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-outline)] mb-1">Active Tasks</p>
-              <div className="flex items-baseline gap-1">
-                <span className="text-[36px] font-light leading-none text-[var(--color-on-surface)]">{String(tasks.filter(t => !t.is_completed).length).padStart(2, '0')}</span>
-                <span className="font-mono text-[11px] text-[var(--color-outline)]">/{tasks.length}</span>
+
+            {/* Card 3: Habits */}
+            <div className="glass-card rounded-2xl p-6 flex items-center justify-between border border-[rgba(255,255,255,0.05)] border-t-[3px] border-t-[var(--color-tertiary)] hover:border-[var(--color-tertiary)]/30 hover:scale-[1.02] hover:shadow-[0_8px_30px_rgba(206,194,220,0.06)] transition-all duration-300">
+              <div className="flex flex-col gap-1.5">
+                <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--color-outline)]">Habits Completed</span>
+                <div className="flex items-baseline gap-1 mt-1">
+                  <span className="text-[36px] font-black tracking-tight text-[var(--color-on-surface)] leading-none">{String(habits.filter(h => h.completed_today).length).padStart(2, '0')}</span>
+                  <span className="font-mono text-[10px] text-[var(--color-outline)]">/ {habits.length}</span>
+                </div>
+                <span className="font-mono text-[9px] text-[var(--color-outline)] opacity-70">Daily streak triggers</span>
+              </div>
+              <div className="w-11 h-11 rounded-xl bg-[var(--color-tertiary)]/10 border border-[var(--color-tertiary)]/20 flex items-center justify-center text-[var(--color-tertiary)] shadow-[0_0_15px_rgba(206,194,220,0.1)]">
+                <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>
               </div>
             </div>
-            <div className="p-5">
-              <p className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-outline)] mb-1">Habits</p>
-              <div className="flex items-baseline gap-1">
-                <span className="text-[36px] font-light leading-none text-[var(--color-on-surface)]">{String(habits.filter(h => h.completed_today).length).padStart(2, '0')}</span>
-                <span className="font-mono text-[11px] text-[var(--color-outline)]">/{habits.length}</span>
+
+            {/* Card 4: High Priority */}
+            <div className="glass-card rounded-2xl p-6 flex items-center justify-between border border-[rgba(255,255,255,0.05)] border-t-[3px] border-t-[var(--color-error)] hover:border-[var(--color-error)]/30 hover:scale-[1.02] hover:shadow-[0_8px_30px_rgba(255,180,171,0.06)] transition-all duration-300">
+              <div className="flex flex-col gap-1.5">
+                <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--color-outline)]">High Priority</span>
+                <div className="flex items-baseline gap-1 mt-1">
+                  <span className="text-[36px] font-black tracking-tight leading-none" style={{ color: highPriorityCount > 0 ? 'var(--color-error)' : 'var(--color-on-surface)' }}>{String(highPriorityCount).padStart(2, '0')}</span>
+                  <span className="font-mono text-[10px] text-[var(--color-outline)]">pending</span>
+                </div>
+                <span className="font-mono text-[9px] text-[var(--color-outline)] opacity-70">Requires deep focus</span>
               </div>
-            </div>
-            <div className="p-5">
-              <p className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-outline)] mb-1">High Priority</p>
-              <div className="flex items-baseline gap-1">
-                <span className="text-[36px] font-light leading-none" style={{ color: highPriorityCount > 0 ? 'var(--color-error)' : 'var(--color-on-surface)' }}>{String(highPriorityCount).padStart(2, '0')}</span>
-                <span className="font-mono text-[11px] text-[var(--color-outline)]">pending</span>
+              <div className="w-11 h-11 rounded-xl bg-[var(--color-error)]/10 border border-[var(--color-error)]/25 flex items-center justify-center text-[var(--color-error)] shadow-[0_0_15px_rgba(255,180,171,0.1)]">
+                <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>warning</span>
               </div>
             </div>
           </section>
 
           {/* Progress bar */}
-          <div className="flex items-center gap-3">
-            <div className="flex-1 h-1.5 bg-[var(--color-surface-container-highest)] relative rounded-full overflow-hidden">
+          <div className="flex items-center gap-4 px-2">
+            <div className="flex-1 h-1 bg-[rgba(255,255,255,0.06)] relative rounded-full overflow-hidden">
               <div
-                className="absolute left-0 top-0 bottom-0 bg-[var(--color-primary)] transition-all duration-500 rounded-full"
+                className="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-[var(--color-primary)] to-[var(--color-secondary)] transition-all duration-500 rounded-full shadow-[0_0_8px_rgba(210,187,255,0.6)]"
                 style={{ width: `${pct}%` }}
               />
             </div>
-            <span className="font-mono text-[10px] text-[var(--color-outline)] w-8 text-right">{pct}%</span>
+            <span className="font-mono text-[10px] text-[var(--color-primary)] w-8 text-right font-bold">{pct}%</span>
           </div>
         </div>
 
         {/* ── BURNOUT ASSESSMENT ────────────────────────────── */}
         {aiEnabled && !burnoutLoading && (
-          <div className="border border-[var(--color-outline-variant)] bg-[var(--color-surface-container)] p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mt-2">
+          <div className="glass-card rounded-2xl border-[rgba(255,255,255,0.05)] p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-lg hover:border-[var(--color-secondary)]/30 transition-all duration-300">
             <div className="flex items-center gap-4">
-               <div className="w-10 h-10 rounded-full border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-high)] flex items-center justify-center shrink-0">
+               <div className="w-11 h-11 rounded-xl border border-[var(--color-secondary)]/20 bg-[var(--color-secondary)]/10 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(90,218,206,0.1)]">
                  <span className="material-symbols-outlined text-[18px] text-[var(--color-secondary)]">show_chart</span>
                </div>
                <div>
-                 <div className="flex items-center gap-2">
-                   <h3 className="font-mono text-[12px] font-bold text-[var(--color-on-surface)] uppercase tracking-wider">Burnout Risk</h3>
-                   <span className="font-mono text-[9px] uppercase font-bold px-1.5 py-0.5 border border-[var(--color-secondary)] text-[var(--color-secondary)] bg-[var(--color-secondary)]/10 rounded-sm animate-pulse">
+                 <div className="flex items-center gap-3">
+                   <h3 className="font-mono text-[10px] font-bold text-[var(--color-on-surface)] uppercase tracking-[0.2em]">Burnout Risk</h3>
+                   <span className="font-mono text-[9px] uppercase font-bold px-2.5 py-0.5 border border-[var(--color-secondary)] text-[var(--color-secondary)] bg-[var(--color-secondary)]/10 rounded-full animate-pulse">
                      {burnoutRisk?.risk || 'LOW'}
                    </span>
                  </div>
-                 <p className="font-mono text-[11px] text-[var(--color-outline)] mt-1">
+                 <p className="text-[13px] text-[var(--color-outline)] mt-1.5 font-medium">
                    {burnoutRisk?.details || 'Cognitive load optimal. Proceed with Deep Work phase.'}
                  </p>
                </div>
             </div>
-            <button className="font-mono text-[10px] text-[var(--color-outline)] hover:text-[var(--color-on-surface)] uppercase tracking-widest flex items-center gap-1 shrink-0">
+            <button className="font-mono text-[10px] text-[var(--color-outline)] hover:text-[var(--color-on-surface)] uppercase tracking-widest flex items-center gap-1.5 shrink-0 transition-colors">
               Calibrate <span className="material-symbols-outlined text-[14px]">chevron_right</span>
             </button>
           </div>
@@ -504,101 +604,101 @@ export function DashboardPage() {
            {/* LEFT COLUMN */}
            <div className="flex flex-col gap-6">
              {/* Today's Blueprint Header */}
-             <div className="flex items-center justify-between border-b border-[var(--color-outline-variant)] pb-3">
-               <h3 className="font-title-md font-bold text-[18px] text-[var(--color-on-surface)] flex items-center gap-2 tracking-wide uppercase">
-                 <span className="material-symbols-outlined text-[20px]">account_tree</span>
+             <div className="flex items-center justify-between border-b border-[rgba(255,255,255,0.06)] pb-3.5">
+               <h3 className="font-title-md font-bold text-[16px] text-[var(--color-on-surface)] flex items-center gap-2.5 tracking-wider uppercase">
+                 <span className="material-symbols-outlined text-[18px] text-[var(--color-primary)]">account_tree</span>
                  Today's Blueprint
                </h3>
-               <button onClick={() => setShowAddTask(v => !v)} className="font-mono text-[10px] text-[var(--color-primary)] hover:text-[var(--color-primary)]/80 uppercase tracking-widest flex items-center gap-1 transition-colors">
-                 <span className="material-symbols-outlined text-[14px]">{showAddTask ? 'close' : 'add'}</span> {showAddTask ? 'Cancel' : 'Add Task'}
+               <button onClick={() => setShowAddTask(v => !v)} className="font-mono text-[9px] text-[var(--color-primary)] hover:opacity-80 uppercase tracking-[0.2em] flex items-center gap-1.5 transition-opacity">
+                 <span className="material-symbols-outlined text-[12px]">{showAddTask ? 'close' : 'add'}</span> {showAddTask ? 'Cancel' : 'Add Task'}
                </button>
              </div>
 
              {/* Quick add */}
              {showAddTask && (
-               <form onSubmit={handleAddTask} className="flex items-center gap-2 px-4 py-3 border border-[var(--color-outline-variant)] bg-[var(--color-surface-container)] mb-4">
+               <form onSubmit={handleAddTask} className="flex items-center gap-3 px-4 py-3 glass-card rounded-xl border-[rgba(255,255,255,0.06)] bg-white/[0.02] mb-4">
                  <span className="material-symbols-outlined text-[16px] text-[var(--color-primary)]">add</span>
-                 <input autoFocus value={newTaskTitle} onChange={e => setNewTaskTitle(e.target.value)} placeholder="New task..." className="flex-1 bg-transparent outline-none text-[var(--color-on-surface)] text-[14px] placeholder:text-[var(--color-outline)]" />
-                 <button type="submit" disabled={!newTaskTitle.trim()} className="px-3 py-1 bg-[var(--color-primary)] text-[var(--color-on-primary)] font-mono text-[10px] uppercase tracking-wider disabled:opacity-30 hover:opacity-90 transition-opacity">Add</button>
+                 <input autoFocus value={newTaskTitle} onChange={e => setNewTaskTitle(e.target.value)} placeholder="New task..." className="flex-1 bg-transparent outline-none text-[var(--color-on-surface)] text-[14px] placeholder:text-[var(--color-outline)] font-medium" />
+                 <button type="submit" disabled={!newTaskTitle.trim()} className="px-4 py-1.5 rounded-lg bg-[var(--color-primary)] text-black font-mono text-[9px] uppercase tracking-wider font-bold disabled:opacity-30 hover:opacity-90 transition-opacity">Add</button>
                </form>
              )}
 
              {/* Blueprint List */}
              {loading ? (
-                <div className="divide-y divide-[var(--color-outline-variant)]/50">
+                <div className="divide-y divide-[rgba(255,255,255,0.04)] rounded-2xl overflow-hidden border border-[rgba(255,255,255,0.05)] bg-[#050505]/40 backdrop-blur-md">
                   {[...Array(4)].map((_, i) => (
-                    <div key={i} className="h-[52px] animate-pulse bg-[var(--color-surface-container)]/30" />
+                    <div key={i} className="h-[52px] animate-pulse bg-white/[0.01]" />
                   ))}
                 </div>
              ) : blueprintItems.length === 0 ? (
-                <div className="text-center py-12 border border-[var(--color-outline-variant)]/50">
-                  <span className="material-symbols-outlined text-[32px] text-[var(--color-outline)] mb-2">check_circle</span>
-                  <p className="text-[14px] text-[var(--color-on-surface-variant)]">Blueprint is empty</p>
+                <div className="text-center py-12 glass-card rounded-2xl border-[rgba(255,255,255,0.05)] bg-white/[0.01] backdrop-blur-sm">
+                  <span className="material-symbols-outlined text-[32px] text-[var(--color-outline)] mb-3 opacity-60">check_circle</span>
+                  <p className="font-mono text-[10px] uppercase tracking-widest text-[var(--color-outline)]">Blueprint is empty</p>
                 </div>
              ) : (
-               <div>
-                 {renderBlueprintGroup('[01] MORNING ROUTINE', morningItems, '07:00 - 09:00')}
-                 {renderBlueprintGroup('[02] DEEP WORK PHASE', taskItems, '09:30 - 12:30')}
-                 {renderBlueprintGroup('[03] EVENING RITUAL', otherItems, '18:00 - 21:00')}
+                <div>
+                  {renderBlueprintGroup('[01] MORNING ROUTINE', morningItems, '07:00 - 09:00')}
+                  {renderBlueprintGroup('[02] DEEP WORK PHASE', taskItems, '09:30 - 12:30')}
+                  {renderBlueprintGroup('[03] EVENING RITUAL', otherItems, '18:00 - 21:00')}
 
-                 {/* Done items (collapsed) */}
-                 {doneItems.length > 0 && (
-                   <details className="group mt-4 border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-low)]">
-                     <summary className="cursor-pointer list-none flex items-center gap-2 px-4 py-3 text-[var(--color-outline)] font-mono text-[10px] uppercase tracking-wider hover:text-[var(--color-on-surface-variant)] transition-colors select-none">
-                       <span className="material-symbols-outlined text-[12px] transition-transform group-open:rotate-90">chevron_right</span>
-                       {doneItems.length} completed
-                     </summary>
-                     <div className="border-t border-[var(--color-outline-variant)] bg-[var(--color-surface-container)]">
-                       {doneItems.map((item, idx) => (
-                         <BlueprintRow key={item.id} item={item} onComplete={handleComplete} isLast={idx === doneItems.length - 1} />
-                       ))}
-                     </div>
-                   </details>
-                 )}
+                  {/* Done items (collapsed) */}
+                  {doneItems.length > 0 && (
+                    <details className="group mt-4 border border-[rgba(255,255,255,0.05)] bg-white/[0.01] rounded-2xl overflow-hidden shadow-sm">
+                      <summary className="cursor-pointer list-none flex items-center gap-2 px-5 py-3.5 text-[var(--color-outline)] font-mono text-[9px] uppercase tracking-[0.25em] hover:text-[var(--color-on-surface-variant)] transition-colors select-none">
+                        <span className="material-symbols-outlined text-[12px] transition-transform group-open:rotate-90">chevron_right</span>
+                        {doneItems.length} completed
+                      </summary>
+                      <div className="border-t border-[rgba(255,255,255,0.04)] bg-white/[0.01]">
+                        {doneItems.map((item, idx) => (
+                          <BlueprintRow key={item.id} item={item} onComplete={handleComplete} isLast={idx === doneItems.length - 1} />
+                        ))}
+                      </div>
+                    </details>
+                  )}
 
-                 {pct === 100 && totalCount > 0 && (
-                   <div className="px-4 py-4 mt-6 border border-[var(--color-outline-variant)] bg-[var(--color-primary)]/5 text-center animate-pulse">
-                     <p className="font-mono text-[11px] uppercase tracking-wider text-[var(--color-primary)] font-bold">
-                       ✓ Blueprint Complete — Outstanding Execution
-                     </p>
-                   </div>
-                 )}
+                  {pct === 100 && totalCount > 0 && (
+                    <div className="px-5 py-4 mt-6 glass-card border-[var(--color-primary)]/20 rounded-2xl bg-[var(--color-primary)]/5 text-center animate-pulse shadow-[0_0_20px_rgba(210,187,255,0.05)]">
+                      <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--color-primary)] font-bold">
+                        ✓ Blueprint Complete — Outstanding Execution
+                      </p>
+                    </div>
+                  )}
 
-                 {totalCount > 0 && (
-                   <div className="flex justify-center mt-6">
-                     <Link to="/daily" className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-outline)] hover:text-[var(--color-on-surface)] flex items-center gap-1 border border-[var(--color-outline-variant)] px-6 py-3 hover:bg-[var(--color-surface-container-high)] transition-colors">
-                       View Full Task Queue <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
-                     </Link>
-                   </div>
-                 )}
-               </div>
+                  {totalCount > 0 && (
+                    <div className="flex justify-center mt-6">
+                      <Link to="/daily" className="font-mono text-[9px] uppercase tracking-[0.2em] text-[var(--color-outline)] hover:text-[var(--color-on-surface)] flex items-center gap-2 border border-[rgba(255,255,255,0.08)] bg-white/[0.01] hover:bg-white/[0.04] px-6 py-3.5 rounded-full transition-all duration-300">
+                        View Full Task Queue <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                      </Link>
+                    </div>
+                  )}
+                </div>
              )}
            </div>
 
            {/* RIGHT COLUMN */}
            <div className="flex flex-col gap-6">
              {/* Quick Energy Log Widget */}
-             <div className="border border-[var(--color-outline-variant)] bg-[var(--color-surface-container)] p-5 flex flex-col gap-4 anim-fade-up">
-               <div className="flex justify-between items-center border-b border-[var(--color-outline-variant)]/50 pb-2.5">
-                 <h3 className="font-mono text-[11px] font-bold text-[var(--color-on-surface)] uppercase tracking-widest flex items-center gap-2">
-                   <span className="material-symbols-outlined text-[14px] text-[var(--color-primary)]">bolt</span>
+             <div className="glass-card rounded-2xl p-5 flex flex-col gap-4 border border-[rgba(255,255,255,0.05)] border-t-[3px] border-t-[var(--color-secondary)] shadow-lg hover-lift">
+               <div className="flex justify-between items-center border-b border-[rgba(255,255,255,0.06)] pb-3">
+                 <h3 className="font-mono text-[10px] font-bold text-[var(--color-on-surface)] uppercase tracking-[0.2em] flex items-center gap-2">
+                   <span className="material-symbols-outlined text-[14px] text-[var(--color-primary)]" style={{ fontVariationSettings: "'FILL' 1" }}>bolt</span>
                    Energy Check-in
                  </h3>
-                 <span className="font-mono text-[9px] text-[var(--color-outline)] uppercase tracking-widest">Circadian Log</span>
+                 <span className="font-mono text-[9px] text-[var(--color-outline)] uppercase tracking-[0.15em] opacity-60">Circadian Log</span>
                </div>
                
-               <p className="text-[12px] text-[var(--color-on-surface-variant)] leading-snug">
-                 Rate your current battery/focus level to calibrate the circadian heatmap.
-               </p>
+               <p className="text-[13px] text-[var(--color-on-surface-variant)] leading-relaxed">
+                  Rate your current energy state to calibrate your circadian focus windows.
+                </p>
 
-               <div className="flex gap-2">
+                <div className="bg-white/[0.015] border border-[rgba(255,255,255,0.04)] p-2 rounded-xl flex gap-2 justify-between">
                  {[1, 2, 3, 4, 5].map((val) => {
                    const colors = [
-                     'hover:bg-red-500/20 hover:text-red-400 border-red-500/20 text-red-500/50',
-                     'hover:bg-orange-500/20 hover:text-orange-400 border-orange-500/20 text-orange-500/50',
-                     'hover:bg-yellow-500/20 hover:text-yellow-400 border-yellow-500/20 text-yellow-500/50',
-                     'hover:bg-teal-500/20 hover:text-teal-400 border-teal-500/20 text-teal-500/50',
-                     'hover:bg-cyan-500/20 hover:text-cyan-400 border-cyan-500/20 text-cyan-500/50',
+                      'bg-red-500/5 text-red-500 border-red-500/15 hover:bg-red-500/10 hover:border-red-500/35 hover:text-red-400 hover:shadow-[0_0_10px_rgba(239,68,68,0.15)]',
+                      'bg-orange-500/5 text-orange-400 border-orange-500/15 hover:bg-orange-500/10 hover:border-orange-500/35 hover:text-orange-300 hover:shadow-[0_0_10px_rgba(249,115,22,0.15)]',
+                      'bg-yellow-500/5 text-yellow-400 border-yellow-500/15 hover:bg-yellow-500/10 hover:border-yellow-500/35 hover:text-yellow-300 hover:shadow-[0_0_10px_rgba(234,179,8,0.15)]',
+                      'bg-violet-500/5 text-violet-400 border-violet-500/15 hover:bg-violet-500/10 hover:border-violet-500/35 hover:text-violet-300 hover:shadow-[0_0_10px_rgba(139,92,246,0.15)]',
+                      'bg-cyan-500/5 text-cyan-400 border-cyan-500/15 hover:bg-cyan-500/10 hover:border-cyan-500/35 hover:text-cyan-300 hover:shadow-[0_0_10px_rgba(6,182,212,0.15)]',
                    ];
                    return (
                      <button
@@ -611,7 +711,7 @@ export function DashboardPage() {
                            showToast(err.message || 'Failed to log energy', 'error');
                          }
                        }}
-                       className={`flex-1 py-2 border font-mono text-[13px] font-bold text-center transition-all ${colors[val - 1]}`}
+                        className={`aspect-square w-10 flex-1 flex items-center justify-center rounded-lg border font-mono text-[13px] font-bold transition-all duration-100 active:translate-y-[2px] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)] ${colors[val - 1]}`}
                      >
                        {val}
                      </button>
@@ -622,26 +722,29 @@ export function DashboardPage() {
 
              {/* AI Coach Insights Widget */}
              {aiEnabled && (
-               <div className="border border-[var(--color-outline-variant)] bg-[var(--color-surface-container)] p-5 flex flex-col gap-4 anim-fade-up">
-                <div className="flex justify-between items-center border-b border-[var(--color-outline-variant)]/50 pb-2.5">
-                  <h3 className="font-mono text-[11px] font-bold text-[var(--color-on-surface)] uppercase tracking-widest flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[14px] text-[var(--color-secondary)]">insights</span>
+               <div className="glass-card rounded-2xl p-5 flex flex-col gap-4 border border-[rgba(255,255,255,0.05)] border-t-[3px] border-t-[var(--color-secondary)] shadow-lg hover-lift">
+                <div className="flex justify-between items-center border-b border-[rgba(255,255,255,0.06)] pb-3">
+                  <h3 className="font-mono text-[10px] font-bold text-[var(--color-on-surface)] uppercase tracking-[0.2em] flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[14px] text-[var(--color-secondary)]" style={{ fontVariationSettings: "'FILL' 1" }}>insights</span>
                     Coach Insights
                   </h3>
-                  <span className="font-mono text-[9px] text-[var(--color-secondary)] uppercase tracking-widest font-bold">Active</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
+                    <span className="font-mono text-[9px] text-[var(--color-secondary)] uppercase tracking-[0.15em] font-bold">Active</span>
+                  </div>
                 </div>
 
                 {insightsLoading ? (
                   <div className="flex flex-col gap-3 animate-pulse">
-                    <div className="h-12 bg-[var(--color-surface-container-high)] rounded" />
-                    <div className="h-12 bg-[var(--color-surface-container-high)] rounded" />
+                    <div className="h-12 bg-white/[0.02] rounded-lg" />
+                    <div className="h-12 bg-white/[0.02] rounded-lg" />
                   </div>
                 ) : insights.length === 0 ? (
-                  <p className="font-mono text-[10px] text-[var(--color-outline)] uppercase tracking-widest text-center py-4">No recommendations</p>
+                  <p className="font-mono text-[10px] text-[var(--color-outline)] uppercase tracking-widest text-center py-4 opacity-60">No recommendations</p>
                 ) : (
                   <div className="flex flex-col gap-4">
                     {insights.map((insight, idx) => (
-                      <div key={idx} className="flex flex-col gap-1 border-l-2 border-[var(--color-secondary)] pl-3">
+                      <div key={idx} className="flex flex-col gap-1.5 border-l-2 border-[var(--color-secondary)] pl-3">
                         <span className="font-mono text-[9px] uppercase tracking-wider text-[var(--color-secondary)] font-bold">
                           {insight.category} · {insight.title}
                         </span>
@@ -656,40 +759,121 @@ export function DashboardPage() {
              )}
 
              {/* Focus Mode Widget */}
-             <div className="border border-[var(--color-outline-variant)] bg-[var(--color-surface-container)] overflow-hidden p-5 flex flex-col">
-                <div className="flex justify-between items-center mb-5">
-                  <h3 className="font-mono text-[11px] font-bold text-[var(--color-on-surface)] uppercase tracking-widest flex items-center gap-2">
+             <div className="glass-card rounded-2xl border border-[rgba(255,255,255,0.05)] border-t-[3px] border-t-[var(--color-primary)] shadow-lg overflow-hidden p-5 flex flex-col gap-4 hover-lift">
+                <div className="flex justify-between items-center border-b border-[rgba(255,255,255,0.06)] pb-3">
+                  <h3 className="font-mono text-[10px] font-bold text-[var(--color-on-surface)] uppercase tracking-[0.2em] flex items-center gap-2">
                     <span className="material-symbols-outlined text-[14px]">center_focus_strong</span>
                     Focus Mode
                   </h3>
-                  <span className="font-mono text-[9px] text-[var(--color-outline)] uppercase tracking-widest">Offline</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${focusIsRunning ? 'bg-[var(--color-primary)] shadow-[0_0_8px_rgba(210,187,255,0.5)]' : 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]'}`} />
+                    <span className="font-mono text-[9px] text-[var(--color-outline)] uppercase tracking-[0.15em] font-bold">
+                      {focusIsRunning ? 'ENGAGED' : 'READY'}
+                    </span>
+                  </div>
                 </div>
                 
-                <div className="bg-[var(--color-surface-container-high)] border border-[var(--color-outline-variant)] py-8 flex flex-col items-center justify-center mb-4">
-                  <span className="font-mono text-[36px] font-light text-[var(--color-on-surface)] tracking-widest">25:00</span>
-                  <span className="font-mono text-[9px] text-[var(--color-outline)] uppercase tracking-widest mt-2">Pomodoro Ready</span>
+                <div className="py-4 flex flex-col items-center justify-center relative">
+                  {/* SVG Circular Dial */}
+                  <div className="relative w-40 h-40 flex items-center justify-center">
+                    <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                      {/* Glow Filter */}
+                      <defs>
+                        <filter id="focus-glow" x="-20%" y="-20%" width="140%" height="140%">
+                          <feGaussianBlur stdDeviation="3" result="blur" />
+                          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                        </filter>
+                      </defs>
+                      {/* Track */}
+                      <circle
+                        cx="50"
+                        cy="50"
+                        r="42"
+                        className="stroke-white/[0.04] fill-none"
+                        strokeWidth="3"
+                      />
+                      {/* Progress with glow */}
+                      <circle
+                        cx="50"
+                        cy="50"
+                        r="42"
+                        className="stroke-[var(--color-primary)] fill-none transition-all duration-500 ease-out"
+                        strokeWidth="3.5"
+                        strokeDasharray={2 * Math.PI * 42}
+                        strokeDashoffset={2 * Math.PI * 42 * (1 - focusPercent / 100)}
+                        strokeLinecap="round"
+                        filter="url(#focus-glow)"
+                        style={{
+                          transformOrigin: '50% 50%',
+                        }}
+                      />
+                    </svg>
+                    
+                    {/* Time Text */}
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <span className="font-mono text-3xl font-light text-[var(--color-on-surface)] tracking-wider">
+                        {formatFocusTime(focusTimeLeft)}
+                      </span>
+                      <span className="font-mono text-[8px] text-[var(--color-outline)] uppercase tracking-[0.15em] mt-1 font-bold">
+                        {focusIsRunning ? 'Deep Focus' : 'Pomodoro'}
+                      </span>
+                    </div>
+                  </div>
                 </div>
                 
-                <Link to="/focus" className="w-full py-3 bg-[var(--color-primary)] hover:bg-[var(--color-primary)]/90 text-[var(--color-on-primary)] font-mono text-[11px] font-bold uppercase tracking-widest flex justify-center items-center gap-2 transition-colors">
-                  <span className="material-symbols-outlined text-[14px]">play_arrow</span>
-                  Initiate Focus
-                </Link>
-             </div>
+                {/* Control Panel */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setFocusIsRunning(!focusIsRunning)}
+                    className={`flex-1 py-2.5 rounded-xl font-mono text-[9px] font-bold uppercase tracking-widest flex justify-center items-center gap-1.5 transition-all ${
+                      focusIsRunning
+                        ? 'bg-[var(--color-error)]/10 border border-[var(--color-error)]/30 text-[var(--color-error)] hover:bg-[var(--color-error)]/20 active:scale-[0.98]'
+                        : 'bg-[var(--color-primary)] text-black hover:opacity-95 active:scale-[0.98] shadow-[0_4px_15px_rgba(210,187,255,0.2)]'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[14px]">
+                      {focusIsRunning ? 'pause' : 'play_arrow'}
+                    </span>
+                    {focusIsRunning ? 'Pause' : 'Start'}
+                  </button>
+                  
+                  {(focusTimeLeft !== 1500 || focusIsRunning) && (
+                    <button
+                      onClick={() => {
+                        setFocusIsRunning(false);
+                        setFocusTimeLeft(1500);
+                      }}
+                      className="px-3.5 py-2.5 glass-card border-[rgba(255,255,255,0.05)] bg-[var(--color-surface)]/20 hover:bg-white/[0.05] hover:border-white/[0.15] text-[var(--color-outline)] hover:text-[var(--color-on-surface-variant)] transition-all rounded-xl flex items-center justify-center"
+                      title="Reset Pomodoro"
+                    >
+                      <span className="material-symbols-outlined text-[14px]">replay</span>
+                    </button>
+                  )}
+                  
+                  <Link 
+                    to="/focus" 
+                    className="px-3.5 py-2.5 glass-card border-[rgba(255,255,255,0.05)] bg-[var(--color-surface)]/20 hover:bg-white/[0.05] hover:border-white/[0.15] text-[var(--color-outline)] hover:text-[var(--color-on-surface-variant)] transition-all rounded-xl flex items-center justify-center"
+                    title="Open Full Focus Screen"
+                  >
+                    <span className="material-symbols-outlined text-[14px]">open_in_new</span>
+                  </Link>
+                </div>
+              </div>
 
              {/* Scratchpad Widget */}
-             <div className="border border-[var(--color-outline-variant)] bg-[var(--color-surface-container)] flex flex-col h-64 relative">
-                <div className="px-5 py-4 border-b border-[var(--color-outline-variant)]">
-                  <h3 className="font-mono text-[11px] font-bold text-[var(--color-on-surface)] uppercase tracking-widest flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[14px]">edit_note</span>
+             <div className="glass-card rounded-2xl border-[rgba(255,255,255,0.05)] flex flex-col h-64 relative shadow-lg hover-lift">
+                <div className="px-5 py-4 border-b border-[rgba(255,255,255,0.06)] flex justify-between items-center">
+                  <h3 className="font-mono text-[10px] font-bold text-[var(--color-on-surface)] uppercase tracking-[0.2em] flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[14px] text-[var(--color-primary)]">edit_note</span>
                     Scratchpad
                   </h3>
                 </div>
                 <div className="flex-1 p-5">
-                  <textarea className="w-full h-full bg-transparent resize-none outline-none font-mono text-[11px] text-[var(--color-on-surface)] placeholder:text-[var(--color-outline)]" placeholder="// Quick thoughts..."></textarea>
+                  <textarea className="w-full h-full bg-transparent resize-none outline-none font-mono text-[11px] text-[var(--color-on-surface)] placeholder:text-[var(--color-outline)] leading-relaxed" placeholder="// Quick thoughts..."></textarea>
                 </div>
                 {/* Floating add button */}
-                <button className="absolute bottom-[-16px] right-4 w-12 h-12 rounded-full bg-[var(--color-secondary)] hover:bg-[var(--color-secondary)]/90 flex items-center justify-center text-[var(--color-on-secondary)] shadow-lg transition-transform hover:scale-105 z-10">
-                   <span className="material-symbols-outlined text-[24px]">add</span>
+                <button className="absolute bottom-[-16px] right-6 w-11 h-11 rounded-full bg-[var(--color-secondary)] hover:bg-[var(--color-secondary)]/90 flex items-center justify-center text-[var(--color-on-secondary)] shadow-[0_0_15px_rgba(90,218,206,0.3)] transition-all active:scale-95 hover:scale-105 z-10">
+                   <span className="material-symbols-outlined text-[20px]">add</span>
                 </button>
              </div>
 

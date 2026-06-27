@@ -71,6 +71,7 @@ func main() {
 	registerAIRoutes(protectedMux)
 	registerProjectRoutes(protectedMux)
 	registerNotificationRoutes(protectedMux)
+	registerShareRoutes(protectedMux)
 
 	// --- Combine ---
 	rootMux := http.NewServeMux()

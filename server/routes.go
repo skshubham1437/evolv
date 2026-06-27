@@ -114,6 +114,13 @@ func registerPublicRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/auth/register", RateLimitAuth(handlers.Register))
 	mux.HandleFunc("POST /api/auth/login", RateLimitAuth(handlers.Login))
 	mux.HandleFunc("POST /api/auth/forgot-password", RateLimitAuth(handlers.ForgotPassword))
+	mux.HandleFunc("GET /api/shared/overview/{token}", handlers.GetSharedOverview)
+}
+
+func registerShareRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("POST /api/shares", handlers.CreateOrRegenerateShare)
+	mux.HandleFunc("GET /api/shares/status", handlers.GetShareStatus)
+	mux.HandleFunc("DELETE /api/shares", handlers.RevokeShare)
 }
 
 func registerProjectRoutes(mux *http.ServeMux) {
@@ -127,4 +134,6 @@ func registerNotificationRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/notifications", handlers.GetNotifications)
 	mux.HandleFunc("PUT /api/notifications/{id}/read", handlers.MarkNotificationAsRead)
 	mux.HandleFunc("PUT /api/notifications/read-all", handlers.MarkAllNotificationsAsRead)
+	mux.HandleFunc("POST /api/notifications/subscribe", handlers.SubscribePush)
+	mux.HandleFunc("POST /api/notifications/unsubscribe", handlers.UnsubscribePush)
 }

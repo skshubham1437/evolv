@@ -51,7 +51,7 @@ export function Sidebar({ expanded = false, onToggle }: SidebarProps) {
   return (
     <nav
       aria-label="Main navigation"
-      className={`hidden md:flex flex-col h-screen fixed left-0 top-0 bg-[var(--color-surface-container-low)] border-r border-[var(--color-outline-variant)] z-40 transition-[width] duration-300 ease-in-out ${expanded ? 'w-60' : 'w-14'}`}
+      className={`hidden md:flex flex-col h-screen fixed left-0 top-0 bg-[var(--color-surface)]/10 backdrop-blur-3xl border-r border-[var(--glass-border)] z-40 transition-[width] duration-300 ease-in-out shadow-[4px_0_30px_rgba(0,0,0,0.1)] ${expanded ? 'w-60' : 'w-14'}`}
     >
 
       {/* ── Brand mark ─────────────────────────────── */}
@@ -59,26 +59,26 @@ export function Sidebar({ expanded = false, onToggle }: SidebarProps) {
         onClick={onToggle}
         aria-expanded={expanded}
         aria-label={expanded ? 'Collapse sidebar' : 'Expand sidebar'}
-        className={`group flex items-center h-14 border-b border-[var(--color-outline-variant)] hover:bg-[var(--color-surface-container-high)] transition-colors relative cursor-pointer overflow-hidden shrink-0 ${expanded ? 'px-4 justify-between' : 'justify-center'}`}
+        className={`group flex items-center h-14 border-b border-[var(--color-outline-variant)] hover:bg-white/[0.02] transition-colors relative cursor-pointer overflow-hidden shrink-0 active:scale-[0.98] ${expanded ? 'px-4 justify-between' : 'justify-center'}`}
       >
         {expanded ? (
-           <>
-             <span className="font-mono text-[16px] font-bold text-[var(--color-primary)] tracking-tight">
-               EVOLV
-             </span>
-             <span className="material-symbols-outlined text-[20px] text-[var(--color-outline)] opacity-0 group-hover:opacity-100 transition-opacity" aria-hidden="true">
-               menu_open
-             </span>
-           </>
+          <>
+            <span className="font-title-md text-xl font-bold text-[var(--color-primary)] tracking-tight select-none">
+              Evolv
+            </span>
+            <span className="material-symbols-outlined text-[20px] text-[var(--color-outline)] opacity-0 group-hover:opacity-100 transition-all duration-300 transform rotate-180" aria-hidden="true">
+              menu_open
+            </span>
+          </>
         ) : (
-           <>
-             <span className="font-mono text-[16px] font-bold text-[var(--color-primary)] tracking-tight group-hover:opacity-0 transition-opacity absolute" aria-hidden="true">
-               E
-             </span>
-             <span className="material-symbols-outlined text-[20px] text-[var(--color-outline)] opacity-0 group-hover:opacity-100 transition-opacity absolute" aria-hidden="true">
-               menu
-             </span>
-           </>
+          <>
+            <span className="font-title-md text-xl font-bold text-[var(--color-primary)] tracking-tight group-hover:opacity-0 transition-opacity absolute select-none" aria-hidden="true">
+              E
+            </span>
+            <span className="material-symbols-outlined text-[20px] text-[var(--color-outline)] opacity-0 group-hover:opacity-100 transition-all duration-300 transform rotate-0 absolute" aria-hidden="true">
+              menu
+            </span>
+          </>
         )}
       </button>
 
@@ -91,7 +91,7 @@ export function Sidebar({ expanded = false, onToggle }: SidebarProps) {
             )}
             {/* Group label — only visible when sidebar expanded */}
             {expanded && (
-              <span className="font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--color-outline)] px-5 py-1.5 block opacity-70">
+              <span className="text-[10px] font-medium uppercase tracking-wider text-[var(--color-outline)] px-5 py-2 block">
                 {group.label}
               </span>
             )}
@@ -103,28 +103,31 @@ export function Sidebar({ expanded = false, onToggle }: SidebarProps) {
                   end={to === '/'}
                   aria-label={label}
                   className={({ isActive }) => `
-                    flex items-center transition-all duration-150 relative
-                    ${expanded ? 'px-3 py-2.5 rounded-sm mx-1' : 'justify-center w-10 h-10 mx-auto tooltip-wrapper'}
+                    flex items-center transition-all duration-300 relative group/nav active:scale-[0.97]
+                    ${expanded ? 'px-3 py-2.5 rounded-xl mx-2 mb-1' : 'justify-center w-11 h-11 mx-auto rounded-xl mb-1 tooltip-wrapper'}
                     ${isActive
-                      ? 'text-[var(--color-primary)] bg-[var(--color-primary)]/8'
-                      : 'text-[var(--color-outline)] hover:text-[var(--color-on-surface-variant)] hover:bg-[var(--color-surface-container-high)]'
+                      ? 'text-[var(--color-primary)] bg-gradient-to-r from-[var(--color-primary)]/10 to-transparent bg-[length:200%_100%] animate-[bg-shift_3s_ease-in-out_infinite]'
+                      : 'text-[var(--color-outline)] hover:text-[var(--color-on-surface-variant)] hover:bg-[var(--color-surface-container-high)]/50'
                     }
                   `}
                 >
                   {({ isActive }) => (
                     <>
-                      {!expanded && isActive && (
-                        <div className="absolute left-0 top-[20%] bottom-[20%] w-[2px] bg-[var(--color-primary)]" aria-hidden="true" />
+                      {isActive && (
+                        <div className="absolute left-0 top-[20%] bottom-[20%] w-[3px] bg-[var(--color-primary)] rounded-r-full glow-shadow-primary" aria-hidden="true" />
                       )}
                       <span
-                        className="material-symbols-outlined text-[20px] shrink-0"
-                        style={{ fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0" }}
+                        className="material-symbols-outlined text-[20px] shrink-0 transition-transform duration-300 group-hover/nav:scale-110 group-active/nav:scale-95"
+                        style={{ 
+                          fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0",
+                          textShadow: isActive ? '0 0 12px rgba(210,187,255,0.5)' : 'none'
+                        }}
                         aria-hidden="true"
                       >
                         {icon}
                       </span>
                       {expanded && (
-                         <span className="font-mono text-[11px] uppercase tracking-wider ml-3 whitespace-nowrap opacity-100 transition-opacity duration-300">
+                         <span className="text-sm font-medium ml-3 whitespace-nowrap opacity-100 transition-opacity duration-300">
                            {label}
                          </span>
                       )}
@@ -145,12 +148,12 @@ export function Sidebar({ expanded = false, onToggle }: SidebarProps) {
           onClick={toggleTheme}
           title={theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
           aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-          className={`flex items-center justify-center transition-colors text-[var(--color-outline)] hover:text-[var(--color-on-surface-variant)] hover:bg-[var(--color-surface-container-high)] ${expanded ? 'w-full py-2 rounded-sm mr-1' : 'w-10 h-10 tooltip-wrapper'}`}
+          className={`flex items-center justify-center transition-colors text-[var(--color-outline)] hover:text-[var(--color-on-surface-variant)] hover:bg-[var(--color-surface-container-high)]/50 ${expanded ? 'w-full py-2.5 rounded-xl mr-1' : 'w-11 h-11 rounded-xl tooltip-wrapper'}`}
         >
           <span className="material-symbols-outlined text-[20px] shrink-0" style={{ fontVariationSettings: "'FILL' 1" }} aria-hidden="true">
             {theme === 'dark' ? 'light_mode' : 'dark_mode'}
           </span>
-          {expanded && <span className="font-mono text-[11px] uppercase tracking-wider ml-2 whitespace-nowrap">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>}
+          {expanded && <span className="text-sm font-medium ml-2 whitespace-nowrap">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>}
           {!expanded && <span className="tooltip-text" aria-hidden="true">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>}
         </button>
 
@@ -159,15 +162,17 @@ export function Sidebar({ expanded = false, onToggle }: SidebarProps) {
           to="/settings"
           aria-label="Settings"
           className={({ isActive }) =>
-            `flex items-center justify-center transition-colors ${expanded ? 'w-full py-2 rounded-sm ml-1' : 'w-10 h-10 tooltip-wrapper'} ${
-              isActive ? 'text-[var(--color-primary)] bg-[var(--color-primary)]/8' : 'text-[var(--color-outline)] hover:text-[var(--color-on-surface-variant)] hover:bg-[var(--color-surface-container-high)]'
+            `flex items-center justify-center transition-colors ${expanded ? 'w-full py-2.5 rounded-xl ml-1' : 'w-11 h-11 rounded-xl tooltip-wrapper'} ${
+              isActive 
+                ? 'text-[var(--color-primary)] bg-gradient-to-r from-[var(--color-primary)]/10 to-transparent shadow-[inset_2px_0_0_var(--color-primary)]' 
+                : 'text-[var(--color-outline)] hover:text-[var(--color-on-surface-variant)] hover:bg-[var(--color-surface-container-high)]/50'
             }`
           }
         >
-          <div className="w-7 h-7 flex items-center justify-center font-mono text-[10px] font-bold border border-[var(--color-outline-variant)] bg-[var(--color-surface-container-high)] text-[var(--color-on-surface-variant)] shrink-0" aria-hidden="true">
+          <div className="w-7 h-7 flex items-center justify-center text-xs font-semibold rounded-full bg-[var(--color-surface-container-high)] text-[var(--color-on-surface)] shrink-0 shadow-sm" aria-hidden="true">
             {getInitials(user?.name)}
           </div>
-          {expanded && <span className="font-mono text-[11px] uppercase tracking-wider ml-2 whitespace-nowrap text-inherit">Settings</span>}
+          {expanded && <span className="text-sm font-medium ml-2 whitespace-nowrap text-inherit">Settings</span>}
           {!expanded && <span className="tooltip-text" aria-hidden="true">Settings</span>}
         </NavLink>
       </div>

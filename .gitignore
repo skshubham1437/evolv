@@ -54,3 +54,6 @@ tmp/
 temp/
 .gemini/
 .opencode/
+
+# Nginx server config (managed manually on production server)
+nginx/

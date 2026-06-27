@@ -10,10 +10,13 @@ const PRESETS = [
 ];
 
 const SOUNDS = [
+  { id: 'none',     icon: 'volume_off', label: 'Mute' },
   { id: 'rain',     icon: 'rainy',      label: 'Rain' },
   { id: 'binaural', icon: 'graphic_eq', label: 'Binaural' },
   { id: 'white',    icon: 'waves',      label: 'White Noise' },
   { id: 'forest',   icon: 'forest',     label: 'Forest' },
+  { id: 'lofi',     icon: 'music_note', label: 'Lofi Beats' },
+  { id: 'cafe',     icon: 'coffee',     label: 'Cafe Hum' },
 ];
 
 const WAVE_HEIGHTS = [30, 60, 45, 80, 55, 90, 40, 70, 50, 85, 35, 65];
@@ -33,7 +36,8 @@ function createNoiseBuffer(ctx: AudioContext, seconds = 4): AudioBuffer {
   return buf;
 }
 
-function startAudio(soundId: string): () => void {
+function startAudio(soundId: string): (() => void) | null {
+  if (soundId === 'none') return null;
   const ctx = new AudioContext();
   const master = ctx.createGain();
   master.gain.setValueAtTime(0, ctx.currentTime);
@@ -118,6 +122,120 @@ function startAudio(soundId: string): () => void {
     }, 900 + Math.random() * 1800);
 
     cleanupFns.push(() => { src.stop(); window.clearInterval(iv); });
+  } else if (soundId === 'lofi') {
+    master.gain.setValueAtTime(0, ctx.currentTime);
+    master.gain.linearRampToValueAtTime(0.25, ctx.currentTime + 1.5);
+    
+    const chords = [
+      [220, 261.63, 329.63, 392.00], // Am7
+      [293.66, 349.23, 440.00, 523.25], // Dm7
+      [196.00, 246.94, 293.66, 392.00], // G7
+      [261.63, 329.63, 392.00, 493.88], // Cmaj7
+    ];
+    let chordIdx = 0;
+    let lofiTimer: number | null = null;
+    
+    const playChord = () => {
+      if (ctx.state === 'closed') return;
+      const now = ctx.currentTime;
+      const notes = chords[chordIdx];
+      chordIdx = (chordIdx + 1) % chords.length;
+      
+      notes.forEach(freq => {
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, now);
+        
+        g.gain.setValueAtTime(0, now);
+        g.gain.linearRampToValueAtTime(0.06, now + 0.6);
+        g.gain.setValueAtTime(0.06, now + 3.0);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + 4.5);
+        
+        osc.connect(g);
+        g.connect(master);
+        osc.start(now);
+        osc.stop(now + 5);
+      });
+      
+      // Soft kick-like thud on beat 2
+      const tickOsc = ctx.createOscillator();
+      const tickGain = ctx.createGain();
+      tickOsc.type = 'sine';
+      tickOsc.frequency.setValueAtTime(90, now + 2.0);
+      tickOsc.frequency.exponentialRampToValueAtTime(50, now + 2.15);
+      tickGain.gain.setValueAtTime(0.12, now + 2.0);
+      tickGain.gain.exponentialRampToValueAtTime(0.0001, now + 2.3);
+      tickOsc.connect(tickGain);
+      tickGain.connect(master);
+      tickOsc.start(now + 2.0);
+      tickOsc.stop(now + 2.4);
+
+      lofiTimer = window.setTimeout(playChord, 4800);
+    };
+    
+    playChord();
+    cleanupFns.push(() => { if (lofiTimer !== null) window.clearTimeout(lofiTimer); });
+
+  } else if (soundId === 'cafe') {
+    master.gain.setValueAtTime(0, ctx.currentTime);
+    master.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 1.5);
+
+    // Base murmur layer — bandpass noise
+    const src = ctx.createBufferSource();
+    src.buffer = createNoiseBuffer(ctx, 6);
+    src.loop = true;
+    const bpf = ctx.createBiquadFilter();
+    bpf.type = 'bandpass';
+    bpf.frequency.value = 400;
+    bpf.Q.value = 0.6;
+    const chatterGain = ctx.createGain();
+    chatterGain.gain.value = 0.12;
+    src.connect(bpf);
+    bpf.connect(chatterGain);
+    chatterGain.connect(master);
+    src.start();
+
+    // Second murmur layer — slightly different freq for richness
+    const src2 = ctx.createBufferSource();
+    src2.buffer = createNoiseBuffer(ctx, 5);
+    src2.loop = true;
+    const bpf2 = ctx.createBiquadFilter();
+    bpf2.type = 'bandpass';
+    bpf2.frequency.value = 700;
+    bpf2.Q.value = 0.3;
+    const chatter2 = ctx.createGain();
+    chatter2.gain.value = 0.06;
+    src2.connect(bpf2);
+    bpf2.connect(chatter2);
+    chatter2.connect(master);
+    src2.start();
+    
+    // Random clink/tap sounds using recursive setTimeout for varied timing
+    let cafeTimer: number | null = null;
+    const scheduleClink = () => {
+      if (ctx.state === 'closed') return;
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = 'sine';
+      const freq = 2000 + Math.random() * 3000;
+      osc.frequency.setValueAtTime(freq, now);
+      osc.frequency.exponentialRampToValueAtTime(freq * 0.7, now + 0.05);
+      g.gain.setValueAtTime(0.05, now);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
+      osc.connect(g);
+      g.connect(master);
+      osc.start();
+      osc.stop(now + 0.1);
+      cafeTimer = window.setTimeout(scheduleClink, 600 + Math.random() * 2500);
+    };
+    cafeTimer = window.setTimeout(scheduleClink, 500);
+    
+    cleanupFns.push(() => {
+      src.stop(); src2.stop();
+      if (cafeTimer !== null) window.clearTimeout(cafeTimer);
+    });
   }
 
   return () => {
@@ -128,31 +246,195 @@ function startAudio(soundId: string): () => void {
 }
 
 // ── SVG Progress Ring ──────────────────────────────────────
-function FocusRing({ pct, timeStr, running }: { pct: number; timeStr: string; running: boolean }) {
-  const size = 300, strokeW = 4;
-  const r = (size - 60 - strokeW * 2) / 2;
-  const circ = 2 * Math.PI * r;
+function FocusRing({ pct, timeStr, running, totalSecs, remaining }: { pct: number; timeStr: string; running: boolean; totalSecs: number; remaining: number }) {
+  const size = 340, strokeW = 5;
+  const cx = size / 2, cy = size / 2;
+  const rOuter = 148;          // main progress ring
+  const rInner = 134;          // thin inner accent ring
+  const rTicks = 158;          // where the minute ticks sit
+  const circOuter = 2 * Math.PI * rOuter;
+  const circInner = 2 * Math.PI * rInner;
+  const elapsed = totalSecs - remaining;
+  const elapsedMins = Math.floor(elapsed / 60);
+  const elapsedSecs = elapsed % 60;
+
+  // Head dot position (follows progress arc tip)
+  const headAngle = pct * 360 - 90; // -90 because SVG starts at top
+  const headRad = (headAngle * Math.PI) / 180;
+  const headX = cx + rOuter * Math.cos(headRad);
+  const headY = cy + rOuter * Math.sin(headRad);
+
   return (
-    <div className="relative flex items-center justify-center border border-[var(--color-outline-variant)] bg-[var(--color-surface-container)]" style={{ width: size, height: size }}>
-      {running && (
-        <div className="absolute inset-0 border border-[var(--color-primary)]/50 pointer-events-none animate-pulse" />
-      )}
+    <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
       
-      <svg width={size-60} height={size-60} className="absolute rotate-[-90deg]">
-        <circle cx={(size-60)/2} cy={(size-60)/2} r={r} fill="none" stroke="var(--color-surface-variant)" strokeWidth={strokeW} opacity="0.5" />
-        <circle cx={(size-60)/2} cy={(size-60)/2} r={r} fill="none" stroke="var(--color-primary)" strokeWidth={strokeW}
-          strokeDasharray={`${circ * pct} ${circ}`}
-          style={{ transition: running ? 'stroke-dasharray 1s linear' : 'stroke-dasharray 0.4s ease' }} />
+      {/* Ambient glow behind the ring when running */}
+      {running && (
+        <div className="absolute inset-0 rounded-full pointer-events-none" 
+          style={{ 
+            background: 'radial-gradient(circle, rgba(210,187,255,0.04) 0%, transparent 70%)',
+            animation: 'pulse 3s ease-in-out infinite' 
+          }} 
+        />
+      )}
+
+      <svg width={size} height={size} className="absolute overflow-visible pointer-events-none">
+        <defs>
+          <linearGradient id="progress-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="1" />
+            <stop offset="100%" stopColor="var(--color-secondary)" stopOpacity="0.7" />
+          </linearGradient>
+          <linearGradient id="sweep-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="var(--color-primary)" stopOpacity="0.6" />
+            <stop offset="100%" stopColor="var(--color-primary)" stopOpacity="0" />
+          </linearGradient>
+          <filter id="head-glow">
+            <feGaussianBlur stdDeviation="4" result="blur" />
+            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+          </filter>
+          <filter id="ring-glow">
+            <feGaussianBlur stdDeviation="2.5" result="blur" />
+            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+          </filter>
+        </defs>
+
+        {/* ── 60 Minute Tick Marks ────────────────────── */}
+        {Array.from({ length: 60 }).map((_, i) => {
+          const deg = i * 6; // 360/60
+          const isMajor = i % 5 === 0;
+          const len = isMajor ? 10 : 5;
+          return (
+            <line
+              key={`tick-${i}`}
+              x1={cx}
+              y1={cy - rTicks}
+              x2={cx}
+              y2={cy - rTicks + len}
+              stroke={isMajor ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.06)'}
+              strokeWidth={isMajor ? '1.5' : '0.75'}
+              transform={`rotate(${deg} ${cx} ${cy})`}
+            />
+          );
+        })}
+
+        {/* ── Quarter Labels (12, 3, 6, 9 o'clock positions) ── */}
+        {[
+          { angle: -90, label: '0' },
+          { angle: 0, label: '15' },
+          { angle: 90, label: '30' },
+          { angle: 180, label: '45' },
+        ].map(({ angle, label }) => {
+          const labelR = rTicks + 14;
+          const rad = (angle * Math.PI) / 180;
+          return (
+            <text
+              key={label}
+              x={cx + labelR * Math.cos(rad)}
+              y={cy + labelR * Math.sin(rad)}
+              textAnchor="middle"
+              dominantBaseline="central"
+              fill="rgba(255,255,255,0.18)"
+              fontSize="8"
+              fontFamily="var(--font-mono)"
+              fontWeight="600"
+            >
+              {label}
+            </text>
+          );
+        })}
+
+        {/* ── Outer faint reference circle ────────────── */}
+        <circle cx={cx} cy={cy} r={rTicks + 2} fill="none" stroke="rgba(255,255,255,0.02)" strokeWidth="0.5" />
+
+        {/* ── Base Track (dark) ────────────────────────── */}
+        <circle
+          cx={cx} cy={cy} r={rOuter}
+          fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth={strokeW}
+          transform={`rotate(-90 ${cx} ${cy})`}
+        />
+
+        {/* ── Inner Accent Ring (thin, shows pct in secondary color) */}
+        <circle
+          cx={cx} cy={cy} r={rInner}
+          fill="none" stroke="rgba(255,255,255,0.02)" strokeWidth="1.5"
+          transform={`rotate(-90 ${cx} ${cy})`}
+        />
+        <circle
+          cx={cx} cy={cy} r={rInner}
+          fill="none" stroke="var(--color-secondary)" strokeWidth="1.5"
+          strokeDasharray={`${circInner * pct} ${circInner}`}
+          strokeLinecap="round"
+          opacity="0.4"
+          style={{ transition: running ? 'stroke-dasharray 1s linear' : 'stroke-dasharray 0.4s ease' }}
+          transform={`rotate(-90 ${cx} ${cy})`}
+        />
+
+        {/* ── Main Progress Arc ───────────────────────── */}
+        <circle
+          cx={cx} cy={cy} r={rOuter}
+          fill="none" stroke="url(#progress-grad)" strokeWidth={strokeW}
+          strokeDasharray={`${circOuter * pct} ${circOuter}`}
+          strokeLinecap="round"
+          filter="url(#ring-glow)"
+          style={{ transition: running ? 'stroke-dasharray 1s linear' : 'stroke-dasharray 0.4s ease' }}
+          transform={`rotate(-90 ${cx} ${cy})`}
+        />
+
+        {/* ── Glowing Head Dot (follows the arc tip) ──── */}
+        {pct > 0.005 && (
+          <circle
+            cx={headX}
+            cy={headY}
+            r="4"
+            fill="var(--color-primary)"
+            filter="url(#head-glow)"
+            style={{ transition: running ? 'cx 1s linear, cy 1s linear' : 'cx 0.4s ease, cy 0.4s ease' }}
+          />
+        )}
+
+        {/* ── Rotating Radar Sweep (only when running) ── */}
+        {running && (
+          <circle cx={cx} cy={cy} r={rOuter} fill="none" stroke="url(#sweep-grad)" strokeWidth={strokeW + 2}
+            strokeDasharray={`${circOuter * 0.1} ${circOuter}`}
+            style={{ 
+              transformOrigin: 'center',
+              animation: 'spin 6s linear infinite',
+            }}
+          />
+        )}
       </svg>
       
+      {/* ── Center Content ────────────────────────────── */}
       <div className="relative z-10 flex flex-col items-center justify-center">
-        <span className={`font-mono text-[var(--color-on-surface)] tracking-tight select-none`}
-          style={{ fontSize: 56, lineHeight: 1, fontWeight: 300 }}>
+        {/* Main Time Display */}
+        <span className="font-mono text-[var(--color-on-surface)] tracking-[-0.04em] select-none font-extralight tabular-nums"
+          style={{ fontSize: 68, lineHeight: 1 }}>
           {timeStr}
         </span>
-        <span className="font-label-sm text-[10px] text-[var(--color-primary)] font-bold uppercase tracking-widest mt-4">
-          {running ? 'Execution Active' : 'System Paused'}
-        </span>
+
+        {/* Status Label */}
+        <div className="flex items-center gap-2 mt-4">
+          <span className={`w-1.5 h-1.5 rounded-full transition-all duration-500 ${
+            running 
+              ? 'bg-[var(--color-primary)] shadow-[0_0_8px_rgba(210,187,255,0.6)] animate-pulse' 
+              : 'bg-white/20'
+          }`} />
+          <span className="font-mono text-[9px] text-[var(--color-primary)] font-bold uppercase tracking-[0.2em]">
+            {running ? 'Execution Active' : 'System Paused'}
+          </span>
+        </div>
+        
+        {/* Elapsed / Percentage Subtext */}
+        {pct > 0 && (
+          <div className="flex items-center gap-3 mt-3 opacity-40">
+            <span className="font-mono text-[9px] text-[var(--color-on-surface)] uppercase tracking-widest">
+              {pad(elapsedMins)}:{pad(elapsedSecs)} elapsed
+            </span>
+            <span className="text-[var(--color-outline)] text-[8px]">·</span>
+            <span className="font-mono text-[9px] text-[var(--color-on-surface)] uppercase tracking-widest">
+              {Math.round(pct * 100)}%
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -192,16 +474,25 @@ export function FocusModePage() {
   const timeStr = formatTime(remaining);
 
   useEffect(() => {
-    if (running) {
-      stopAudioRef.current?.();
+    stopAudioRef.current?.();
+    stopAudioRef.current = null;
+    if (running && sound !== 'none') {
       stopAudioRef.current = startAudio(sound);
-    } else {
-      stopAudioRef.current?.();
-      stopAudioRef.current = null;
     }
     return () => { stopAudioRef.current?.(); stopAudioRef.current = null; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [running, sound]);
+
+  useEffect(() => {
+    if (running) {
+      document.documentElement.classList.add('focus-mode-running');
+    } else {
+      document.documentElement.classList.remove('focus-mode-running');
+    }
+    return () => {
+      document.documentElement.classList.remove('focus-mode-running');
+    };
+  }, [running]);
 
   const tick = useCallback(() => {
     setRemaining(prev => {
@@ -239,26 +530,26 @@ export function FocusModePage() {
   };
 
   return (
-    <div className="flex flex-col h-full w-full bg-[var(--color-surface-container-lowest)] text-[var(--color-on-surface)] items-center overflow-hidden">
-      <div className="flex flex-col h-full w-full max-w-[var(--spacing-container-max)] border-x border-[var(--color-outline-variant)] relative">
+    <div className="flex flex-col h-full w-full bg-transparent text-[var(--color-on-surface)] items-center overflow-hidden">
+      <div className="flex flex-col h-full w-full max-w-[var(--spacing-container-max)] border-x border-[rgba(255,255,255,0.06)] relative">
         
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between px-8 py-6 border-b border-[var(--color-outline-variant)] shrink-0 bg-[var(--color-surface-container-lowest)] gap-4">
+        <div className={`flex flex-col md:flex-row md:items-end justify-between px-8 py-6 border-b border-[rgba(255,255,255,0.06)] shrink-0 bg-transparent gap-4 transition-all duration-700 ${running ? 'opacity-10 hover:opacity-100' : 'opacity-100'}`}>
           <div>
-            <h2 className="font-title-md text-[32px] font-medium tracking-tight text-[var(--color-primary-fixed)]">
+            <h2 className="text-[36px] font-black tracking-tighter text-[var(--color-on-surface)] leading-none select-none">
               Deep Focus
             </h2>
-            <p className="font-label-sm text-[11px] text-[var(--color-outline)] uppercase tracking-widest mt-1 font-bold">
+            <p className="font-mono text-[9px] text-[var(--color-outline)] uppercase tracking-[0.25em] mt-2.5">
               UNINTERRUPTED EXECUTION MODE
             </p>
           </div>
           
           <div className="flex items-center gap-10">
             <div className="flex flex-col items-end">
-              <span className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest mb-1 font-bold">Status</span>
+              <span className="font-mono text-[9px] text-[var(--color-outline)] uppercase tracking-widest mb-1 font-bold">Status</span>
               <div className="flex items-center gap-2">
-                <span className={`w-2.5 h-2.5 ${finished ? 'bg-[var(--color-secondary)]' : running ? 'bg-[var(--color-primary)] animate-pulse' : 'bg-[var(--color-outline)]'}`} />
-                <span className="font-label-sm text-[12px] text-[var(--color-on-surface)] uppercase tracking-widest font-bold">
+                <span className={`w-1.5 h-1.5 rounded-full ${finished ? 'bg-[var(--color-secondary)] shadow-[0_0_8px_rgba(90,218,206,0.4)]' : running ? 'bg-[var(--color-primary)] animate-pulse shadow-[0_0_8px_rgba(210,187,255,0.4)]' : 'bg-white/30'}`} />
+                <span className="font-mono text-[10px] text-[var(--color-on-surface)] uppercase tracking-widest font-bold">
                   {finished ? 'COMPLETE' : running ? 'ACTIVE' : 'IDLE'}
                 </span>
               </div>
@@ -266,30 +557,28 @@ export function FocusModePage() {
           </div>
         </div>
 
-        <main className="flex-1 w-full flex flex-col items-center justify-center p-8 gap-10 bg-[var(--color-surface-container-low)] relative overflow-y-auto no-scrollbar pb-32">
+        <main className="flex-1 w-full flex flex-col items-center justify-start p-8 pt-12 md:pt-16 gap-10 bg-transparent relative overflow-y-auto no-scrollbar pb-32">
 
-          {/* Presets */}
-          <div className="flex gap-4 w-full justify-center flex-wrap">
+          <div className={`flex gap-3 w-full justify-center flex-wrap transition-all duration-700 ${running ? 'opacity-[0.02] pointer-events-none hover:opacity-100 hover:pointer-events-auto' : 'opacity-100'}`}>
             {PRESETS.map((p, i) => (
               <button key={p.label} onClick={() => handlePreset(i, p.seconds)} disabled={running}
-                className={`px-6 py-3 font-label-sm text-[11px] uppercase tracking-widest font-bold border transition-colors disabled:opacity-40 ${
+                className={`px-5 py-2.5 font-mono text-[10px] uppercase tracking-widest font-bold border rounded-full transition-all duration-300 disabled:opacity-30 active:scale-95 ${
                   selectedPreset === i
-                    ? 'bg-[var(--color-primary)] text-black border-[var(--color-primary)]'
-                    : 'bg-[var(--color-surface-container)] text-[var(--color-on-surface-variant)] border-[var(--color-outline-variant)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]'
+                    ? 'bg-[var(--color-primary)] text-black border-[var(--color-primary)] shadow-[0_0_12px_rgba(210,187,255,0.25)]'
+                    : 'glass-card text-[var(--color-on-surface-variant)] border-[rgba(255,255,255,0.06)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] bg-white/[0.01]'
                 }`}>
                 {p.label}
               </button>
             ))}
           </div>
 
-          {/* Custom duration input */}
           {showCustom && (
-            <div className="flex items-center gap-3 w-full max-w-sm bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] p-2">
+            <div className="flex items-center gap-3 w-full max-w-sm glass-card rounded-xl p-2 border-[rgba(255,255,255,0.06)] bg-[var(--color-surface)]/20 shadow-md">
               <input autoFocus type="number" min={1} max={180} value={customMins}
                 onChange={e => setCustomMins(e.target.value)} placeholder="Minutes (1–180)"
                 className="flex-1 bg-transparent px-3 outline-none text-[var(--color-on-surface)] font-body-md placeholder:text-[var(--color-outline)]" />
               <button onClick={handleCustom}
-                className="px-6 py-2 bg-[var(--color-primary)] text-black font-label-sm text-[11px] font-bold uppercase tracking-widest hover:bg-[var(--color-primary-fixed)] transition-colors">
+                className="px-5 py-2 bg-[var(--color-primary)] text-black font-mono text-[10px] font-bold uppercase tracking-widest hover:brightness-110 rounded-lg active:scale-95 transition-all shadow-[0_0_8px_rgba(210,187,255,0.2)]">
                 Set
               </button>
             </div>
@@ -298,66 +587,79 @@ export function FocusModePage() {
           {/* Timer ring / completion */}
           <div className="flex flex-col items-center gap-8 w-full">
             {finished ? (
-              <div className="flex flex-col items-center gap-6 p-12 border border-[var(--color-primary)] bg-[var(--color-surface-container)] w-full max-w-md">
-                <div className="w-16 h-16 bg-[var(--color-primary)] text-black flex items-center justify-center">
-                  <span className="material-symbols-outlined text-[32px] font-bold">done_all</span>
+              <div className="flex flex-col items-center gap-6 p-10 border border-[rgba(255,255,255,0.06)] glass-card rounded-2xl w-full max-w-md shadow-2xl relative bg-[var(--color-surface)]/20">
+                <div className="absolute inset-0 border border-[var(--color-primary)]/10 rounded-2xl pointer-events-none animate-pulse" />
+                <div className="w-12 h-12 bg-[var(--color-primary)] text-black flex items-center justify-center rounded-xl shadow-[0_0_15px_rgba(210,187,255,0.3)]">
+                  <span className="material-symbols-outlined text-[24px] font-bold">done_all</span>
                 </div>
                 <div className="text-center">
-                  <p className="font-label-sm text-[14px] text-[var(--color-on-surface)] font-bold uppercase tracking-widest mb-2">Session Complete</p>
+                  <p className="font-mono text-[11px] text-[var(--color-on-surface)] font-bold uppercase tracking-[0.2em] mb-2">Session Complete</p>
                   <p className="font-body-md text-[13px] text-[var(--color-outline)]">
                     {formatTime(totalSecs)} of focused execution. Outstanding.
                   </p>
                 </div>
               </div>
             ) : (
-              <FocusRing pct={pct} timeStr={timeStr} running={running} />
+              <FocusRing pct={pct} timeStr={timeStr} running={running} totalSecs={totalSecs} remaining={remaining} />
             )}
 
             {/* Controls */}
-            <div className="flex items-center gap-6 mt-4">
+            <div className={`flex items-center gap-6 mt-4 transition-all duration-700 ${running ? 'opacity-20 hover:opacity-100' : 'opacity-100'}`}>
               <button onClick={handleReset} title="Reset"
-                className="w-14 h-14 border border-[var(--color-outline-variant)] flex items-center justify-center text-[var(--color-outline)] hover:text-[var(--color-on-surface)] hover:border-[var(--color-on-surface)] hover:bg-[var(--color-surface-container)] transition-colors">
-                <span className="material-symbols-outlined text-[24px]">restart_alt</span>
+                className="w-12 h-12 border border-[rgba(255,255,255,0.08)] rounded-xl flex items-center justify-center text-[var(--color-outline)] hover:text-[var(--color-on-surface)] hover:border-[rgba(255,255,255,0.2)] glass-card hover:bg-white/[0.03] active:scale-90 transition-all shadow-md">
+                <span className="material-symbols-outlined text-[22px]">restart_alt</span>
               </button>
 
               {!finished && (
                 <button onClick={handleToggle} title={running ? 'Pause' : 'Start'}
-                  className={`w-24 h-16 border flex items-center justify-center transition-colors ${
+                  className={`w-20 h-14 border rounded-xl flex items-center justify-center transition-all active:scale-95 shadow-lg ${
                     running 
-                      ? 'bg-[var(--color-surface-container)] text-[var(--color-primary)] border-[var(--color-primary)] hover:bg-[var(--color-primary)]/10' 
-                      : 'bg-[var(--color-primary)] text-black border-[var(--color-primary)] hover:bg-[var(--color-primary-fixed)]'
+                      ? 'glass-card text-[var(--color-primary)] border-[var(--color-primary)]/30 hover:bg-[var(--color-primary)]/10 shadow-[0_0_15px_rgba(210,187,255,0.15)]' 
+                      : 'bg-[var(--color-primary)] text-black border-[var(--color-primary)] hover:brightness-110 shadow-[0_0_20px_rgba(210,187,255,0.3)]'
                   }`}>
-                  <span className="material-symbols-outlined text-[32px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+                  <span className="material-symbols-outlined text-[28px]" style={{ fontVariationSettings: "'FILL' 1" }}>
                     {running ? 'pause' : 'play_arrow'}
                   </span>
                 </button>
               )}
 
               <button onClick={handleEndSession} title="End Session"
-                className="w-14 h-14 border border-[var(--color-outline-variant)] flex items-center justify-center text-[var(--color-outline)] hover:text-[var(--color-error)] hover:border-[var(--color-error)] hover:bg-[var(--color-error)]/10 transition-colors">
-                <span className="material-symbols-outlined text-[24px]">stop_circle</span>
+                className="w-12 h-12 border border-[rgba(255,255,255,0.08)] rounded-xl flex items-center justify-center text-[var(--color-outline)] hover:text-[var(--color-error)] hover:border-[var(--color-error)]/30 glass-card hover:bg-[var(--color-error)]/10 active:scale-90 transition-all shadow-md">
+                <span className="material-symbols-outlined text-[22px]">stop_circle</span>
               </button>
             </div>
           </div>
 
           {/* Sound selector */}
-          <div className="w-full flex flex-col items-center gap-6 mt-8">
-            <Waveform active={running} />
-            <div className="flex items-center border border-[var(--color-outline-variant)] bg-[var(--color-surface-container)]">
+          <div className={`w-full flex flex-col items-center gap-6 mt-8 transition-all duration-700 ${running ? 'opacity-10 hover:opacity-100' : 'opacity-100'}`}>
+            <Waveform active={running && sound !== 'none'} />
+            <div className="flex gap-3 justify-center items-center">
               {SOUNDS.map(s => (
-                <button key={s.id} aria-label={s.label} onClick={() => setSound(s.id)} title={s.label}
-                  className={`w-14 h-14 border-r border-[var(--color-outline-variant)] last:border-r-0 transition-colors flex items-center justify-center ${
-                    sound === s.id
-                      ? 'bg-[var(--color-primary)] text-black'
-                      : 'text-[var(--color-outline)] hover:bg-[var(--color-surface-container-high)] hover:text-[var(--color-on-surface)]'
-                  }`}>
-                  <span className="material-symbols-outlined text-[20px]">{s.icon}</span>
-                </button>
+                <div key={s.id} className="flex flex-col items-center gap-1.5 group">
+                  <button
+                    aria-label={s.label}
+                    onClick={() => setSound(s.id)}
+                    title={s.label}
+                    className={`w-12 h-14 bg-white/[0.015] border rounded-lg flex flex-col items-center justify-center relative transition-all duration-150 active:translate-y-[2px] active:shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)] shadow-md hover:bg-white/[0.035] ${
+                      sound === s.id
+                        ? 'border-[var(--color-primary)]/40 bg-[var(--color-primary)]/5 shadow-[0_0_12px_rgba(210,187,255,0.1)]'
+                        : 'border-[rgba(255,255,255,0.05)]'
+                    }`}
+                  >
+                    {/* Status LED */}
+                    <span className={`w-1.5 h-1.5 rounded-full absolute top-2.5 left-1/2 transform -translate-x-1/2 transition-all duration-300 ${sound === s.id ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)]' : 'bg-white/10'}`} />
+                    
+                    <span className={`material-symbols-outlined text-[18px] mt-2 transition-colors duration-250 ${sound === s.id ? 'text-[var(--color-primary)]' : 'text-[var(--color-outline)] group-hover:text-[var(--color-on-surface)]'}`}>
+                      {s.icon}
+                    </span>
+                  </button>
+                  <span className="font-mono text-[8px] uppercase tracking-[0.18em] text-[var(--color-outline)] opacity-40 font-bold select-none">{s.id.substring(0, 4)}</span>
+                </div>
               ))}
             </div>
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-none bg-[var(--color-secondary)]" />
-              <p className="font-label-sm text-[10px] text-[var(--color-outline)] font-bold uppercase tracking-widest">
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-secondary)] shadow-[0_0_8px_rgba(90,218,206,0.4)]" />
+              <p className="font-mono text-[9px] text-[var(--color-outline)] font-bold uppercase tracking-widest opacity-60">
                 {SOUNDS.find(s => s.id === sound)?.label} · Ambient Engine
               </p>
             </div>

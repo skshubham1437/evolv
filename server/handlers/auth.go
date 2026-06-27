@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 	"strings"
@@ -10,6 +11,7 @@ import (
 	"evolv-server/database"
 	"evolv-server/middleware"
 	"evolv-server/models"
+	"evolv-server/services"
 
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
@@ -182,10 +184,12 @@ func UpdateMe(w http.ResponseWriter, r *http.Request) {
 	}
 
 	type UpdateRequest struct {
-		Name            *string `json:"name"`
-		Email           *string `json:"email"`
-		CurrentPassword *string `json:"current_password"` // required for email change
-		Preferences     *string `json:"preferences"`
+		Name                *string `json:"name"`
+		Email               *string `json:"email"`
+		CurrentPassword     *string `json:"current_password"` // required for email change
+		Preferences         *string `json:"preferences"`
+		PushEnabled         *bool   `json:"push_enabled"`
+		WeeklyDigestEnabled *bool   `json:"weekly_digest_enabled"`
 	}
 
 	var req UpdateRequest
@@ -219,6 +223,12 @@ func UpdateMe(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.Preferences != nil {
 		user.Preferences = *req.Preferences
+	}
+	if req.PushEnabled != nil {
+		user.PushEnabled = *req.PushEnabled
+	}
+	if req.WeeklyDigestEnabled != nil {
+		user.WeeklyDigestEnabled = *req.WeeklyDigestEnabled
 	}
 
 	if err := database.DB.Save(&user).Error; err != nil {
@@ -321,7 +331,17 @@ func ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Email enumeration prevention: always return 200 OK with success message.
-	// In a real system we would send an email here.
+	var user models.User
+	if err := database.DB.Where("email = ?", email).First(&user).Error; err == nil {
+		resetLink := "http://localhost:5173/reset-password?token=mock-token-xyz"
+		body := fmt.Sprintf(`<h2>Evolv Password Reset</h2>
+<p>Hello %s,</p>
+<p>We received a request to reset your password. Click the link below to verify your identity and set a new password:</p>
+<p style="margin: 20px 0;"><a href="%s" style="padding: 10px 20px; background: #6C4AB0; color: #FFFFFF; text-decoration: none; font-family: sans-serif;">Reset Password</a></p>
+<p>If you did not request this, you can safely ignore this email.</p>`, user.Name, resetLink)
+		_ = services.SendEmail(user.Email, "Evolv — Password Reset Request", body)
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(`{"success":true,"message":"If this email exists in our system, reset instructions have been sent."}`))

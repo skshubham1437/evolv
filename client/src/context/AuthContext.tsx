@@ -7,6 +7,8 @@ interface User {
   name: string;
   is_onboarded: boolean;
   preferences?: string;
+  push_enabled?: boolean;
+  weekly_digest_enabled?: boolean;
 }
 
 interface AuthContextType {

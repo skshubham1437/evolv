@@ -5,7 +5,7 @@ import (
 	"evolv-server/models"
 )
 
-// SendNotification stores an in-app notification for a given user.
+// SendNotification stores an in-app notification for a given user and triggers a web push.
 func SendNotification(userID uint, title, message, notifType string) error {
 	notif := models.Notification{
 		UserID:  userID,
@@ -14,5 +14,14 @@ func SendNotification(userID uint, title, message, notifType string) error {
 		Type:    notifType,
 		IsRead:  false,
 	}
-	return database.DB.Create(&notif).Error
+	
+	if err := database.DB.Create(&notif).Error; err != nil {
+		return err
+	}
+
+	// Trigger Web Push notification asynchronously
+	_ = SendPushNotification(userID, title, message)
+	
+	return nil
 }
+

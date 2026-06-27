@@ -167,25 +167,15 @@ func LogHabit(w http.ResponseWriter, r *http.Request) {
 		id, startOfYesterday, startOfToday,
 	).First(&yesterdayLog).Error == nil
 
-	newStreak := 1
-	if loggedYesterday {
-		newStreak = habit.Streak + 1
-	} else if habit.StreakShieldActive && habit.StreakShieldsRemaining > 0 {
-		// Consuming a streak protection shield!
-		newStreak = habit.Streak + 1
-		habit.StreakShieldsRemaining -= 1
-	}
-
-	// Reward consistency: every 7 consecutive completions, grant +1 shield if shields are active (max 3)
-	if newStreak > 0 && newStreak%7 == 0 && habit.StreakShieldActive && habit.StreakShieldsRemaining < 3 {
-		habit.StreakShieldsRemaining += 1
-	}
+	// Delegate to pure StreakEngine
+	result := services.EvaluateCompletion(habit.Streak, habit.StreakShieldActive, habit.StreakShieldsRemaining, loggedYesterday)
 
 	database.DB.Model(&habit).Updates(map[string]interface{}{
-		"streak":                    newStreak,
-		"streak_shields_remaining": habit.StreakShieldsRemaining,
+		"streak":                    result.NewStreak,
+		"streak_shields_remaining": result.ShieldsRemaining,
 	})
-	habit.Streak = newStreak
+	habit.Streak = result.NewStreak
+	habit.StreakShieldsRemaining = result.ShieldsRemaining
 
 	respond(w, habit)
 }
@@ -384,9 +374,6 @@ func validateHabitStreaks(userID uint) {
 		return
 	}
 
-	startOfToday := time.Now().Truncate(24 * time.Hour)
-	startOfYesterday := startOfToday.AddDate(0, 0, -1)
-
 	// Batch: fetch the most recent log timestamp per habit in ONE query.
 	type lastLogRow struct {
 		HabitID      uint
@@ -412,6 +399,7 @@ func validateHabitStreaks(userID uint) {
 		lastLogMap[row.HabitID] = row.LastLoggedAt.Time
 	}
 
+	now := time.Now()
 	for _, h := range userHabits {
 		lastLogged, hasLog := lastLogMap[h.ID]
 
@@ -423,57 +411,22 @@ func validateHabitStreaks(userID uint) {
 			continue
 		}
 
-		lastLogDay := lastLogged.Truncate(24 * time.Hour)
+		// Delegate to pure StreakEngine
+		result := services.ValidateStreakState(h.Streak, h.StreakShieldActive, h.StreakShieldsRemaining, lastLogged, now)
 
-		if lastLogDay.Before(startOfYesterday) {
-			// One or more days have been missed.
-			daysMissed := int(startOfYesterday.Sub(lastLogDay).Hours() / 24)
+		if result.NewStreak != h.Streak || result.ShieldsRemaining != h.StreakShieldsRemaining {
+			database.DB.Model(&h).Updates(map[string]interface{}{
+				"streak":                    result.NewStreak,
+				"streak_shields_remaining": result.ShieldsRemaining,
+			})
 
-			shieldsAvailable := 0
-			if h.StreakShieldActive && h.StreakShieldsRemaining > 0 {
-				shieldsAvailable = h.StreakShieldsRemaining
-			}
-
-			shieldsUsed := intMin(shieldsAvailable, daysMissed)
-			remainingMissed := daysMissed - shieldsUsed
-
-			if remainingMissed > 0 {
-				// Streak is broken — reset it.
-				// Shields are consumed for the days they cover, rest is gone.
-				database.DB.Model(&h).Updates(map[string]interface{}{
-					"streak":                    0,
-					"streak_shields_remaining": intMax(0, h.StreakShieldsRemaining-shieldsUsed),
-				})
-				if shieldsUsed > 0 {
-					_ = services.SendNotification(userID, "Streak Shields Exhausted", fmt.Sprintf("Your streak for '%s' was reset because you missed too many days, using up all %d shields.", h.Title, shieldsUsed), "warning")
-				}
-			} else if shieldsUsed > 0 {
-				// Shields fully cover the gap — streak is preserved.
-				// Do NOT create synthetic HabitLog rows: fake completions corrupt
-				// analytics (mood correlation, heatmap, time allocation).
-				database.DB.Model(&h).Update(
-					"streak_shields_remaining", h.StreakShieldsRemaining-shieldsUsed,
-				)
-				_ = services.SendNotification(userID, "Streak Shield Activated", fmt.Sprintf("Your streak for '%s' was preserved using %d streak shield(s)!", h.Title, shieldsUsed), "habit_shield")
+			if result.ShieldsExhausted && result.ShieldsUsed > 0 {
+				_ = services.SendNotification(userID, "Streak Shields Exhausted", fmt.Sprintf("Your streak for '%s' was reset because you missed too many days, using up all %d shields.", h.Title, result.ShieldsUsed), "warning")
+			} else if result.ShieldActivated && result.ShieldsUsed > 0 {
+				_ = services.SendNotification(userID, "Streak Shield Activated", fmt.Sprintf("Your streak for '%s' was preserved using %d streak shield(s)!", h.Title, result.ShieldsUsed), "habit_shield")
 			}
 		}
 	}
-}
-
-// intMin returns the smaller of two ints.
-func intMin(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
-// intMax returns the larger of two ints.
-func intMax(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
 }
 
 // sqlTime is a custom wrapper around time.Time that implements sql.Scanner and driver.Valuer interfaces.

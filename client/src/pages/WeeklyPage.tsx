@@ -61,7 +61,7 @@ function PriorityCard({ task }: { task: Task }) {
   const progress = task.is_completed ? 100 : 0;
 
   return (
-    <div className="flex flex-col gap-3 p-4 bg-[var(--color-surface-container)] border border-[var(--color-surface-variant)] rounded-sm">
+    <div className="flex flex-col gap-3 p-4 glass-card rounded-2xl">
       <div className="flex justify-between items-start">
         <span className={`font-label-sm text-[10px] px-2 py-0.5 rounded-sm uppercase tracking-widest font-bold ${badgeColors}`}>
           {pLabel} • {task.title.split(' ')[0] || 'TASK'}
@@ -101,7 +101,7 @@ function AddBlockForm({ date, onCreated, onCancel }: AddBlockFormProps) {
   };
 
   return (
-    <form onSubmit={submit} className="bg-[var(--color-surface-container)] border border-[var(--color-primary)]/20 p-4 flex flex-col gap-3 anim-fade-up ml-20 mb-6">
+    <form onSubmit={submit} className="glass-card rounded-2xl p-4 flex flex-col gap-3 anim-fade-up ml-20 mb-6 border-[var(--color-primary)]/20">
       <input autoFocus value={title} onChange={e => setTitle(e.target.value)} placeholder="Block title…"
         className="bg-transparent border-b border-[var(--color-surface-variant)] pb-1 text-[var(--color-on-surface)] font-body-md outline-none" />
       <div className="flex gap-4 flex-wrap">
@@ -242,44 +242,44 @@ export function WeeklyPage() {
   });
 
   return (
-    <div className="flex flex-col h-full w-full bg-[var(--color-surface-container-lowest)] text-[var(--color-on-surface)] items-center">
-      <div className="flex flex-col h-full w-full max-w-[var(--spacing-container-max)] border-x border-[var(--color-outline-variant)] relative">
+    <div className="flex-1 overflow-y-auto w-full no-scrollbar relative z-10 pb-24 md:pb-0">
+      <div className="max-w-[var(--spacing-container-max)] mx-auto px-[var(--spacing-margin-mobile)] md:px-[var(--spacing-margin-desktop)] pt-5 md:pt-8 pb-12 flex flex-col gap-6 relative z-10">
       
       {/* ── Top Header ─────────────────────────────────────────── */}
-      <div className="flex items-end justify-between px-8 py-6 border-b border-[var(--color-outline-variant)] shrink-0">
+      <div className="flex flex-col md:flex-row md:items-end justify-between px-8 py-6 border-b border-[rgba(255,255,255,0.06)] shrink-0 bg-transparent gap-4">
         <div>
-          <h2 className="font-title-md text-[32px] font-medium tracking-tight text-[var(--color-primary-fixed)]">
+          <h2 className="text-[36px] font-black tracking-tighter text-[var(--color-on-surface)] leading-none select-none">
             Tactical View
           </h2>
-          <p className="font-label-sm text-[11px] text-[var(--color-outline)] uppercase tracking-widest mt-1 font-bold">
-            {loading ? 'LOADING...' : `${weekLabel} • FOCUS MODE`}
+          <p className="font-mono text-[9px] text-[var(--color-outline)] uppercase tracking-[0.25em] mt-2.5">
+            {loading ? 'LOADING...' : `${weekLabel} // WEEKLY FOCUS`}
           </p>
         </div>
         
-        <div className="flex gap-10">
+        <div className="flex items-center gap-10">
           <div className="flex flex-col items-end">
-            <span className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest mb-1">Weekly Score</span>
-            <span className="font-label-sm text-[28px] text-[var(--color-secondary)] font-normal tracking-tight">{loading ? '--' : score.toFixed(1)}</span>
+            <span className="font-mono text-[9px] text-[var(--color-outline)] uppercase tracking-widest mb-1 font-bold">Weekly Score</span>
+            <span className="font-mono text-[24px] text-[var(--color-secondary)] font-bold tracking-tight leading-none">{loading ? '--' : score.toFixed(1)}</span>
           </div>
-          <div className="w-px h-10 bg-[var(--color-outline-variant)] self-center" />
+          <div className="w-px h-8 bg-[rgba(255,255,255,0.08)] self-center" />
           <div className="flex flex-col items-end">
-            <span className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest mb-1">Focus Yield</span>
-            <span className="font-label-sm text-[28px] text-[var(--color-primary)] font-normal tracking-tight">{loading ? '--' : `${focusYield.toFixed(1)}h`}</span>
+            <span className="font-mono text-[9px] text-[var(--color-outline)] uppercase tracking-widest mb-1 font-bold">Focus Yield</span>
+            <span className="font-mono text-[24px] text-[var(--color-primary)] font-bold tracking-tight leading-none">{loading ? '--' : `${focusYield.toFixed(1)}h`}</span>
           </div>
-          <div className="w-px h-10 bg-[var(--color-outline-variant)] self-center" />
+          <div className="w-px h-8 bg-[rgba(255,255,255,0.08)] self-center" />
           <div className="flex flex-col items-end">
-            <span className="font-label-sm text-[10px] text-[var(--color-outline)] uppercase tracking-widest mb-1">Goal Completion</span>
-            <span className="font-label-sm text-[28px] text-[var(--color-on-surface)] font-normal tracking-tight">{loading ? '--' : `${goalCompletion}%`}</span>
+            <span className="font-mono text-[9px] text-[var(--color-outline)] uppercase tracking-widest mb-1 font-bold">Goal Completion</span>
+            <span className="font-mono text-[24px] text-[var(--color-on-surface)] font-bold tracking-tight leading-none">{loading ? '--' : `${goalCompletion}%`}</span>
           </div>
         </div>
       </div>
-
-      <div className="flex flex-1 overflow-hidden">
+ 
+      <div className="flex flex-col lg:flex-row flex-1 overflow-y-auto lg:overflow-hidden glass-card rounded-2xl border-[rgba(255,255,255,0.05)] shadow-lg bg-white/[0.005]">
         
         {/* ── Left Column (Priorities) ─────────────────────────── */}
-        <div className="w-[380px] shrink-0 flex flex-col border-r border-[var(--color-outline-variant)] overflow-y-auto no-scrollbar pb-8">
-          <div className="p-8 pb-6 sticky top-0 bg-[var(--color-surface-container-lowest)] z-10 border-b border-[var(--color-outline-variant)]/50">
-            <h3 className="font-headline-lg-mobile text-[18px] text-[var(--color-on-surface)] font-bold mb-1">Weekly Priorities</h3>
+        <div className="w-full lg:w-[380px] lg:shrink-0 flex flex-col border-b lg:border-b-0 lg:border-r border-[rgba(255,255,255,0.05)] overflow-y-auto no-scrollbar pb-8 min-h-[300px]">
+          <div className="p-8 pb-6 sticky top-0 bg-transparent z-10 border-b border-[rgba(255,255,255,0.05)]">
+            <h3 className="font-body-md text-[18px] text-[var(--color-on-surface)] font-bold mb-1">Weekly Priorities</h3>
             <p className="font-body-md text-[13px] text-[var(--color-outline)]">Strategic buckets for current sprint.</p>
           </div>
           
@@ -297,10 +297,10 @@ export function WeeklyPage() {
         </div>
 
         {/* ── Right Column (Schedule) ──────────────────────────── */}
-        <div className="flex-1 flex flex-col bg-[var(--color-surface-container-low)] relative overflow-hidden">
+        <div className="flex-1 flex flex-col bg-white/[0.005] relative lg:overflow-hidden border-t lg:border-t-0 border-[rgba(255,255,255,0.05)]">
           
           {/* Day Navigator */}
-          <div className="flex border-b border-[var(--color-outline-variant)] pt-2 px-8 shrink-0 bg-[var(--color-surface-container-low)] z-10">
+          <div className="flex border-b border-[rgba(255,255,255,0.05)] pt-2 px-8 shrink-0 bg-transparent z-10">
             {weekDays.map(({ label, date, dayNum }) => {
               const isSelected = date === selectedDate;
               return (
@@ -359,7 +359,7 @@ export function WeeklyPage() {
 
                     {/* Block Content */}
                     <div className="flex-1 pl-6">
-                      <div className={`p-4 bg-[var(--color-surface-container)] border border-[var(--color-surface-variant)] rounded-sm relative overflow-hidden`}>
+                      <div className={`p-4 glass-card rounded-2xl relative overflow-hidden`}>
                         <div className={`absolute left-0 top-0 bottom-0 ${isDeepWork ? 'w-1.5' : 'w-0.5'} ${colorClass.split(' ')[0]} bg-current opacity-70`} />
                         
                         <div className="flex justify-between items-start mb-2">
@@ -409,7 +409,7 @@ export function WeeklyPage() {
           </div>
           
           {/* Shutdown Action - Fixed at bottom */}
-          <div className="absolute bottom-0 left-0 right-0 bg-[var(--color-surface-container-low)] border-t border-[var(--color-outline-variant)] p-6 z-20">
+          <div className="absolute bottom-0 left-0 right-0 bg-[var(--color-surface)]/40 backdrop-blur-md border-t border-[rgba(255,255,255,0.05)] p-6 z-20">
             <button 
               onClick={handleGenerateReview}
               disabled={generatingReview}
@@ -440,8 +440,8 @@ export function WeeklyPage() {
       {/* Review Modal overlay */}
       {showReviewModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-8">
-          <div className="bg-[var(--color-surface-container)] border border-[var(--color-surface-variant)] rounded-sm max-w-2xl w-full max-h-[80vh] flex flex-col shadow-2xl">
-            <div className="p-6 border-b border-[var(--color-surface-variant)] flex justify-between items-center">
+          <div className="glass-card rounded-2xl max-w-2xl w-full max-h-[80vh] flex flex-col shadow-2xl overflow-hidden border-[var(--glass-border)]">
+            <div className="p-6 border-b border-[var(--glass-border)] flex justify-between items-center">
               <h3 className="font-title-md text-[20px] text-[var(--color-primary)] font-bold">System Review Log</h3>
               <button onClick={() => setShowReviewModal(false)} className="text-[var(--color-outline)] hover:text-[var(--color-on-surface)]">
                 <span className="material-symbols-outlined">close</span>

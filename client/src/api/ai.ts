@@ -60,3 +60,13 @@ export function generateMonthlyReview(year: number, month: number): Promise<Mont
     body: JSON.stringify({ year, month }),
   });
 }
+
+export interface AILimitStatus {
+  remaining: number;
+  burst: number;
+  reset_seconds: number;
+}
+
+export function fetchAILimitStatus(): Promise<AILimitStatus> {
+  return request(`${API}/ai/limit-status`);
+}

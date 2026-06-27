@@ -94,20 +94,7 @@ func BreakDownGoalHandler(w http.ResponseWriter, r *http.Request) {
 func GetMorningBrief(w http.ResponseWriter, r *http.Request) {
 	userID := getUserIDFromCtx(r)
 
-	// Fetch user details
-	var user models.User
-	if err := database.DB.First(&user, userID).Error; err != nil {
-		http.Error(w, `{"error":"User not found"}`, http.StatusNotFound)
-		return
-	}
-
-	// Fetch tasks and habits
-	var tasks []models.Task
-	var habits []models.Habit
-	database.DB.Where("user_id = ? AND is_completed = ?", userID, false).Find(&tasks)
-	database.DB.Where("user_id = ?", userID).Find(&habits)
-
-	brief, err := services.GenerateMorningBrief(r.Context(), user.Name, tasks, habits)
+	brief, err := services.GetMorningBriefInsight(r.Context(), userID)
 	if err != nil {
 		handleAIError(w, r, err, "Failed to generate morning brief")
 		return

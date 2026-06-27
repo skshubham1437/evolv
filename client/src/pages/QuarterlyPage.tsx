@@ -67,13 +67,13 @@ export function QuarterlyPage() {
   };
 
   return (
-    <div className="flex flex-col h-full w-full bg-[var(--color-surface-container-lowest)] text-[var(--color-on-surface)] items-center overflow-hidden">
-      <div className="flex flex-col h-full w-full max-w-[var(--spacing-container-max)] border-x border-[var(--color-outline-variant)] relative">
+    <div className="flex-1 overflow-y-auto w-full no-scrollbar relative z-10 pb-24 md:pb-0">
+      <div className="max-w-[var(--spacing-container-max)] mx-auto px-[var(--spacing-margin-mobile)] md:px-[var(--spacing-margin-desktop)] pt-5 md:pt-8 pb-12 flex flex-col gap-6 relative z-10">
         
         {/* Top Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between px-8 py-6 border-b border-[var(--color-outline-variant)] shrink-0 bg-[var(--color-surface-container-lowest)] gap-4">
+        <div className="glass-card rounded-2xl flex flex-col md:flex-row md:items-end justify-between px-6 py-5 border border-[var(--color-outline-variant)]/40 bg-[var(--color-surface-container)]/40 backdrop-blur-md gap-4">
           <div>
-            <h2 className="font-title-md text-[32px] font-medium tracking-tight text-[var(--color-primary-fixed)]">
+            <h2 className="font-title-md text-[32px] font-bold tracking-tight text-gradient-primary">
               Quarterly Objectives
             </h2>
             <p className="font-label-sm text-[11px] text-[var(--color-outline)] uppercase tracking-widest mt-1 font-bold">
@@ -82,7 +82,7 @@ export function QuarterlyPage() {
           </div>
           
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 pr-4 border-r border-[var(--color-outline-variant)]/50">
+            <div className="flex items-center gap-2 pr-4 border-r border-[var(--color-outline-variant)]/40">
               <button onClick={() => setYear(year - 1)} className="material-symbols-outlined text-[18px] text-[var(--color-outline)] hover:text-[var(--color-primary)] transition-colors">chevron_left</button>
               <span className="font-label-sm text-[12px] font-bold">{year}</span>
               <button onClick={() => setYear(year + 1)} className="material-symbols-outlined text-[18px] text-[var(--color-outline)] hover:text-[var(--color-primary)] transition-colors">chevron_right</button>
@@ -92,10 +92,10 @@ export function QuarterlyPage() {
                 <button 
                   key={q} 
                   onClick={() => setQuarter(q)}
-                  className={`w-9 h-8 font-label-sm text-[11px] font-bold uppercase tracking-widest transition-colors border flex items-center justify-center ${
+                  className={`w-9 h-8 font-label-sm text-[11px] font-bold uppercase tracking-widest transition-all duration-300 border flex items-center justify-center ${
                     quarter === q 
-                      ? 'bg-[var(--color-primary)] border-[var(--color-primary)] text-black' 
-                      : 'border-[var(--color-outline-variant)] text-[var(--color-outline)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)]'
+                      ? 'bg-[var(--color-primary)] border-[var(--color-primary)] text-black font-extrabold shadow-[0_0_8px_rgba(210,187,255,0.3)]' 
+                      : 'border-[var(--color-outline-variant)] text-[var(--color-outline)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] hover:bg-[var(--color-primary)]/5'
                   }`}
                 >
                   Q{q}
@@ -105,9 +105,9 @@ export function QuarterlyPage() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto no-scrollbar bg-[var(--color-surface-container-low)]">
+        <div className="flex flex-col gap-6">
           {/* Scorecard Summary Row */}
-          <div className="grid grid-cols-2 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-[var(--color-outline-variant)] border-b border-[var(--color-outline-variant)] bg-[var(--color-surface-container-lowest)]">
+          <section className="glass-card rounded-2xl grid grid-cols-2 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-[var(--glass-border)] bg-[var(--color-surface-container)]/30 backdrop-blur-md overflow-hidden">
             {['not_started', 'on_track', 'at_risk', 'completed'].map(status => {
               const count = objectives.filter(o => o.status === status).length;
               const config = STATUS_CONFIG[status];
@@ -122,9 +122,9 @@ export function QuarterlyPage() {
                 </div>
               );
             })}
-          </div>
+          </section>
 
-          <div className="p-8">
+          <div className="flex flex-col gap-6">
             <div className="flex items-center justify-between mb-6 pl-1 border-l-2 border-[var(--color-primary)]">
               <h3 className="font-label-sm text-[11px] uppercase tracking-widest text-[var(--color-primary)] font-bold ml-3">
                 Scorecard Overview
@@ -139,8 +139,7 @@ export function QuarterlyPage() {
             </div>
 
             {showForm && (
-              <form onSubmit={handleCreate} className="bg-[var(--color-surface-container)] border border-[var(--color-primary)]/20 p-6 mb-8 relative">
-                <div className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--color-primary)]" />
+              <form onSubmit={handleCreate} className="glass-card glow-card rounded-2xl p-6 relative border border-[var(--color-primary)]/15 bg-gradient-to-r from-[var(--color-primary)]/5 to-[var(--color-secondary)]/5 glow-shadow-primary anim-fade-up">
                 <h4 className="font-label-sm text-[10px] text-[var(--color-primary)] uppercase tracking-widest font-bold mb-4">Define Objective</h4>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -178,7 +177,7 @@ export function QuarterlyPage() {
             <div className="flex flex-col gap-4">
               {loading ? (
                 <div className="animate-pulse flex flex-col gap-4">
-                  {[1,2,3].map(i => <div key={i} className="h-28 bg-[var(--color-surface-container)] border border-[var(--color-surface-variant)]" />)}
+                  {[1,2,3].map(i => <div key={i} className="h-28 glass-card rounded-2xl" />)}
                 </div>
               ) : objectives.length === 0 ? (
                 <div className="text-center py-16 opacity-50 font-label-sm text-[11px] text-[var(--color-outline)] uppercase tracking-widest border border-dashed border-[var(--color-surface-variant)]">
@@ -191,8 +190,8 @@ export function QuarterlyPage() {
                   const isCompleted = obj.status === 'completed';
                   
                   return (
-                    <div key={obj.id} className="bg-[var(--color-surface-container)] border border-[var(--color-surface-variant)] p-5 md:p-6 flex flex-col gap-4 group hover:border-[var(--color-outline-variant)] transition-colors relative overflow-hidden">
-                      {isCompleted && <div className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--color-primary)]" />}
+                    <div key={obj.id} className="glass-card rounded-2xl p-5 md:p-6 flex flex-col gap-4 group hover:scale-[1.01] hover:shadow-lg hover:border-[var(--color-outline-variant)]/60 transition-all duration-300 relative overflow-hidden bg-[var(--color-surface-container)]/25">
+                      {isCompleted && <div className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--color-primary)] rounded-l-2xl" />}
                       <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 pl-1">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2 flex-wrap">

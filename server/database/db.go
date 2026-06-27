@@ -29,8 +29,8 @@ func Connect() {
 	if err != nil {
 		log.Fatal("Failed to get underlying sql.DB:", err)
 	}
-	sqlDB.SetMaxOpenConns(25)
-	sqlDB.SetMaxIdleConns(10)
+	sqlDB.SetMaxOpenConns(10)
+	sqlDB.SetMaxIdleConns(5)
 	sqlDB.SetConnMaxLifetime(5 * time.Minute)
 
 	// Verify the connection is alive before proceeding.

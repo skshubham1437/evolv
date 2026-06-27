@@ -1,0 +1,11 @@
+CREATE TABLE push_subscriptions (
+    id SERIAL PRIMARY KEY,
+    user_id INT NOT NULL,
+    endpoint TEXT NOT NULL UNIQUE,
+    p256dh TEXT NOT NULL,
+    auth_key TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE users ADD COLUMN push_enabled BOOLEAN DEFAULT TRUE;
+ALTER TABLE users ADD COLUMN weekly_digest_enabled BOOLEAN DEFAULT TRUE;

@@ -1,0 +1,10 @@
+.env
+.env.*
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+.git
+.gitignore
+README.md

@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { request, API_BASE } from '../api/core';
+import { fetchAILimitStatus, type AILimitStatus } from '../api/ai';
 
 interface AIContextProps {
   isPanelOpen: boolean;
@@ -8,6 +9,8 @@ interface AIContextProps {
   initialMessage: string;
   contextData: string;
   aiEnabled: boolean;
+  aiLimit: AILimitStatus | null;
+  refreshLimit: () => Promise<void>;
 }
 
 const AIContext = createContext<AIContextProps | undefined>(undefined);
@@ -17,6 +20,16 @@ export function AIProvider({ children }: { children: ReactNode }) {
   const [initialMessage, setInitialMessage] = useState('');
   const [contextData, setContextData] = useState('');
   const [aiEnabled, setAiEnabled] = useState(false);
+  const [aiLimit, setAiLimit] = useState<AILimitStatus | null>(null);
+
+  const refreshLimit = async () => {
+    try {
+      const data = await fetchAILimitStatus();
+      setAiLimit(data);
+    } catch (err) {
+      console.error('Failed to check AI rate limits:', err);
+    }
+  };
 
   useEffect(() => {
     async function checkHealth() {
@@ -31,11 +44,32 @@ export function AIProvider({ children }: { children: ReactNode }) {
     checkHealth();
   }, []);
 
+  useEffect(() => {
+    if (aiEnabled) {
+      refreshLimit();
+    }
+  }, [aiEnabled]);
+
+  // Real-time client countdown for reset duration
+  useEffect(() => {
+    if (!aiLimit || aiLimit.reset_seconds <= 0) return;
+    const interval = setInterval(() => {
+      setAiLimit(prev => {
+        if (!prev || prev.reset_seconds <= 0) return prev;
+        return {
+          ...prev,
+          reset_seconds: Math.max(0, prev.reset_seconds - 1),
+        };
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [aiLimit?.reset_seconds]);
+
   const openPanel = (msg: string = '', ctx: string = '') => {
-    if (!aiEnabled) return; // Prevent opening panel if AI is disabled
     setInitialMessage(msg);
     setContextData(ctx);
     setIsPanelOpen(true);
+    refreshLimit(); // Refresh when panel opens
   };
 
   const closePanel = () => {
@@ -45,7 +79,7 @@ export function AIProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AIContext.Provider value={{ isPanelOpen, openPanel, closePanel, initialMessage, contextData, aiEnabled }}>
+    <AIContext.Provider value={{ isPanelOpen, openPanel, closePanel, initialMessage, contextData, aiEnabled, aiLimit, refreshLimit }}>
       {children}
     </AIContext.Provider>
   );

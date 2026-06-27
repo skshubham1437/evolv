@@ -16,3 +16,4 @@ export * from './goals';
 export * from './planning';
 export * from './vision';
 export * from './ai';
+export * from './syncManager';
