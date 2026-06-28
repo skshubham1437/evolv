@@ -57,3 +57,8 @@ temp/
 
 # Nginx server config (managed manually on production server)
 nginx/
+
+# Never commit real credentials
+*.env.local
+docs/secrets*
+.git-replacements.txt
