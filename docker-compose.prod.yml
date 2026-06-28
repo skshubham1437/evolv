@@ -10,6 +10,8 @@ services:
       APP_ENV: production
     ports:
       - "8082:8081"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - evolv-net
     healthcheck:
