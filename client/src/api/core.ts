@@ -30,7 +30,9 @@ export async function request<T>(url: string, options: RequestInit = {}): Promis
       // Clear any stale localStorage remnants from the old auth approach.
       localStorage.removeItem('evolv_token');
       localStorage.removeItem('evolv_user');
-      window.location.href = '/login';
+      if (window.location.pathname !== '/login' && window.location.pathname !== '/register' && window.location.pathname !== '/') {
+        window.location.href = '/login';
+      }
       throw new Error('Session expired');
     }
 
