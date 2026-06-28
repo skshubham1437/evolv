@@ -105,6 +105,12 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v6
 
+      - name: Debug Network Connectivity (Port 22)
+        run: |
+          echo "Testing connectivity to ${{ secrets.VM_HOST }} on port 22..."
+          # Use nc (netcat) with a 5 second timeout to check if the port is open
+          nc -vz -w 5 ${{ secrets.VM_HOST }} 22 || echo "Port 22 is unreachable!"
+          
       - name: Copy docker-compose.prod.yml to server
         uses: appleboy/scp-action@v0.1.7
         with:
