@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import {
   fetchDashboard, createTask, completeTask, deleteTask, updateTask,
-  fetchProjects, createProject, deleteProject, fetchGoals,
+  fetchProjects, createProject, deleteProject, fetchGoals, updateTaskPositions,
   type Task, type Project, type Goal,
 } from '../api';
 import { useToast } from '../context/ToastContext';
@@ -31,6 +31,7 @@ function PriorityBadge({ priority }: { priority: Priority }) {
 
 function TaskRow({
   task, onComplete, onDelete, onChangePriority, idx, projects, allTasks, subtasks = [], onAddSubtask, isTaskBlocked, goals = [], onToggleUrgent, onToggleImportant, onChangeGoal,
+  onDragStart, onDragEnd, onDragOver, onDragLeave, onDrop, draggedTaskId, dragOverTaskId,
 }: {
   task: Task;
   onComplete: (id: number) => void;
@@ -46,6 +47,13 @@ function TaskRow({
   onToggleUrgent?: (id: number) => void;
   onToggleImportant?: (id: number) => void;
   onChangeGoal?: (id: number, goalId: number | null) => void;
+  onDragStart?: (e: React.DragEvent, id: number) => void;
+  onDragEnd?: (e: React.DragEvent) => void;
+  onDragOver?: (e: React.DragEvent, id: number) => void;
+  onDragLeave?: (e: React.DragEvent) => void;
+  onDrop?: (e: React.DragEvent, id: number) => void;
+  draggedTaskId?: number | null;
+  dragOverTaskId?: number | null;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [completing, setCompleting] = useState(false);
@@ -62,8 +70,24 @@ function TaskRow({
   const project = projects.find(p => p.id === task.project_id);
   const blockCheck = isTaskBlocked(task);
 
+  const isBeingDragged = draggedTaskId === task.id;
+  const isDragTarget = dragOverTaskId === task.id;
+
   return (
-    <div className="anim-fade-up w-full" style={{ animationDelay: `${idx * 20}ms` }}>
+    <div
+      className={`anim-fade-up w-full transition-all duration-200 ${
+        isBeingDragged ? 'opacity-25 scale-[0.98] border-2 border-dashed border-[var(--color-primary)]/40 rounded-xl bg-white/[0.002]' : ''
+      } ${
+        isDragTarget ? 'border-t-2 border-[var(--color-primary)] bg-[var(--color-primary)]/5' : ''
+      }`}
+      style={{ animationDelay: `${idx * 20}ms` }}
+      draggable={!task.is_completed && !task.parent_task_id}
+      onDragStart={(e) => onDragStart && onDragStart(e, task.id)}
+      onDragEnd={onDragEnd}
+      onDragOver={(e) => onDragOver && onDragOver(e, task.id)}
+      onDragLeave={onDragLeave}
+      onDrop={(e) => onDrop && onDrop(e, task.id)}
+    >
       <div
         className={`group flex flex-col gap-2 p-4 transition-all duration-300 border-b border-[rgba(255,255,255,0.04)] relative ${
           task.is_completed ? 'opacity-35' : expanded ? 'bg-white/[0.02]' : 'bg-transparent'
@@ -71,6 +95,14 @@ function TaskRow({
       >
         {expanded && !task.is_completed && <div className="absolute left-0 top-[20%] bottom-[20%] w-[3px] bg-[var(--color-primary)] rounded-r-full glow-shadow-primary" />}
         <div className="flex items-start gap-4">
+          
+          {/* Drag Handle (for visual cue) */}
+          {!task.is_completed && !task.parent_task_id && (
+            <div className="shrink-0 mt-1 cursor-grab active:cursor-grabbing text-[var(--color-outline)]/40 hover:text-[var(--color-primary)] transition-colors select-none no-print">
+              <span className="material-symbols-outlined text-[18px]">drag_indicator</span>
+            </div>
+          )}
+
           <button
             onClick={handleComplete}
             disabled={task.is_completed}
@@ -242,6 +274,8 @@ function TaskRow({
               onChangePriority={onChangePriority} projects={projects} allTasks={allTasks}
               subtasks={allTasks.filter(t => t.parent_task_id === sub.id)} onAddSubtask={onAddSubtask} isTaskBlocked={isTaskBlocked}
               goals={goals} onToggleUrgent={onToggleUrgent} onToggleImportant={onToggleImportant} onChangeGoal={onChangeGoal}
+              onDragStart={onDragStart} onDragEnd={onDragEnd} onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}
+              draggedTaskId={draggedTaskId} dragOverTaskId={dragOverTaskId}
             />
           ))}
         </div>
@@ -279,6 +313,12 @@ export function TasksPage() {
   const [newTags, setNewTags]                     = useState('');
   const [newDependencyId, setNewDependencyId]     = useState<number | null>(null);
 
+  // Drag and drop states
+  const [draggedTaskId, setDraggedTaskId] = useState<number | null>(null);
+  const [dragOverTaskId, setDragOverTaskId] = useState<number | null>(null);
+  const [dragOverQuadrant, setDragOverQuadrant] = useState<string | null>(null);
+  const [dragOverProject, setDragOverProject] = useState<number | 'standalone' | null>(null);
+
   useEffect(() => {
     load();
     window.addEventListener('task-added-globally', load);
@@ -295,6 +335,137 @@ export function TasksPage() {
       setError('Cannot reach the server.');
     } finally { setLoading(false); }
   };
+
+  // Drag and drop handlers
+  const handleDragStart = (e: React.DragEvent, id: number) => {
+    e.dataTransfer.setData('text/plain', id.toString());
+    setDraggedTaskId(id);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedTaskId(null);
+    setDragOverTaskId(null);
+    setDragOverQuadrant(null);
+    setDragOverProject(null);
+  };
+
+  const handleDragOverTask = (e: React.DragEvent, id: number) => {
+    if (draggedTaskId === id) return;
+    e.preventDefault();
+    setDragOverTaskId(id);
+  };
+
+  const handleDropTask = async (e: React.DragEvent, targetId: number) => {
+    e.preventDefault();
+    const draggedId = draggedTaskId;
+    handleDragEnd();
+
+    if (!draggedId || draggedId === targetId) return;
+
+    const draggedTask = tasks.find(t => t.id === draggedId);
+    const targetTask = tasks.find(t => t.id === targetId);
+    if (!draggedTask || !targetTask) return;
+
+    // Check if dragging cross-section
+    let updates: Partial<Task> = {};
+    if (viewMode === 'eisenhower') {
+      updates.is_urgent = targetTask.is_urgent;
+      updates.is_important = targetTask.is_important;
+    } else {
+      updates.project_id = targetTask.project_id;
+    }
+
+    // Reorder locally
+    const reorderedList = [...tasks];
+    const draggedIdx = reorderedList.findIndex(t => t.id === draggedId);
+    reorderedList.splice(draggedIdx, 1);
+
+    const targetIdx = reorderedList.findIndex(t => t.id === targetId);
+    reorderedList.splice(targetIdx, 0, {
+      ...draggedTask,
+      ...updates
+    });
+
+    // Re-index all sibling tasks in target group
+    let siblingTasks = reorderedList;
+    if (viewMode === 'eisenhower') {
+      siblingTasks = reorderedList.filter(t => t.is_urgent === targetTask.is_urgent && t.is_important === targetTask.is_important && !t.parent_task_id);
+    } else {
+      siblingTasks = reorderedList.filter(t => t.project_id === targetTask.project_id && !t.parent_task_id);
+    }
+
+    const updatedPositions = siblingTasks.map((t, idx) => ({
+      id: t.id,
+      position: idx * 100
+    }));
+
+    // Update state immediately
+    setTasks(prev => prev.map(t => {
+      const posUpdate = updatedPositions.find(p => p.id === t.id);
+      if (t.id === draggedId) {
+        return { ...t, ...updates, position: posUpdate ? posUpdate.position : t.position };
+      }
+      return posUpdate ? { ...t, position: posUpdate.position } : t;
+    }));
+
+    try {
+      if (Object.keys(updates).length > 0) {
+        await updateTask(draggedId, updates);
+      }
+      await updateTaskPositions(updatedPositions);
+      showToast('Task reordered', 'success');
+    } catch (err: any) {
+      showToast(err.message || 'Failed to update order', 'error');
+      load();
+    }
+  };
+
+  const handleQuadrantDrop = async (e: React.DragEvent, isUrgent: boolean, isImportant: boolean) => {
+    e.preventDefault();
+    const draggedId = draggedTaskId;
+    handleDragEnd();
+
+    if (!draggedId) return;
+
+    const task = tasks.find(t => t.id === draggedId);
+    if (!task) return;
+
+    if (task.is_urgent === isUrgent && task.is_important === isImportant) return;
+
+    setTasks(prev => prev.map(t => t.id === draggedId ? { ...t, is_urgent: isUrgent, is_important: isImportant } : t));
+
+    try {
+      await updateTask(draggedId, { is_urgent: isUrgent, is_important: isImportant });
+      showToast('Quadrant updated', 'success');
+    } catch (err: any) {
+      showToast(err.message || 'Failed to move to quadrant', 'error');
+      load();
+    }
+  };
+
+  const handleProjectDrop = async (e: React.DragEvent, projectId: number | null) => {
+    e.preventDefault();
+    const draggedId = draggedTaskId;
+    handleDragEnd();
+
+    if (!draggedId) return;
+
+    const task = tasks.find(t => t.id === draggedId);
+    if (!task) return;
+
+    if (task.project_id === projectId) return;
+
+    setTasks(prev => prev.map(t => t.id === draggedId ? { ...t, project_id: projectId } : t));
+
+    try {
+      await updateTask(draggedId, { project_id: projectId });
+      showToast(projectId ? 'Task moved to project' : 'Task moved to standalone', 'success');
+    } catch (err: any) {
+      showToast(err.message || 'Failed to move project', 'error');
+      load();
+    }
+  };
+
 
   const handleAdd = async (e: FormEvent) => {
     e.preventDefault();
@@ -680,7 +851,16 @@ export function TasksPage() {
                   return (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 anim-fade-up">
                       {/* Q1: Urgent & Important */}
-                      <div className="glass-card rounded-2xl flex flex-col min-h-[350px] overflow-hidden border-[rgba(255,255,255,0.05)] shadow-lg hover:border-[var(--color-error)]/20 transition-all duration-300">
+                      <div
+                        onDragOver={(e) => { e.preventDefault(); setDragOverQuadrant('q1'); }}
+                        onDragLeave={() => setDragOverQuadrant(null)}
+                        onDrop={(e) => handleQuadrantDrop(e, true, true)}
+                        className={`glass-card rounded-2xl flex flex-col min-h-[350px] overflow-hidden border transition-all duration-300 ${
+                          dragOverQuadrant === 'q1'
+                            ? 'border-[var(--color-error)] bg-[var(--color-error)]/5 scale-[1.01] shadow-[0_0_20px_rgba(255,180,171,0.15)]'
+                            : 'border-[rgba(255,255,255,0.05)] hover:border-[var(--color-error)]/20 shadow-lg'
+                        }`}
+                      >
                         <div className="p-4 px-5 border-b border-[rgba(255,255,255,0.06)] bg-white/[0.02] flex flex-col gap-1.5">
                           <div className="flex items-center justify-between">
                             <h3 className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-error)] flex items-center gap-1.5">
@@ -706,6 +886,8 @@ export function TasksPage() {
                                 subtasks={filtered.filter(t => t.parent_task_id === task.id)}
                                 onAddSubtask={handleAddSubtask} isTaskBlocked={isTaskBlocked}
                                 goals={goals} onToggleUrgent={handleToggleUrgent} onToggleImportant={handleToggleImportant} onChangeGoal={handleChangeGoal}
+                                onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragOver={handleDragOverTask} onDrop={handleDropTask}
+                                draggedTaskId={draggedTaskId} dragOverTaskId={dragOverTaskId}
                               />
                             ))
                           )}
@@ -713,7 +895,16 @@ export function TasksPage() {
                       </div>
 
                       {/* Q2: Important, Not Urgent */}
-                      <div className="glass-card rounded-2xl flex flex-col min-h-[350px] overflow-hidden border-[rgba(255,255,255,0.05)] shadow-lg hover:border-[var(--color-secondary)]/20 transition-all duration-300">
+                      <div
+                        onDragOver={(e) => { e.preventDefault(); setDragOverQuadrant('q2'); }}
+                        onDragLeave={() => setDragOverQuadrant(null)}
+                        onDrop={(e) => handleQuadrantDrop(e, false, true)}
+                        className={`glass-card rounded-2xl flex flex-col min-h-[350px] overflow-hidden border transition-all duration-300 ${
+                          dragOverQuadrant === 'q2'
+                            ? 'border-[var(--color-secondary)] bg-[var(--color-secondary)]/5 scale-[1.01] shadow-[0_0_20px_rgba(90,218,206,0.15)]'
+                            : 'border-[rgba(255,255,255,0.05)] hover:border-[var(--color-secondary)]/20 shadow-lg'
+                        }`}
+                      >
                         <div className="p-4 px-5 border-b border-[rgba(255,255,255,0.06)] bg-white/[0.02] flex flex-col gap-1.5">
                           <div className="flex items-center justify-between">
                             <h3 className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-secondary)] flex items-center gap-1.5">
@@ -739,6 +930,8 @@ export function TasksPage() {
                                 subtasks={filtered.filter(t => t.parent_task_id === task.id)}
                                 onAddSubtask={handleAddSubtask} isTaskBlocked={isTaskBlocked}
                                 goals={goals} onToggleUrgent={handleToggleUrgent} onToggleImportant={handleToggleImportant} onChangeGoal={handleChangeGoal}
+                                onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragOver={handleDragOverTask} onDrop={handleDropTask}
+                                draggedTaskId={draggedTaskId} dragOverTaskId={dragOverTaskId}
                               />
                             ))
                           )}
@@ -746,7 +939,16 @@ export function TasksPage() {
                       </div>
 
                       {/* Q3: Urgent, Not Important */}
-                      <div className="glass-card rounded-2xl flex flex-col min-h-[350px] overflow-hidden border-[rgba(255,255,255,0.05)] shadow-lg hover:border-[var(--color-primary)]/20 transition-all duration-300">
+                      <div
+                        onDragOver={(e) => { e.preventDefault(); setDragOverQuadrant('q3'); }}
+                        onDragLeave={() => setDragOverQuadrant(null)}
+                        onDrop={(e) => handleQuadrantDrop(e, true, false)}
+                        className={`glass-card rounded-2xl flex flex-col min-h-[350px] overflow-hidden border transition-all duration-300 ${
+                          dragOverQuadrant === 'q3'
+                            ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/5 scale-[1.01] shadow-[0_0_20px_rgba(210,187,255,0.15)]'
+                            : 'border-[rgba(255,255,255,0.05)] hover:border-[var(--color-primary)]/20 shadow-lg'
+                        }`}
+                      >
                         <div className="p-4 px-5 border-b border-[rgba(255,255,255,0.06)] bg-white/[0.02] flex flex-col gap-1.5">
                           <div className="flex items-center justify-between">
                             <h3 className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-primary)] flex items-center gap-1.5">
@@ -772,6 +974,8 @@ export function TasksPage() {
                                 subtasks={filtered.filter(t => t.parent_task_id === task.id)}
                                 onAddSubtask={handleAddSubtask} isTaskBlocked={isTaskBlocked}
                                 goals={goals} onToggleUrgent={handleToggleUrgent} onToggleImportant={handleToggleImportant} onChangeGoal={handleChangeGoal}
+                                onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragOver={handleDragOverTask} onDrop={handleDropTask}
+                                draggedTaskId={draggedTaskId} dragOverTaskId={dragOverTaskId}
                               />
                             ))
                           )}
@@ -779,7 +983,16 @@ export function TasksPage() {
                       </div>
 
                       {/* Q4: Not Urgent & Not Important */}
-                      <div className="glass-card rounded-2xl flex flex-col min-h-[350px] overflow-hidden border-[rgba(255,255,255,0.05)] shadow-lg hover:border-[var(--color-outline)]/20 transition-all duration-300">
+                      <div
+                        onDragOver={(e) => { e.preventDefault(); setDragOverQuadrant('q4'); }}
+                        onDragLeave={() => setDragOverQuadrant(null)}
+                        onDrop={(e) => handleQuadrantDrop(e, false, false)}
+                        className={`glass-card rounded-2xl flex flex-col min-h-[350px] overflow-hidden border transition-all duration-300 ${
+                          dragOverQuadrant === 'q4'
+                            ? 'border-[var(--color-outline)] bg-white/[0.04] scale-[1.01]'
+                            : 'border-[rgba(255,255,255,0.05)] hover:border-[var(--color-outline)]/20 shadow-lg'
+                        }`}
+                      >
                         <div className="p-4 px-5 border-b border-[rgba(255,255,255,0.06)] bg-white/[0.02] flex flex-col gap-1.5">
                           <div className="flex items-center justify-between">
                             <h3 className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[var(--color-outline)] flex items-center gap-1.5">
@@ -805,6 +1018,8 @@ export function TasksPage() {
                                 subtasks={filtered.filter(t => t.parent_task_id === task.id)}
                                 onAddSubtask={handleAddSubtask} isTaskBlocked={isTaskBlocked}
                                 goals={goals} onToggleUrgent={handleToggleUrgent} onToggleImportant={handleToggleImportant} onChangeGoal={handleChangeGoal}
+                                onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragOver={handleDragOverTask} onDrop={handleDropTask}
+                                draggedTaskId={draggedTaskId} dragOverTaskId={dragOverTaskId}
                               />
                             ))
                           )}
@@ -818,9 +1033,20 @@ export function TasksPage() {
                   {projects.map(proj => {
                     const projTasks = filtered.filter(t => t.project_id === proj.id && !t.parent_task_id);
                     const isCollapsed = collapsedProjects[proj.id] ?? false;
+                    const isHovered = dragOverProject === proj.id;
 
                     return (
-                      <div key={proj.id} className="glass-card rounded-2xl overflow-hidden border-[rgba(255,255,255,0.05)] shadow-lg mb-6">
+                      <div
+                        key={proj.id}
+                        onDragOver={(e) => { e.preventDefault(); setDragOverProject(proj.id); }}
+                        onDragLeave={() => setDragOverProject(null)}
+                        onDrop={(e) => handleProjectDrop(e, proj.id)}
+                        className={`glass-card rounded-2xl overflow-hidden border mb-6 transition-all duration-300 ${
+                          isHovered
+                            ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/5 scale-[1.005] shadow-lg'
+                            : 'border-[rgba(255,255,255,0.05)] shadow-lg'
+                        }`}
+                      >
                         <div 
                           className="flex items-center justify-between p-4 px-5 border-b border-[rgba(255,255,255,0.06)] bg-white/[0.02] cursor-pointer group"
                           onClick={() => setCollapsedProjects(prev => ({ ...prev, [proj.id]: !isCollapsed }))}
@@ -862,6 +1088,8 @@ export function TasksPage() {
                                   subtasks={filtered.filter(t => t.parent_task_id === task.id)}
                                   onAddSubtask={handleAddSubtask} isTaskBlocked={isTaskBlocked}
                                   goals={goals} onToggleUrgent={handleToggleUrgent} onToggleImportant={handleToggleImportant} onChangeGoal={handleChangeGoal}
+                                  onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragOver={handleDragOverTask} onDrop={handleDropTask}
+                                  draggedTaskId={draggedTaskId} dragOverTaskId={dragOverTaskId}
                                 />
                               ))
                             )}
@@ -874,8 +1102,19 @@ export function TasksPage() {
                   {(() => {
                     const standaloneTasks = filtered.filter(t => !t.project_id && !t.parent_task_id);
                     if (standaloneTasks.length === 0 && projects.length > 0) return null;
+                    const isStandaloneHovered = dragOverProject === 'standalone';
+
                     return (
-                      <div className="glass-card rounded-2xl overflow-hidden mt-4 border-[rgba(255,255,255,0.05)] shadow-lg">
+                      <div
+                        onDragOver={(e) => { e.preventDefault(); setDragOverProject('standalone'); }}
+                        onDragLeave={() => setDragOverProject(null)}
+                        onDrop={(e) => handleProjectDrop(e, null)}
+                        className={`glass-card rounded-2xl overflow-hidden mt-4 border transition-all duration-300 ${
+                          isStandaloneHovered
+                            ? 'border-[var(--color-primary)] bg-[var(--color-primary)]/5 scale-[1.005] shadow-lg'
+                            : 'border-[rgba(255,255,255,0.05)] shadow-lg'
+                        }`}
+                      >
                         <div className="p-4 px-5 border-b border-[rgba(255,255,255,0.06)] bg-white/[0.02]">
                           <h3 className="font-mono text-[10px] font-bold text-[var(--color-outline)] uppercase tracking-[0.2em] flex items-center gap-2">
                             <span className="material-symbols-outlined text-[14px] text-[var(--color-primary)]">inbox</span>
@@ -895,6 +1134,8 @@ export function TasksPage() {
                                 subtasks={filtered.filter(t => t.parent_task_id === task.id)}
                                 onAddSubtask={handleAddSubtask} isTaskBlocked={isTaskBlocked}
                                 goals={goals} onToggleUrgent={handleToggleUrgent} onToggleImportant={handleToggleImportant} onChangeGoal={handleChangeGoal}
+                                onDragStart={handleDragStart} onDragEnd={handleDragEnd} onDragOver={handleDragOverTask} onDrop={handleDropTask}
+                                draggedTaskId={draggedTaskId} dragOverTaskId={dragOverTaskId}
                               />
                             ))
                           )}

@@ -20,6 +20,7 @@ func registerDashboardRoutes(mux *http.ServeMux) {
 func registerTaskRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/tasks", handlers.GetTasks)
 	mux.HandleFunc("POST /api/tasks", handlers.CreateTask)
+	mux.HandleFunc("PUT /api/tasks/positions", handlers.UpdateTaskPositions)
 	mux.HandleFunc("PATCH /api/tasks/{id}", handlers.UpdateTask)
 	mux.HandleFunc("PUT /api/tasks/{id}/complete", handlers.CompleteTask)
 	mux.HandleFunc("DELETE /api/tasks/{id}", handlers.DeleteTask)

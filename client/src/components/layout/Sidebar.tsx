@@ -1,5 +1,4 @@
 import { NavLink } from 'react-router-dom';
-import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../context/AuthContext';
 
 const navGroups = [
@@ -37,7 +36,6 @@ interface SidebarProps {
 }
 
 export function Sidebar({ expanded = false, onToggle }: SidebarProps) {
-  const { theme, toggleTheme } = useTheme();
   const { user } = useAuth();
 
   const getInitials = (name?: string) => {
@@ -119,8 +117,8 @@ export function Sidebar({ expanded = false, onToggle }: SidebarProps) {
                       <span
                         className="material-symbols-outlined text-[20px] shrink-0 transition-transform duration-300 group-hover/nav:scale-110 group-active/nav:scale-95"
                         style={{ 
-                          fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0",
-                          textShadow: isActive ? '0 0 12px rgba(210,187,255,0.5)' : 'none'
+                           fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0",
+                           textShadow: isActive ? '0 0 12px rgba(210,187,255,0.5)' : 'none'
                         }}
                         aria-hidden="true"
                       >
@@ -142,27 +140,13 @@ export function Sidebar({ expanded = false, onToggle }: SidebarProps) {
       </div>
 
       {/* ── Bottom actions ───────────────────────── */}
-      <div className={`flex border-t border-[var(--color-outline-variant)] py-2 ${expanded ? 'items-center px-4 justify-between flex-row' : 'flex-col items-center gap-0.5 px-2'}`}>
-        {/* Theme toggle */}
-        <button
-          onClick={toggleTheme}
-          title={theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
-          aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-          className={`flex items-center justify-center transition-colors text-[var(--color-outline)] hover:text-[var(--color-on-surface-variant)] hover:bg-[var(--color-surface-container-high)]/50 ${expanded ? 'w-full py-2.5 rounded-xl mr-1' : 'w-11 h-11 rounded-xl tooltip-wrapper'}`}
-        >
-          <span className="material-symbols-outlined text-[20px] shrink-0" style={{ fontVariationSettings: "'FILL' 1" }} aria-hidden="true">
-            {theme === 'dark' ? 'light_mode' : 'dark_mode'}
-          </span>
-          {expanded && <span className="text-sm font-medium ml-2 whitespace-nowrap">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>}
-          {!expanded && <span className="tooltip-text" aria-hidden="true">{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>}
-        </button>
-
+      <div className={`flex border-t border-[var(--color-outline-variant)] py-2 ${expanded ? 'items-center px-4 justify-center flex-row' : 'flex-col items-center gap-0.5 px-2'}`}>
         {/* Settings / User */}
         <NavLink
           to="/settings"
           aria-label="Settings"
           className={({ isActive }) =>
-            `flex items-center justify-center transition-colors ${expanded ? 'w-full py-2.5 rounded-xl ml-1' : 'w-11 h-11 rounded-xl tooltip-wrapper'} ${
+            `flex items-center justify-center transition-colors ${expanded ? 'w-full py-2.5 rounded-xl' : 'w-11 h-11 rounded-xl tooltip-wrapper'} ${
               isActive 
                 ? 'text-[var(--color-primary)] bg-gradient-to-r from-[var(--color-primary)]/10 to-transparent shadow-[inset_2px_0_0_var(--color-primary)]' 
                 : 'text-[var(--color-outline)] hover:text-[var(--color-on-surface-variant)] hover:bg-[var(--color-surface-container-high)]/50'

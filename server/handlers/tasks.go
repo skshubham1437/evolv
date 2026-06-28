@@ -275,3 +275,39 @@ func DeleteTask(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
+
+// UpdateTaskPositions bulk-updates positions of tasks in a single database transaction.
+func UpdateTaskPositions(w http.ResponseWriter, r *http.Request) {
+	userID := getUserIDFromCtx(r)
+	
+	var req struct {
+		Positions []struct {
+			ID       uint `json:"id"`
+			Position int  `json:"position"`
+		} `json:"positions"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid body", http.StatusBadRequest)
+		return
+	}
+
+	err := database.DB.Transaction(func(tx *gorm.DB) error {
+		for _, item := range req.Positions {
+			if err := tx.Model(&models.Task{}).
+				Where("id = ? AND user_id = ?", item.ID, userID).
+				Update("position", item.Position).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+
+	if err != nil {
+		http.Error(w, "Failed to update task positions", http.StatusInternalServerError)
+		return
+	}
+
+	respond(w, map[string]string{"status": "ok"})
+}
+

@@ -85,6 +85,13 @@ export function rescheduleOverdueTasks(): Promise<{ status: string }> {
   return request(`${API}/tasks/reschedule`, { method: 'POST' });
 }
 
+export function updateTaskPositions(positions: { id: number; position: number }[]): Promise<{ status: string }> {
+  return request(`${API}/tasks/positions`, {
+    method: 'PUT',
+    body: JSON.stringify({ positions }),
+  });
+}
+
 // ─── Projects ─────────────────────────────────────────────────────────────────
 
 export function fetchProjects(): Promise<Project[]> {
