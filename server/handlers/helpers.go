@@ -7,6 +7,7 @@ import (
 
 	"evolv-server/middleware"
 	"evolv-server/models"
+	"evolv-server/services"
 	"gorm.io/gorm"
 )
 
@@ -63,23 +64,7 @@ func UpdateGoalProgress(tx *gorm.DB, goalID uint) error {
 		return err
 	}
 
-	totalItems := len(krs) + len(tasks)
-	if totalItems == 0 {
-		return tx.Model(&models.Goal{}).Where("id = ?", goalID).Update("progress", 0).Error
-	}
-
-	doneItems := 0
-	for _, kr := range krs {
-		if kr.IsDone {
-			doneItems++
-		}
-	}
-	for _, t := range tasks {
-		if t.IsCompleted {
-			doneItems++
-		}
-	}
-
-	progress := (doneItems * 100) / totalItems
+	progress := services.CalculateGoalProgress(krs, tasks)
 	return tx.Model(&models.Goal{}).Where("id = ?", goalID).Update("progress", progress).Error
 }
+

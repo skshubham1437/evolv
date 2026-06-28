@@ -52,6 +52,7 @@ func GetHabits(w http.ResponseWriter, r *http.Request) {
 	}
 
 	query.Find(&habits)
+	habits = services.SortHabits(habits)
 
 	startOfDay := time.Now().Truncate(24 * time.Hour)
 
@@ -107,6 +108,22 @@ func CreateHabit(w http.ResponseWriter, r *http.Request) {
 	} else {
 		habit.StreakShieldsRemaining = 0
 	}
+
+	// Validate stacking constraints
+	if habit.StackAfterID != nil {
+		var allHabits []models.Habit
+		database.DB.Where("user_id = ?", userID).Find(&allHabits)
+		
+		tempHabit := habit
+		tempHabit.ID = 999999 // Temporary non-zero ID for cycle detection
+		allHabits = append(allHabits, tempHabit)
+
+		if err := services.ValidateStack(allHabits); err != nil {
+			http.Error(w, fmt.Sprintf(`{"error":"%s"}`, err.Error()), http.StatusBadRequest)
+			return
+		}
+	}
+
 	database.DB.Create(&habit)
 	w.WriteHeader(http.StatusCreated)
 	respond(w, habit)
@@ -131,6 +148,25 @@ func UpdateHabit(w http.ResponseWriter, r *http.Request) {
 		habit.StreakShieldsRemaining = 0
 	}
 	habit.UserID = userID
+
+	// Validate stacking constraints
+	if habit.StackAfterID != nil {
+		var allHabits []models.Habit
+		database.DB.Where("user_id = ?", userID).Find(&allHabits)
+		
+		for idx, h := range allHabits {
+			if h.ID == habit.ID {
+				allHabits[idx] = habit
+				break
+			}
+		}
+
+		if err := services.ValidateStack(allHabits); err != nil {
+			http.Error(w, fmt.Sprintf(`{"error":"%s"}`, err.Error()), http.StatusBadRequest)
+			return
+		}
+	}
+
 	database.DB.Save(&habit)
 	respond(w, habit)
 }

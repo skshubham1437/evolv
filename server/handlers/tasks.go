@@ -8,6 +8,7 @@ import (
 
 	"evolv-server/database"
 	"evolv-server/models"
+	"evolv-server/services"
 	"gorm.io/gorm"
 )
 
@@ -226,15 +227,8 @@ func CompleteTask(w http.ResponseWriter, r *http.Request) {
 
 		// If it's a recurring task, schedule the next occurrence
 		if task.Recurrence != "" && task.DueDate != nil {
-			var nextDueDate time.Time
-			switch task.Recurrence {
-			case "daily":
-				nextDueDate = task.DueDate.AddDate(0, 0, 1)
-			case "weekly":
-				nextDueDate = task.DueDate.AddDate(0, 0, 7)
-			case "monthly":
-				nextDueDate = task.DueDate.AddDate(0, 1, 0)
-			default:
+			nextDueDate, ok := services.CalculateNextDueDate(*task.DueDate, task.Recurrence)
+			if !ok {
 				return nil // no valid recurrence, do nothing
 			}
 
