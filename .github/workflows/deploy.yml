@@ -111,44 +111,36 @@ jobs:
           # Use nc (netcat) with a 5 second timeout to check if the port is open
           nc -vz -w 5 ${{ secrets.VM_HOST }} 22 || echo "Port 22 is unreachable!"
           
-      - name: Copy docker-compose.prod.yml to server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.VM_HOST }}
-          username: ${{ secrets.VM_USER }}
-          key: ${{ secrets.VM_SSH_KEY }}
-          source: "docker-compose.prod.yml"
-          target: "/opt/evolv/"
+      - name: Setup SSH Key and Known Hosts
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VM_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          # Add the host to known_hosts to prevent interactive prompt
+          # We also set a 10s connection timeout for faster failure feedback
+          ssh-keyscan -t rsa,ed25519 -H ${{ secrets.VM_HOST }} >> ~/.ssh/known_hosts || true
 
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.VM_HOST }}
-          username: ${{ secrets.VM_USER }}
-          key: ${{ secrets.VM_SSH_KEY }}
-          script: |
+      - name: Copy docker-compose.prod.yml to server (Native SCP)
+        run: |
+          scp -v -o ConnectTimeout=15 -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 docker-compose.prod.yml ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }}:/opt/evolv/
+
+      - name: Deploy via SSH (Native SSH)
+        run: |
+          ssh -v -o ConnectTimeout=15 -o StrictHostKeyChecking=no -i ~/.ssh/id_ed25519 ${{ secrets.VM_USER }}@${{ secrets.VM_HOST }} << 'EOF'
             set -e
-
             DEPLOY_DIR="/opt/evolv"
             cd "$DEPLOY_DIR"
 
-            # Inject env vars for docker compose interpolation
             export DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }}
-
-            # Pull the latest images from Docker Hub
             docker compose -f docker-compose.prod.yml pull
-
-            # Recreate containers with new images, keep other services up
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
-
-            # Wait for containers to initialise
+            
             echo "⏳ Waiting for containers to start..."
             sleep 10
-
             echo "✅ Evolv deployed successfully at $(date)"
 
-            # Prune old dangling images to free disk space
             docker image prune -f
             docker images ${{ secrets.DOCKERHUB_USERNAME }}/evolv-server --format "{{.ID}} {{.Tag}}" | grep -v latest | awk '{print $1}' | xargs -r docker rmi -f || true
             docker images ${{ secrets.DOCKERHUB_USERNAME }}/evolv-client --format "{{.ID}} {{.Tag}}" | grep -v latest | awk '{print $1}' | xargs -r docker rmi -f || true
             echo "🧹 Old images cleaned up"
+          EOF
