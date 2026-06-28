@@ -9,7 +9,7 @@ services:
       ALLOWED_ORIGIN: ${ALLOWED_ORIGIN:-https://evolv.shubhamkr.in}
       APP_ENV: production
     ports:
-      - "8081:8081"
+      - "8082:8081"
     networks:
       - evolv-net
     healthcheck:
@@ -23,7 +23,7 @@ services:
     image: ${DOCKERHUB_USERNAME}/evolv-client:latest
     restart: unless-stopped
     ports:
-      - "3000:80"
+      - "3001:80"
     networks:
       - evolv-net
     depends_on:
