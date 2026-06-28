@@ -285,6 +285,35 @@
       var(--color-background);
   }
 
+  /* ── Preference-gated overrides ─────────────────────────── */
+  /* Ambient orbs: remove all gradient overlays, show plain bg  */
+  html.no-ambient-orbs .bg-ambient-mesh {
+    background: var(--color-background) !important;
+  }
+
+  /* Page transitions: disable any enter/exit transition on route wrappers */
+  html.no-page-transitions * {
+    transition-duration: 0ms !important;
+    animation-duration: 0ms !important;
+  }
+
+  /* Habit glows: disable glow/pulse on completed habit cards */
+  html.no-habit-glows .habit-glow,
+  html.no-habit-glows .habit-completed-glow {
+    box-shadow: none !important;
+    animation: none !important;
+  }
+
+  /* Timer tick: disable the breathe animation on focus timer */
+  html.no-timer-tick .timer-breathe {
+    animation: none !important;
+  }
+
+  /* Waveforms: hide soundwave bars in Focus Mode */
+  html.no-waveforms .soundwave-bar {
+    display: none !important;
+  }
+
   /* ── Gradient Button ────────────────────────────────────── */
   .btn-gradient {
     background: linear-gradient(135deg, var(--color-primary), var(--color-primary-container));
