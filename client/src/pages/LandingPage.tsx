@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { useTheme } from '../context/ThemeContext';
 
 // ── Web Audio Engine (Self-contained) ──────────────────────────────────
 function createNoiseBuffer(ctx: AudioContext, seconds = 4): AudioBuffer {
@@ -102,6 +103,7 @@ function startAudio(soundId: string): () => void {
 }
 
 export function LandingPage() {
+  const { theme, toggleTheme } = useTheme();
   // ── Focus demo state ────────────────────────────────────────────────
   const [soundPlaying, setSoundPlaying] = useState(false);
   const [activeSound, setActiveSound] = useState('rain');
@@ -185,6 +187,16 @@ export function LandingPage() {
           </nav>
 
           <div className="flex items-center gap-4">
+            <button
+              onClick={toggleTheme}
+              title={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+              aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
+              className="w-8 h-8 rounded-full flex items-center justify-center text-[var(--color-outline)] hover:text-[var(--color-on-surface)] hover:bg-white/5 transition-colors active:scale-90 cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+                {theme === 'dark' ? 'light_mode' : 'dark_mode'}
+              </span>
+            </button>
             <Link 
               to="/login" 
               className="text-[11px] font-mono uppercase tracking-widest text-[var(--color-outline)] hover:text-[var(--color-on-surface)] transition-colors hidden sm:block"

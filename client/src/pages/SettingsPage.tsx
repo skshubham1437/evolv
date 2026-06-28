@@ -23,29 +23,31 @@ function ToggleNode({
   return (
     <button
       onClick={onToggle}
-      className="flex items-center justify-between p-4 bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] hover:border-[var(--color-primary)]/50 transition-colors group w-full text-left"
+      className="flex items-center justify-between p-4 glass-card rounded-xl border border-[rgba(255,255,255,0.06)] hover:border-[var(--color-primary)]/30 transition-all duration-200 group w-full text-left bg-white/[0.005] active:scale-[0.99] cursor-pointer"
     >
       <div className="flex items-center gap-4">
-        <div className="w-12 h-12 bg-[var(--color-surface-container-high)] flex items-center justify-center border border-transparent group-hover:border-[var(--color-primary)]/30 transition-colors">
-          <span className="material-symbols-outlined text-[var(--color-on-surface-variant)] group-hover:text-[var(--color-primary)] transition-colors">
+        <div className="w-12 h-12 bg-white/[0.02] flex items-center justify-center rounded-xl border border-[rgba(255,255,255,0.06)] group-hover:border-[var(--color-primary)]/20 transition-colors">
+          <span className="material-symbols-outlined text-[var(--color-on-surface-variant)] group-hover:text-[var(--color-on-surface)] transition-colors">
             {icon}
           </span>
         </div>
         <div>
           <h3 className="font-body-md text-[14px] text-[var(--color-on-surface)] font-bold">{title}</h3>
-          <p className="font-body-md text-[12px] text-[var(--color-on-surface-variant)]">{desc}</p>
+          <p className="font-body-md text-[12px] text-[var(--color-outline)]">{desc}</p>
         </div>
       </div>
 
-      {/* Toggle rigid box */}
+      {/* Modern pill-shaped switch */}
       <div
-        className={`relative w-12 h-6 border transition-colors duration-200 shrink-0 ${
-          active ? 'bg-[var(--color-primary)] border-[var(--color-primary)]' : 'bg-[var(--color-surface-container-lowest)] border-[var(--color-outline-variant)]'
+        className={`relative w-11 h-6 rounded-full border transition-all duration-300 shrink-0 ${
+          active 
+            ? 'bg-[var(--color-primary)] border-[var(--color-primary)]' 
+            : 'bg-transparent border-[rgba(255,255,255,0.2)]'
         }`}
       >
         <div
-          className={`absolute top-0.5 w-[18px] h-[18px] transition-all duration-200 ${
-            active ? 'bg-black left-[27px]' : 'bg-[var(--color-outline)] left-0.5'
+          className={`absolute top-[2px] w-[18px] h-[18px] rounded-full transition-all duration-300 ${
+            active ? 'bg-black left-[23px]' : 'bg-white/40 left-[2px]'
           }`}
         />
       </div>
@@ -56,9 +58,9 @@ function ToggleNode({
 // ─── Settings Section wrapper ───────────────────────────────
 function SettingsSection({ title, icon, children }: { title: string; icon: string; children: React.ReactNode }) {
   return (
-    <section className="bg-[var(--color-surface-container-low)] border border-[var(--color-outline-variant)] p-8">
-      <h2 className="font-label-sm text-[12px] font-bold uppercase tracking-widest text-[var(--color-on-surface)] mb-6 flex items-center gap-2 border-b border-[var(--color-surface-variant)] pb-3">
-        <span className="material-symbols-outlined text-[18px] text-[var(--color-primary)]">{icon}</span>
+    <section className="glass-card rounded-2xl p-8 border-[rgba(255,255,255,0.06)] shadow-lg bg-white/[0.005] transition-all duration-300">
+      <h2 className="font-label-sm text-[12px] font-bold uppercase tracking-widest text-[var(--color-on-surface)] mb-6 flex items-center gap-2 border-b border-[rgba(255,255,255,0.06)] pb-3.5 font-mono">
+        <span className="material-symbols-outlined text-[18px] text-[var(--color-on-surface-variant)]">{icon}</span>
         {title}
       </h2>
       <div>{children}</div>
@@ -372,34 +374,36 @@ export function SettingsPage() {
 
 
   return (
-    <div className="flex flex-col h-full w-full bg-[var(--color-surface-container-lowest)] text-[var(--color-on-surface)] items-center overflow-hidden">
-      <div className="flex flex-col h-full w-full max-w-[var(--spacing-container-max)] border-x border-[var(--color-outline-variant)] relative">
+    <div className="flex flex-col h-full w-full bg-transparent text-[var(--color-on-surface)] items-center overflow-hidden">
+      <div className="flex flex-col h-full w-full max-w-[var(--spacing-container-max)] border-x border-[rgba(255,255,255,0.06)] relative">
 
-        <div className="flex-1 overflow-y-auto no-scrollbar bg-[var(--color-surface-container-low)] pb-32">
+        <div className="flex-1 overflow-y-auto no-scrollbar pb-32">
           
           {/* Header */}
-          <header className="px-8 py-6 border-b border-[var(--color-outline-variant)] shrink-0 bg-[var(--color-surface-container-lowest)]">
-            <h1 className="font-title-md text-[32px] font-medium tracking-tight text-[var(--color-primary-fixed)]">System Config</h1>
-            <p className="font-label-sm text-[11px] text-[var(--color-outline)] uppercase tracking-widest mt-1 font-bold">
-              CALIBRATE ENVIRONMENTAL PARAMETERS
+          <header className="px-8 py-6 border-b border-[rgba(255,255,255,0.06)] shrink-0 bg-transparent">
+            <h2 className="text-[36px] font-black tracking-tighter text-[var(--color-on-surface)] leading-none select-none">
+              Settings
+            </h2>
+            <p className="font-mono text-[9px] text-[var(--color-outline)] uppercase tracking-[0.25em] mt-2.5">
+              Personalize your workspace and account
             </p>
           </header>
-
+ 
           <div className="p-8 flex flex-col gap-8 max-w-4xl mx-auto w-full">
 
-            {/* ── Identity ──────────────────────────────────── */}
-            <SettingsSection title="Identity Parameters" icon="fingerprint">
+            {/* ── Profile Settings ─────────────────────────── */}
+            <SettingsSection title="Profile Settings" icon="fingerprint">
               <div className="flex flex-col sm:flex-row gap-8 items-start">
                 {/* Avatar */}
                 <div className="relative shrink-0">
-                  <div className="w-24 h-24 border border-[var(--color-primary)] p-1 bg-[var(--color-surface-container)]">
+                  <div className="w-24 h-24 border border-[rgba(255,255,255,0.08)] p-1 bg-white/[0.02] rounded-xl">
                     <img
                       alt="Avatar"
                       src="https://lh3.googleusercontent.com/aida-public/AB6AXuCFRESvWmL07H3BCrn86q8If8pHfMpmrmz9EGoUy8r0yujHOLn3Q3szEJ6j3QS0dPGkkkTjiUMcuFpvYiW2qSjqN-4NTH5ff20iiLoin9Uz-lQUifHxQ4747m_FBzbwXrSuKdXXiNoUcRdc-nWn8ssyxNqGyET4VAOHtqN3gK4F52B-c9CNl5eGUrAVw2tPs00tdwTJOdwQLyuHw9P0nL_83vRnU4tuBrgGuIE-yxtyfAWQE80jtZdaa-9mCo2J9svzcapWaFRAPuUa"
-                      className="w-full h-full object-cover grayscale opacity-80"
+                      className="w-full h-full object-cover grayscale opacity-80 rounded-lg"
                     />
                   </div>
-                  <button className="absolute -bottom-2 -right-2 w-8 h-8 bg-[var(--color-primary)] text-black border border-[var(--color-primary)] flex items-center justify-center hover:bg-[var(--color-primary-fixed)] transition-colors">
+                  <button className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-white text-black flex items-center justify-center hover:bg-[#e6e6e6] transition-colors shadow-lg cursor-pointer active:scale-90 border-none">
                     <span className="material-symbols-outlined text-[16px]">edit</span>
                   </button>
                 </div>
@@ -407,32 +411,32 @@ export function SettingsPage() {
                 {/* Fields */}
                 <div className="flex-1 w-full space-y-6">
                   <div>
-                    <label className="font-label-sm text-[10px] text-[var(--color-outline)] font-bold uppercase tracking-widest block mb-2">Designation</label>
+                    <label className="font-mono text-[9px] text-[var(--color-outline)] font-bold uppercase tracking-widest block mb-2">Display Name</label>
                     <input
                       value={name}
                       onChange={e => setName(e.target.value)}
-                      className="w-full bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] focus:border-[var(--color-primary)] text-[var(--color-on-surface)] font-body-md text-[14px] px-4 py-3 transition-colors outline-none"
+                      className="input-field w-full px-4 py-3"
                       type="text"
                     />
                   </div>
                   <div>
-                    <label className="font-label-sm text-[10px] text-[var(--color-outline)] font-bold uppercase tracking-widest block mb-2">Com-Link (Email)</label>
+                    <label className="font-mono text-[9px] text-[var(--color-outline)] font-bold uppercase tracking-widest block mb-2">Email Address</label>
                     <input
                       value={email}
                       onChange={e => { setEmail(e.target.value); setEmailChanged(e.target.value !== user?.email); }}
-                      className="w-full bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] focus:border-[var(--color-primary)] text-[var(--color-on-surface)] font-body-md text-[14px] px-4 py-3 transition-colors outline-none"
+                      className="input-field w-full px-4 py-3"
                       type="email"
                     />
                   </div>
                   {emailChanged && (
                     <div>
-                      <label className="font-label-sm text-[10px] text-[var(--color-error)] font-bold uppercase tracking-widest block mb-2">Current Password (required to change email)</label>
+                      <label className="font-mono text-[9px] text-[var(--color-error)] font-bold uppercase tracking-widest block mb-2">Current Password (required to change email)</label>
                       <input
                         value={currentPasswordForEmail}
                         onChange={e => setCurrentPasswordForEmail(e.target.value)}
-                        className="w-full bg-[var(--color-surface-container)] border border-[var(--color-error)] focus:border-[var(--color-error)] text-[var(--color-on-surface)] font-body-md text-[14px] px-4 py-3 transition-colors outline-none"
+                        className="input-field w-full px-4 py-3 border-[var(--color-error)]/35 focus:border-[var(--color-error)]"
                         type="password"
-                        placeholder="Confirm identity..."
+                        placeholder="Confirm password..."
                         autoComplete="current-password"
                       />
                     </div>
@@ -441,43 +445,43 @@ export function SettingsPage() {
               </div>
             </SettingsSection>
 
-            {/* ── Appearance ────────────────────────────────── */}
-            <SettingsSection title="Appearance" icon="palette">
+            {/* ── Theme & Style ────────────────────────────── */}
+            <SettingsSection title="Theme & Style" icon="palette">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Theme toggle card */}
                 <button
                   onClick={toggleTheme}
-                  className={`flex items-center gap-4 p-4 border transition-colors group text-left ${
+                  className={`flex items-center gap-4 p-4 rounded-xl border transition-all duration-200 group text-left cursor-pointer active:scale-[0.98] ${
                     theme === 'light'
-                      ? 'bg-[var(--color-primary)] text-black border-[var(--color-primary)]'
-                      : 'bg-[var(--color-surface-container)] border-[var(--color-outline-variant)] hover:border-[var(--color-primary)]'
+                      ? 'bg-[var(--color-on-surface)] text-[var(--color-surface)] border-[var(--color-on-surface)] shadow-[0_4px_20px_rgba(0,0,0,0.05)]'
+                      : 'bg-white/[0.01] border-[rgba(255,255,255,0.08)] text-[var(--color-on-surface)] hover:border-white/20 hover:bg-white/[0.03]'
                   }`}
                 >
-                  <div className={`w-12 h-12 flex items-center justify-center border ${theme === 'light' ? 'bg-black/10 border-black/20' : 'bg-[var(--color-surface-container-high)] border-[var(--color-outline-variant)]'}`}>
+                  <div className={`w-12 h-12 flex items-center justify-center rounded-xl border ${theme === 'light' ? 'bg-black/5 border-black/10' : 'bg-white/5 border-white/10'}`}>
                     <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>
                       {theme === 'dark' ? 'light_mode' : 'dark_mode'}
                     </span>
                   </div>
                   <div>
-                    <p className={`font-body-md text-[14px] font-bold ${theme === 'light' ? 'text-black' : 'text-[var(--color-on-surface)]'}`}>
+                    <p className="font-body-md text-[14px] font-bold">
                       {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
                     </p>
-                    <p className={`font-label-sm text-[10px] uppercase tracking-widest font-bold mt-1 ${theme === 'light' ? 'text-black/60' : 'text-[var(--color-outline)]'}`}>
+                    <p className={`font-mono text-[9px] uppercase tracking-widest font-bold mt-1 ${theme === 'light' ? 'text-[var(--color-surface)]/70' : 'text-[var(--color-outline)]'}`}>
                       Active: {theme}
                     </p>
                   </div>
                 </button>
 
                 {/* Color palette teaser */}
-                <div className="flex items-center gap-4 p-4 border border-[var(--color-outline-variant)] bg-[var(--color-surface-container)]">
-                  <div className="w-12 h-12 bg-[var(--color-surface-container-high)] border border-[var(--color-outline-variant)] flex items-center justify-center">
+                <div className="flex items-center gap-4 p-4 rounded-xl border border-[rgba(255,255,255,0.08)] bg-white/[0.01]">
+                  <div className="w-12 h-12 rounded-xl bg-white/[0.02] border border-[rgba(255,255,255,0.08)] flex items-center justify-center">
                     <span className="material-symbols-outlined text-[var(--color-secondary)]">colors</span>
                   </div>
                   <div>
                     <p className="font-body-md text-[14px] text-[var(--color-on-surface)] font-bold">Accent Color</p>
-                    <div className="flex gap-2 mt-2">
+                    <div className="flex gap-2.5 mt-2.5">
                       {['#d2bbff', '#5adace', '#f4a261', '#e76f51'].map(c => (
-                        <div key={c} className="w-5 h-5 border border-[var(--color-outline-variant)] cursor-pointer hover:border-[var(--color-on-surface)] transition-colors" style={{ backgroundColor: c }} />
+                        <div key={c} className="w-5 h-5 rounded-full border border-[rgba(255,255,255,0.08)] cursor-pointer hover:scale-110 active:scale-95 transition-transform" style={{ backgroundColor: c }} />
                       ))}
                     </div>
                   </div>
@@ -485,68 +489,68 @@ export function SettingsPage() {
               </div>
             </SettingsSection>
 
-            {/* ── Sensory Controls ──────────────────────────── */}
-            <SettingsSection title="Sensory Controls" icon="tune">
+            {/* ── Interface Preferences ────────────────────── */}
+            <SettingsSection title="Interface Preferences" icon="tune">
               <div className="space-y-3">
                 <ToggleNode
                   icon="blur_on"
-                  title="Ambient Orbs"
-                  desc="Floating background gradient spheres."
+                  title="Ambient Background Glow"
+                  desc="Show floating background gradient spheres."
                   active={ambientOrbs}
                   onToggle={() => setAmbientOrbs(v => !v)}
                 />
                 <ToggleNode
                   icon="transition_slide"
-                  title="Page Transitions"
-                  desc="Fade-up animation when navigating between screens."
+                  title="Page Animations"
+                  desc="Enable smooth transitions when navigating between screens."
                   active={pageTransitions}
                   onToggle={() => setPageTransitions(v => !v)}
                 />
                 <ToggleNode
                   icon="auto_awesome"
-                  title="Habit Glow Effects"
-                  desc="Glow pulse on active and completed habit items."
+                  title="Habit Completed Glows"
+                  desc="Enable glow pulse animation on completed habits."
                   active={habitGlows}
                   onToggle={() => setHabitGlows(v => !v)}
                 />
                 <ToggleNode
                   icon="timer"
-                  title="Timer Pulse"
-                  desc="Subtle breathing animation on the focus countdown."
+                  title="Timer Breathing Animation"
+                  desc="Enable subtle breathing pulse on the focus timer dial."
                   active={timerTick}
                   onToggle={() => setTimerTick(v => !v)}
                 />
                 <ToggleNode
                   icon="graphic_eq"
-                  title="Waveform Visualizer"
-                  desc="Animated soundwave bars in Focus Mode."
+                  title="Soundwave Visualizer"
+                  desc="Display animated audio wave bars in Focus Mode."
                   active={waveforms}
                   onToggle={() => setWaveforms(v => !v)}
                 />
               </div>
             </SettingsSection>
 
-            {/* ── Environment ───────────────────────────────── */}
-            <SettingsSection title="Environment Matrix" icon="public">
+            {/* ── Local Settings ───────────────────────────── */}
+            <SettingsSection title="Local Settings" icon="public">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-[var(--color-surface-container)] p-5 border border-[var(--color-outline-variant)]">
-                  <label className="font-label-sm text-[10px] text-[var(--color-outline)] font-bold uppercase tracking-widest block mb-3">Timezone</label>
+                <div className="bg-white/[0.01] p-5 rounded-xl border border-[rgba(255,255,255,0.08)]">
+                  <label className="font-mono text-[9px] text-[var(--color-outline)] font-bold uppercase tracking-widest block mb-3">Timezone</label>
                   <div className="relative">
-                    <select className="w-full appearance-none bg-[var(--color-surface-container-low)] border border-[var(--color-outline-variant)] focus:border-[var(--color-primary)] text-[var(--color-on-surface)] font-body-md text-[13px] px-4 py-3 pr-10 transition-colors outline-none cursor-pointer">
-                      <option>UTC (Coordinated Universal Time)</option>
-                      <option>EST (Eastern Standard Time)</option>
-                      <option>PST (Pacific Standard Time)</option>
-                      <option>IST (India Standard Time)</option>
+                    <select className="w-full appearance-none bg-white/[0.02] border border-[rgba(255,255,255,0.08)] rounded-xl focus:border-[var(--color-primary)]/45 text-[var(--color-on-surface)] font-body-md text-[13px] px-4 py-3 pr-10 transition-colors outline-none cursor-pointer">
+                      <option className="bg-[var(--color-surface)]">UTC (Coordinated Universal Time)</option>
+                      <option className="bg-[var(--color-surface)]">EST (Eastern Standard Time)</option>
+                      <option className="bg-[var(--color-surface)]">PST (Pacific Standard Time)</option>
+                      <option className="bg-[var(--color-surface)]">IST (India Standard Time)</option>
                     </select>
                     <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-outline)] pointer-events-none text-[20px]">expand_more</span>
                   </div>
                 </div>
-                <div className="bg-[var(--color-surface-container)] p-5 border border-[var(--color-outline-variant)]">
-                  <label className="font-label-sm text-[10px] text-[var(--color-outline)] font-bold uppercase tracking-widest block mb-3">Week Starts On</label>
+                <div className="bg-white/[0.01] p-5 rounded-xl border border-[rgba(255,255,255,0.08)]">
+                  <label className="font-mono text-[9px] text-[var(--color-outline)] font-bold uppercase tracking-widest block mb-3">Week Starts On</label>
                   <div className="relative">
-                    <select className="w-full appearance-none bg-[var(--color-surface-container-low)] border border-[var(--color-outline-variant)] focus:border-[var(--color-primary)] text-[var(--color-on-surface)] font-body-md text-[13px] px-4 py-3 pr-10 transition-colors outline-none cursor-pointer">
-                      <option>Monday</option>
-                      <option>Sunday</option>
+                    <select className="w-full appearance-none bg-white/[0.02] border border-[rgba(255,255,255,0.08)] rounded-xl focus:border-[var(--color-primary)]/45 text-[var(--color-on-surface)] font-body-md text-[13px] px-4 py-3 pr-10 transition-colors outline-none cursor-pointer">
+                      <option className="bg-[var(--color-surface)]">Monday</option>
+                      <option className="bg-[var(--color-surface)]">Sunday</option>
                     </select>
                     <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-outline)] pointer-events-none text-[20px]">expand_more</span>
                   </div>
@@ -554,39 +558,39 @@ export function SettingsPage() {
               </div>
             </SettingsSection>
 
-            {/* ── Data Node Portability ──────────────────────── */}
-            <SettingsSection title="Data Node Portability" icon="download">
-              <p className="font-body-md text-[12px] text-[var(--color-on-surface-variant)] mb-4 leading-relaxed">
-                Export all your life-planning configuration data (goals, tasks, habits, and journal entries) as a backup payload.
+            {/* ── Data Portability ─────────────────────────── */}
+            <SettingsSection title="Data Portability" icon="download">
+              <p className="font-body-md text-[12px] text-[var(--color-outline)] mb-4 leading-relaxed">
+                Export all your life-planning data (goals, tasks, habits, and journal entries) as a backup file.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <button
                   onClick={handleExportData}
-                  className="flex-1 py-3 bg-[var(--color-surface-container-high)] border border-[var(--color-outline-variant)] hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] text-[var(--color-on-surface)] font-label-sm text-[11px] font-bold uppercase tracking-widest transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                  className="flex-1 py-3.5 bg-white/[0.02] border border-[rgba(255,255,255,0.08)] text-[var(--color-on-surface)] rounded-xl hover:border-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-black font-mono text-[9px] font-bold uppercase tracking-widest transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
                 >
                   <span className="material-symbols-outlined text-[16px]">download</span> Export JSON Backup
                 </button>
                 <button
                   onClick={handleExportTasksCSV}
-                  className="flex-1 py-3 bg-[var(--color-surface-container-high)] border border-[var(--color-outline-variant)] hover:border-[var(--color-secondary)] hover:text-[var(--color-secondary)] text-[var(--color-on-surface)] font-label-sm text-[11px] font-bold uppercase tracking-widest transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                  className="flex-1 py-3.5 bg-white/[0.02] border border-[rgba(255,255,255,0.08)] text-[var(--color-on-surface)] rounded-xl hover:border-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-black font-mono text-[9px] font-bold uppercase tracking-widest transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
                 >
                   <span className="material-symbols-outlined text-[16px]">table_view</span> Export Tasks (CSV)
                 </button>
               </div>
             </SettingsSection>
 
-            {/* ── Ecosystem Nodes ───────────────────────────── */}
-            <SettingsSection title="Ecosystem Nodes" icon="device_hub">
+            {/* ── Integrations ─────────────────────────────── */}
+            <SettingsSection title="Integrations" icon="device_hub">
               <div className="space-y-3">
-                <ToggleNode icon="schedule"       title="Chronos Sync"  desc="Calendar and temporal planning alignment."   active={chronosSync}   onToggle={() => setChronos(v => !v)} />
-                <ToggleNode icon="monitor_heart"  title="Bio-Metrics"   desc="Health tracking and physical state nodes."    active={bioMetrics}    onToggle={() => setBioMetrics(v => !v)} />
-                <ToggleNode icon="directions_run" title="Kinetic Track" desc="Location and movement mapping protocol."      active={kineticTrack}  onToggle={() => setKinetic(v => !v)} />
-                <ToggleNode icon="graphic_eq"     title="Audio State"   desc="Brainwave entrainment and focus sounds."      active={audioState}    onToggle={() => setAudio(v => !v)} />
+                <ToggleNode icon="schedule"       title="Calendar Sync"  desc="Align and sync with external calendar platforms."   active={chronosSync}   onToggle={() => setChronos(v => !v)} />
+                <ToggleNode icon="monitor_heart"  title="Health App Sync"   desc="Connect health data and biometric trackers."    active={bioMetrics}    onToggle={() => setBioMetrics(v => !v)} />
+                <ToggleNode icon="directions_run" title="Location Tracking" desc="Enable location mapping for habit check-ins."      active={kineticTrack}  onToggle={() => setKinetic(v => !v)} />
+                <ToggleNode icon="graphic_eq"     title="Audio Focus Sounds"   desc="Play brainwave entrainment and focus soundscapes."      active={audioState}    onToggle={() => setAudio(v => !v)} />
               </div>
             </SettingsSection>
 
             {/* ── Notifications ────────────────────────────── */}
-            <SettingsSection title="Notification Channels" icon="notifications">
+            <SettingsSection title="Notifications" icon="notifications">
               <div className="space-y-3">
                 <ToggleNode
                   icon="notifications_active"
@@ -613,15 +617,15 @@ export function SettingsPage() {
               </div>
             </SettingsSection>
 
-            {/* ── Social Accountability ──────────────────────── */}
-            <SettingsSection title="Social Accountability" icon="share">
-              <p className="font-body-md text-[12px] text-[var(--color-on-surface-variant)] mb-4 leading-relaxed">
+            {/* ── Public Sharing ───────────────────────────── */}
+            <SettingsSection title="Public Sharing" icon="share">
+              <p className="font-body-md text-[12px] text-[var(--color-outline)] mb-4 leading-relaxed">
                 Generate a secure, read-only link to share your focus chart, goal progress, and habit streaks with a mentor or accountability partner. Private journal entries will remain strictly hidden.
               </p>
               {shareToken ? (
                 <div className="space-y-4">
-                  <div className="p-4 bg-[var(--color-surface-container)] border border-[var(--color-primary)]/30 flex items-center justify-between gap-4">
-                    <div className="font-mono text-[11px] truncate select-all text-[var(--color-primary)]">
+                  <div className="p-4 bg-white/[0.02] border border-[rgba(255,255,255,0.08)] rounded-xl flex items-center justify-between gap-4">
+                    <div className="font-mono text-[11px] truncate select-all text-[var(--color-on-surface)]/80">
                       {`${window.location.origin}/shared/${shareToken}`}
                     </div>
                     <button
@@ -629,7 +633,7 @@ export function SettingsPage() {
                         navigator.clipboard.writeText(`${window.location.origin}/shared/${shareToken}`);
                         showToast('Link copied to clipboard!', 'success');
                       }}
-                      className="px-3 py-1.5 bg-[var(--color-primary)] text-black font-mono text-[10px] uppercase tracking-wider hover:opacity-90 transition-opacity"
+                      className="px-4 py-2 bg-[var(--color-primary)] text-black rounded-lg font-mono text-[9px] uppercase tracking-wider hover:opacity-90 transition-colors cursor-pointer active:scale-95 border-none"
                     >
                       Copy
                     </button>
@@ -644,7 +648,7 @@ export function SettingsPage() {
                         showToast('Failed to revoke link.', 'error');
                       }
                     }}
-                    className="w-full py-3 bg-[var(--color-surface-container-high)] border border-[var(--color-error)] text-[var(--color-error)] font-label-sm text-[11px] font-bold uppercase tracking-widest hover:bg-[var(--color-error)]/10 transition-colors"
+                    className="w-full py-3.5 bg-transparent border border-[var(--color-error)]/35 text-[var(--color-error)] font-mono text-[9px] font-bold uppercase tracking-widest hover:bg-[var(--color-error)]/10 transition-all duration-200 rounded-xl cursor-pointer active:scale-[0.98]"
                   >
                     Revoke Share Link
                   </button>
@@ -660,7 +664,7 @@ export function SettingsPage() {
                       showToast('Failed to generate link.', 'error');
                     }
                   }}
-                  className="w-full py-3 bg-[var(--color-primary)] text-black font-label-sm text-[11px] font-bold uppercase tracking-widest hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                  className="w-full py-3.5 bg-[var(--color-primary)] text-black font-mono text-[9px] font-bold uppercase tracking-widest hover:opacity-90 transition-all flex items-center justify-center gap-2 rounded-xl cursor-pointer active:scale-[0.98] shadow-md border-none"
                 >
                   <span className="material-symbols-outlined text-[16px]">link</span> Create Accountability Link
                 </button>
@@ -668,48 +672,48 @@ export function SettingsPage() {
             </SettingsSection>
 
             {/* ── Security ──────────────────────────────────── */}
-            <SettingsSection title="Security Protocol" icon="lock">
+            <SettingsSection title="Security" icon="lock">
               <div className="space-y-4">
                 <div>
-                  <label className="font-label-sm text-[10px] text-[var(--color-outline)] font-bold uppercase tracking-widest block mb-2">Current Password</label>
+                  <label className="font-mono text-[9px] text-[var(--color-outline)] font-bold uppercase tracking-widest block mb-2">Current Password</label>
                   <input
                     value={cpCurrent}
                     onChange={e => { setCpCurrent(e.target.value); setCpError(''); }}
-                    className="w-full bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] focus:border-[var(--color-primary)] text-[var(--color-on-surface)] font-body-md text-[14px] px-4 py-3 transition-colors outline-none"
+                    className="input-field w-full px-4 py-3 font-mono tracking-widest placeholder:tracking-normal placeholder:font-sans"
                     type="password"
                     autoComplete="current-password"
                     placeholder="••••••••"
                   />
                 </div>
                 <div>
-                  <label className="font-label-sm text-[10px] text-[var(--color-outline)] font-bold uppercase tracking-widest block mb-2">New Password</label>
+                  <label className="font-mono text-[9px] text-[var(--color-outline)] font-bold uppercase tracking-widest block mb-2">New Password</label>
                   <input
                     value={cpNew}
                     onChange={e => { setCpNew(e.target.value); setCpError(''); }}
-                    className="w-full bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] focus:border-[var(--color-primary)] text-[var(--color-on-surface)] font-body-md text-[14px] px-4 py-3 transition-colors outline-none"
+                    className="input-field w-full px-4 py-3 font-mono tracking-widest placeholder:tracking-normal placeholder:font-sans"
                     type="password"
                     autoComplete="new-password"
                     placeholder="Min. 8 characters"
                   />
                 </div>
                 <div>
-                  <label className="font-label-sm text-[10px] text-[var(--color-outline)] font-bold uppercase tracking-widest block mb-2">Confirm New Password</label>
+                  <label className="font-mono text-[9px] text-[var(--color-outline)] font-bold uppercase tracking-widest block mb-2">Confirm New Password</label>
                   <input
                     value={cpConfirm}
                     onChange={e => { setCpConfirm(e.target.value); setCpError(''); }}
-                    className="w-full bg-[var(--color-surface-container)] border border-[var(--color-outline-variant)] focus:border-[var(--color-primary)] text-[var(--color-on-surface)] font-body-md text-[14px] px-4 py-3 transition-colors outline-none"
+                    className="input-field w-full px-4 py-3 font-mono tracking-widest placeholder:tracking-normal placeholder:font-sans"
                     type="password"
                     autoComplete="new-password"
                     placeholder="Repeat new password"
                   />
                 </div>
                 {cpError && (
-                  <p className="text-[var(--color-error)] text-[12px] font-bold font-label-sm">{cpError}</p>
+                  <p className="text-[var(--color-error)] text-[12px] font-bold font-mono uppercase tracking-wider">{cpError}</p>
                 )}
                 <button
                   onClick={handleChangePassword}
                   disabled={cpSaving}
-                  className="w-full py-3 bg-[var(--color-surface-container-high)] border border-[var(--color-outline-variant)] hover:border-[var(--color-primary)] text-[var(--color-on-surface)] font-label-sm text-[11px] font-bold uppercase tracking-widest transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="w-full py-3.5 bg-white/[0.02] border border-[rgba(255,255,255,0.08)] hover:border-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-black font-mono text-[9px] font-bold uppercase tracking-widest transition-all duration-200 rounded-xl flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer active:scale-[0.98] text-[var(--color-on-surface)]"
                 >
                   {cpSaving ? (
                     <><span className="material-symbols-outlined text-[16px] animate-spin">sync</span> Updating...</>
@@ -721,10 +725,10 @@ export function SettingsPage() {
             </SettingsSection>
 
             {/* ── Actions ───────────────────────────────────── */}
-            <div className="flex gap-4 mt-4">
+            <div className="flex gap-4 mt-6">
               <button
                 onClick={() => setShowSignOutConfirm(true)}
-                className="flex-[1] py-4 bg-transparent border border-[var(--color-error)] text-[var(--color-error)] hover:bg-[var(--color-error)] hover:text-black font-label-sm text-[11px] font-bold uppercase tracking-widest transition-colors flex items-center justify-center gap-2"
+                className="flex-[1] py-4 bg-transparent border border-[var(--color-error)]/35 text-[var(--color-error)] hover:bg-[var(--color-error)] hover:text-black rounded-xl font-mono text-[9px] font-bold uppercase tracking-widest transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer active:scale-95"
               >
                 <span className="material-symbols-outlined text-[16px]">logout</span>
                 Sign Out
@@ -732,10 +736,10 @@ export function SettingsPage() {
               
               <button
                 onClick={handleSave}
-                className={`flex-[2] py-4 font-label-sm text-[11px] font-bold uppercase tracking-widest transition-colors flex items-center justify-center gap-2 ${
+                className={`flex-[2] py-4 rounded-xl font-mono text-[9px] font-bold uppercase tracking-widest transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer active:scale-95 ${
                   saved
-                    ? 'bg-[var(--color-secondary)] text-black'
-                    : 'bg-[var(--color-primary)] text-black hover:bg-[var(--color-primary-fixed)]'
+                    ? 'bg-emerald-500 text-black shadow-[0_0_20px_rgba(16,185,129,0.3)]'
+                    : 'bg-[var(--color-primary)] text-black hover:opacity-90 shadow-[0_4px_20px_rgba(210,187,255,0.15)]'
                 }`}
               >
                 {saved ? (
@@ -746,7 +750,7 @@ export function SettingsPage() {
                 ) : (
                   <>
                     <span className="material-symbols-outlined text-[16px]">save</span>
-                    Commit Config
+                    Save Settings
                   </>
                 )}
               </button>

@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { Link, useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
@@ -11,6 +11,17 @@ export function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [mousePos, setMousePos] = useState({ x: 50, y: 50 });
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      const x = (e.clientX / window.innerWidth) * 100;
+      const y = (e.clientY / window.innerHeight) * 100;
+      setMousePos({ x, y });
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
 
   if (isAuthenticated) {
     return <Navigate to="/" replace />;
@@ -41,46 +52,53 @@ export function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center p-6 py-12 relative overflow-y-auto bg-ambient-mesh text-[var(--color-on-surface)] selection:bg-[var(--color-secondary)]/30 selection:text-[var(--color-on-surface)]">
-      {/* Ambient background blobs */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-[rgba(108,74,176,0.1)] blur-[100px] animate-ambient-pulse" />
-        <div className="absolute -bottom-[15%] -right-[10%] w-[40%] h-[40%] rounded-full bg-[rgba(90,218,206,0.05)] blur-[80px] animate-ambient-pulse" style={{ animationDelay: '4s' }} />
+    <div className="min-h-screen w-full flex items-center justify-center p-6 relative bg-ambient-mesh text-[var(--color-on-surface)] selection:bg-[var(--color-primary)]/30 overflow-hidden font-body-md">
+      
+      {/* Immersive Background Aesthetics */}
+      <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+        {/* Glowing Cursor-Following Orb */}
+        <div 
+          className="absolute w-[60vw] h-[60vw] rounded-full blur-[120px] transition-transform duration-1000 ease-out opacity-25 mix-blend-screen"
+          style={{
+            background: 'radial-gradient(circle, rgba(210,187,255,0.3) 0%, rgba(90,218,206,0.08) 50%, transparent 75%)',
+            left: `${mousePos.x}%`,
+            top: `${mousePos.y}%`,
+            transform: 'translate(-50%, -50%)'
+          }}
+        />
       </div>
-
-      <div className="w-full max-w-[440px] relative z-10 flex flex-col gap-8">
+      
+      {/* Dot-grid overlay */}
+      <div className="absolute inset-0 bg-dot-grid opacity-35 pointer-events-none z-0" />
+      
+      <div className="w-full max-w-[440px] relative z-10 flex flex-col gap-6 anim-fade-up py-12">
         
-        {/* Logo */}
+        {/* Logo and Header */}
         <div className="text-center">
-          <Link to="/" className="inline-block px-4 py-2 mb-2 hover:scale-105 transition-transform">
-            <h1 className="font-title-md text-4xl font-bold tracking-tight text-gradient-primary">
+          <Link to="/" className="inline-block px-4 py-2 hover:scale-105 transition-transform active:scale-95">
+            <h1 className="font-title-md text-4xl font-extrabold tracking-tight text-gradient-primary">
               Evolv
             </h1>
           </Link>
-          <p className="text-sm text-[var(--color-outline)] font-medium">
-            Create your account
+          <p className="text-sm text-[var(--color-outline)] mt-2 font-medium">
+            Create your account to start your execution journey.
           </p>
         </div>
 
         {/* Register Card */}
-        <div className="glass-card glow-card glow-shadow-primary rounded-2xl p-8 shadow-xl">
+        <div className="glass-card rounded-2xl p-8 shadow-2xl relative overflow-hidden border border-[var(--glass-border)] bg-[var(--color-surface)]/40 backdrop-blur-xl">
           
-          <div className="mb-8 border-b border-[var(--glass-border)] pb-4">
-            <h2 className="text-2xl font-bold text-[var(--color-on-surface)] tracking-tight">Create Account</h2>
-            <p className="text-sm text-[var(--color-outline)] mt-1">Set up your Evolv account</p>
-          </div>
-
           {error && (
-            <div className="mb-6 px-4 py-3 bg-[var(--color-error)]/10 text-[var(--color-error)] text-sm font-medium rounded-xl flex items-center gap-2 border border-[var(--color-error)]/20">
-              <span className="material-symbols-outlined text-[16px]">error</span>
-              {error}
+            <div className="mb-6 p-4 bg-[var(--color-error)]/10 border border-[var(--color-error)]/25 rounded-xl flex items-start gap-3">
+              <span className="material-symbols-outlined text-[var(--color-error)] text-[18px] mt-0.5 select-none">error</span>
+              <p className="text-xs text-[var(--color-error)] font-medium leading-relaxed">{error}</p>
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-[var(--color-on-surface-variant)] block">
-                Name
+            <div className="space-y-2">
+              <label className="text-xs font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)] block ml-1">
+                Full Name
               </label>
               <input
                 type="text"
@@ -88,14 +106,14 @@ export function RegisterPage() {
                 onChange={e => setName(e.target.value)}
                 required
                 autoComplete="name"
-                className="input-field w-full"
-                placeholder="Your name"
+                className="input-field w-full px-4 py-3.5"
+                placeholder="John Doe"
               />
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-[var(--color-on-surface-variant)] block">
-                Email
+            <div className="space-y-2">
+              <label className="text-xs font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)] block ml-1">
+                Email Address
               </label>
               <input
                 type="email"
@@ -103,14 +121,14 @@ export function RegisterPage() {
                 onChange={e => setEmail(e.target.value)}
                 required
                 autoComplete="email"
-                className="input-field w-full"
+                className="input-field w-full px-4 py-3.5"
                 placeholder="you@example.com"
               />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-[var(--color-on-surface-variant)] block">
+              <div className="space-y-2">
+                <label className="text-xs font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)] block ml-1">
                   Password
                 </label>
                 <input
@@ -119,13 +137,13 @@ export function RegisterPage() {
                   onChange={e => setPassword(e.target.value)}
                   required
                   autoComplete="new-password"
-                  className="input-field w-full"
+                  className="input-field w-full px-4 py-3.5 font-mono tracking-widest placeholder:tracking-normal placeholder:font-sans"
                   placeholder="Min 8 chars"
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-[var(--color-on-surface-variant)] block">
+              <div className="space-y-2">
+                <label className="text-xs font-semibold uppercase tracking-wider text-[var(--color-on-surface-variant)] block ml-1">
                   Confirm Password
                 </label>
                 <input
@@ -134,16 +152,16 @@ export function RegisterPage() {
                   onChange={e => setConfirmPassword(e.target.value)}
                   required
                   autoComplete="new-password"
-                  className="input-field w-full"
-                  placeholder="Confirm password"
+                  className="input-field w-full px-4 py-3.5 font-mono tracking-widest placeholder:tracking-normal placeholder:font-sans"
+                  placeholder="Repeat password"
                 />
               </div>
             </div>
 
             {password && (
-              <div className="p-3 bg-[var(--color-surface-container-low)] rounded-xl border border-[var(--color-outline-variant)] text-xs space-y-1.5">
+              <div className="p-4 bg-white/5 rounded-xl border border-white/10 text-xs space-y-2.5 mt-2">
                 <div className="flex items-center gap-2">
-                  <span className={`material-symbols-outlined text-[14px] ${password.length >= 8 ? 'text-[var(--color-primary)]' : 'text-[var(--color-outline)]'}`}>
+                  <span className={`material-symbols-outlined text-[16px] ${password.length >= 8 ? 'text-[var(--color-primary)]' : 'text-[var(--color-outline)]'}`}>
                     {password.length >= 8 ? 'check_circle' : 'radio_button_unchecked'}
                   </span>
                   <span className={password.length >= 8 ? 'text-[var(--color-on-surface)]' : 'text-[var(--color-outline)]'}>
@@ -151,7 +169,7 @@ export function RegisterPage() {
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`material-symbols-outlined text-[14px] ${/[A-Z]/.test(password) && /[a-z]/.test(password) && /[0-9]/.test(password) ? 'text-[var(--color-primary)]' : 'text-[var(--color-outline)]'}`}>
+                  <span className={`material-symbols-outlined text-[16px] ${/[A-Z]/.test(password) && /[a-z]/.test(password) && /[0-9]/.test(password) ? 'text-[var(--color-primary)]' : 'text-[var(--color-outline)]'}`}>
                     {/[A-Z]/.test(password) && /[a-z]/.test(password) && /[0-9]/.test(password) ? 'check_circle' : 'radio_button_unchecked'}
                   </span>
                   <span className={/[A-Z]/.test(password) && /[a-z]/.test(password) && /[0-9]/.test(password) ? 'text-[var(--color-on-surface)]' : 'text-[var(--color-outline)]'}>
@@ -159,11 +177,11 @@ export function RegisterPage() {
                   </span>
                 </div>
                 {confirmPassword && (
-                  <div className="flex items-center gap-2 border-t border-[var(--color-outline-variant)] pt-1.5 mt-1.5">
-                    <span className={`material-symbols-outlined text-[14px] ${password === confirmPassword ? 'text-[var(--color-primary)]' : 'text-[var(--color-error)]'}`}>
+                  <div className="flex items-center gap-2 border-t border-[var(--glass-border)] pt-2.5 mt-1">
+                    <span className={`material-symbols-outlined text-[16px] ${password === confirmPassword ? 'text-[var(--color-primary)]' : 'text-[var(--color-error)]'}`}>
                       {password === confirmPassword ? 'check_circle' : 'cancel'}
                     </span>
-                    <span className={password === confirmPassword ? 'text-[var(--color-on-surface)]' : 'text-[var(--color-error)]'}>
+                    <span className={password === confirmPassword ? 'text-[var(--color-on-surface)]' : 'text-[var(--color-error)] font-medium'}>
                       {password === confirmPassword ? 'Passwords match' : 'Passwords do not match'}
                     </span>
                   </div>
@@ -174,27 +192,25 @@ export function RegisterPage() {
             <button
               type="submit"
               disabled={loading}
-              className="btn-gradient w-full mt-4 py-3 text-base rounded-xl flex items-center justify-center gap-2"
+              className="btn-gradient w-full mt-2 py-3.5 rounded-xl text-sm font-bold tracking-wider flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
             >
               {loading ? (
-                <>
-                  <span className="material-symbols-outlined animate-spin text-[20px]">sync</span>
-                  Creating Account...
-                </>
+                <span className="material-symbols-outlined animate-spin text-[18px]">sync</span>
               ) : (
                 'Create Account'
               )}
             </button>
           </form>
 
-          <div className="mt-8 text-center pt-6 border-t border-[var(--glass-border)]">
-            <p className="text-sm text-[var(--color-on-surface-variant)]">
-              Already have an account?{' '}
-              <Link to="/login" className="text-[var(--color-secondary)] hover:underline font-medium ml-1">
-                Sign In
-              </Link>
-            </p>
-          </div>
+        </div>
+          
+        <div className="text-center">
+          <p className="text-sm text-[var(--color-outline)] font-medium">
+            Already have an account?{' '}
+            <Link to="/login" className="text-[var(--color-primary)] hover:underline ml-1 font-semibold transition-colors">
+              Sign In
+            </Link>
+          </p>
         </div>
       </div>
     </div>
