@@ -184,6 +184,7 @@ export function LandingPage() {
           <nav className="hidden md:flex items-center gap-8 text-[11px] font-mono uppercase tracking-widest text-[var(--color-outline)]">
             <a href="#method" className="hover:text-[var(--color-on-surface)] transition-colors">Method</a>
             <a href="#engine" className="hover:text-[var(--color-on-surface)] transition-colors">Engine</a>
+            <Link to="/features" className="hover:text-[var(--color-on-surface)] transition-colors">Features</Link>
           </nav>
 
           <div className="flex items-center gap-4">

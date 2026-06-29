@@ -29,6 +29,7 @@ const ForgotPasswordPage = React.lazy(() => import('./pages/auth/ForgotPasswordP
 const ShutdownPage = React.lazy(() => import('./pages/ShutdownPage').then(m => ({ default: m.ShutdownPage })));
 const LandingPage = React.lazy(() => import('./pages/LandingPage').then(m => ({ default: m.LandingPage })));
 const SharedOverviewPage = React.lazy(() => import('./pages/SharedOverviewPage').then(m => ({ default: m.SharedOverviewPage })));
+const FeaturesPage = React.lazy(() => import('./pages/FeaturesPage').then(m => ({ default: m.FeaturesPage })));
 
 function LoadingIndicator() {
   return (
@@ -76,6 +77,7 @@ export default function App() {
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
                 <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="/features" element={<FeaturesPage />} />
                 <Route path="/shared/:token" element={<SharedOverviewPage />} />
 
                 {/* Onboarding — Full screen, protected, but doesn't require onboarding itself */}

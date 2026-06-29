@@ -5,6 +5,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useToast } from '../../context/ToastContext';
 import { createTask, request, syncManager } from '../../api';
 import { Modal } from '../ui/Modal';
+import { GettingStartedChecklist } from '../GettingStartedChecklist';
 
 interface LayoutProps {
   children: ReactNode;
@@ -477,6 +478,9 @@ export function Layout({ children }: LayoutProps) {
           </div>
         </form>
       </Modal>
+
+      {/* ── Getting Started Checklist ─────────────────── */}
+      <GettingStartedChecklist />
     </div>
   );
 }
