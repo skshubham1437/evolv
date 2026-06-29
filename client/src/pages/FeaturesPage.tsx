@@ -2,61 +2,122 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 
-const features = [
+interface Feature {
+  id: string;
+  icon: string;
+  color: string;
+  category: 'planning' | 'execution' | 'insight';
+  tag: string;
+  title: string;
+  description: string;
+  bullets: string[];
+}
+
+const features: Feature[] = [
   {
     id: 'dashboard',
     icon: 'dashboard',
     color: 'var(--color-primary)',
+    category: 'insight',
     tag: 'Command Center',
-    title: 'Live Dashboard',
+    title: 'Live Dashboard & Control Panel',
     description:
-      'Your entire operating system at a glance. See active goals, today\'s habits, recent journal entries, focus area scores, and a real-time burnout risk gauge — all updated live.',
-    bullets: ['Today\'s task pulse', 'Streak & habit ring charts', 'Burnout risk meter', 'Goal progress at a glance'],
-  },
-  {
-    id: 'tasks',
-    icon: 'format_list_bulleted',
-    color: 'var(--color-secondary)',
-    tag: 'Execution Layer',
-    title: 'Task Queue & Eisenhower Matrix',
-    description:
-      'Tasks aren\'t just to-dos — they live in a priority system. Drag between Urgent/Important quadrants or across project columns. The system auto-sorts by urgency so your queue always shows what actually matters next.',
-    bullets: ['Eisenhower matrix view', 'Project grouping with drag-and-drop', 'Subtask nesting', 'Priority momentum scores'],
-  },
-  {
-    id: 'goals',
-    icon: 'flag',
-    color: '#FF5F56',
-    tag: 'Direction',
-    title: 'Goal Cascades & OKRs',
-    description:
-      'Set long-horizon goals broken into measurable key results. Each goal tracks progress percentage, due date, and links to the habits and tasks that drive it. Nothing slips through.',
-    bullets: ['OKR-style key results', 'Progress percentage tracking', 'Priority levels (high / medium / low)', 'Shareable accountability links'],
-  },
-  {
-    id: 'habits',
-    icon: 'bolt',
-    color: 'var(--color-secondary)',
-    tag: 'Identity Layer',
-    title: 'Habit Tracking & Streaks',
-    description:
-      'Build atomic habits across every focus area. Track daily completions, watch streaks build, and see your habit consistency over rolling 7-day windows. The system categorises habits by life domain.',
-    bullets: ['Daily & weekly habit frequencies', 'Streak counters with glow effect', '7-day completion grid', 'Focus area categorisation'],
+      "Your entire life operating system in one central hub. Instantly check active goals, today's habit completions, journal highlights, focus area scores, and your real-time AI burnout risk gauge.",
+    bullets: ["Today's task pulse", 'Streak & habit ring charts', 'Burnout risk meter', 'Goal progress at a glance'],
   },
   {
     id: 'vision',
     icon: 'visibility',
     color: 'var(--color-primary)',
+    category: 'planning',
     tag: 'North Star',
-    title: 'Vision Board',
+    title: 'Vision Board & Identity',
     description:
-      'Pin the life you\'re building. Upload images, write affirmations, and organise your aspirations into a visual canvas. Your vision board is the context everything else executes against.',
-    bullets: ['Image uploads & affirmations', 'Life area organisation', 'Full-screen immersive view', 'Shareable vision URLs'],
+      'Pin the future you are actively building. Upload inspirational images, write core affirmations, and organize your long-term aspirations across key Focus Areas (Health, Career, Wealth).',
+    bullets: ['Image canvas & uploads', 'Identity-based goals', 'Focus Area balance', 'Shareable vision boards'],
+  },
+  {
+    id: 'goals',
+    icon: 'flag',
+    color: '#FF5F56',
+    category: 'planning',
+    tag: 'Yearly Horizon',
+    title: 'Goal Cascades & OKRs',
+    description:
+      'Set long-term yearly goals linked to your core values and break them down into measurable Key Results. Track confidence levels, milestone timelines, and category balance.',
+    bullets: ['OKR-style key results', 'Progress percentage tracking', 'Priority levels', 'Milestone checkpoints'],
+  },
+  {
+    id: 'quarterly',
+    icon: 'view_cozy',
+    color: '#5adace',
+    category: 'planning',
+    tag: 'Mid-Term Alignment',
+    title: 'Quarterly Objectives & Scorecards',
+    description:
+      'Translate yearly objectives into 90-day focus sprints. Set outcomes, track performance indicators, and link objectives directly to parent goals to ensure consistent strategic progress.',
+    bullets: ['90-day focus scorecards', 'Outcome tracking', 'Link to yearly goals', 'Status metrics (On Track / At Risk)'],
+  },
+  {
+    id: 'monthly',
+    icon: 'calendar_month',
+    color: 'var(--color-secondary)',
+    category: 'planning',
+    tag: 'Monthly Horizon',
+    title: 'Monthly Plans & AI Reviews',
+    description:
+      'Define your monthly theme, select target goals to advance, and log a baseline snapshot of your Focus Area scores. Generate AI retrospectives that synthesize your daily journals.',
+    bullets: ['Focus theme mapping', 'Goal prioritization', 'Life score radar charts', 'Monthly AI retrospectives'],
+  },
+  {
+    id: 'weekly',
+    icon: 'date_range',
+    color: 'var(--color-secondary)',
+    category: 'planning',
+    tag: 'Weekly Cadence',
+    title: 'Weekly Planners & Time Blocks',
+    description:
+      'Bridge the gap between strategy and execution. Set Weekly Priorities (MITs), schedule time blocks directly in your calendar view, and run guided weekly review flows.',
+    bullets: ['Time-block scheduler', 'Most Important Tasks (MITs)', 'Weekly scorecard review', 'AI plan generation'],
+  },
+  {
+    id: 'tasks',
+    icon: 'format_list_bulleted',
+    color: 'var(--color-secondary)',
+    category: 'execution',
+    tag: 'Execution Layer',
+    title: 'Priority Matrix & Kanban',
+    description:
+      "Tasks aren't just to-dos — they live in a priority system. Drag between Urgent/Important quadrants or across project columns. The system auto-sorts by urgency so your queue shows what actually matters next.",
+    bullets: ['Eisenhower matrix view', 'Project grouping with drag-and-drop', 'Subtask nesting', 'Priority momentum scores'],
+  },
+  {
+    id: 'habits',
+    icon: 'bolt',
+    color: 'var(--color-secondary)',
+    category: 'execution',
+    tag: 'Identity Layer',
+    title: 'Habits & Streak Shields',
+    description:
+      'Build consistency through identity-based habits. Track daily completions, visualize consistency heatmaps, and protect your hard-earned progress with earned Streak Shields.',
+    bullets: ['Heatmap consistency grid', 'Custom streaks counters', 'Focus area tagging', 'Streak Shield protection'],
+  },
+  {
+    id: 'focus',
+    icon: 'timer',
+    color: '#F59E0B',
+    category: 'execution',
+    tag: 'Deep Work',
+    title: 'Focus Mode & Audio Synth',
+    description:
+      'Eliminate distractions. Start a custom Pomodoro session, turn on ambient noise synthesized in real time (Rain, Binaural Beats, Forest), and watch your flow state scores update.',
+    bullets: ['Custom Pomodoro timer', 'Procedural soundscapes', 'Waveform visualizer', 'Flow score analytics'],
   },
   {
     id: 'journal',
     icon: 'edit_note',
     color: '#A78BFA',
+    category: 'execution',
     tag: 'Reflection',
     title: 'Structured Daily Journal',
     description:
@@ -64,64 +125,48 @@ const features = [
     bullets: ['Mood & energy sliders', 'Win logging & gratitude', 'AI-powered reflection prompts', 'Searchable journal history'],
   },
   {
-    id: 'focus',
-    icon: 'timer',
-    color: '#F59E0B',
-    tag: 'Deep Work',
-    title: 'Focus Mode & Pomodoro',
+    id: 'shutdown',
+    icon: 'power_settings_new',
+    color: '#EF4444',
+    category: 'execution',
+    tag: 'Recovery',
+    title: 'Hard Shutdown Protocol',
     description:
-      'Lock in. Focus Mode strips away the UI, runs a Pomodoro timer, plays procedural ambient audio, and blocks distractions. Every session is logged as a completed work block.',
-    bullets: ['Configurable Pomodoro cycles', 'Procedural ambient soundscapes', 'Session logging & history', 'Distraction-free UI'],
+      'Ensure a healthy boundary between work and life. Triaging open items, plan tomorrow\'s top 3, perform a brain dump, and officially shut down for the day with an AI burnout analysis.',
+    bullets: ['EOD task triaging', "Tomorrow's top 3 planner", 'Brain-dump container', 'Burnout warning analysis'],
   },
   {
     id: 'analytics',
     icon: 'bar_chart',
     color: 'var(--color-primary)',
-    tag: 'Insight',
-    title: 'Analytics & Progress Reports',
+    category: 'insight',
+    tag: 'Insights',
+    title: 'Personal Analytics',
     description:
-      'Data you actually care about. Completion rates over time, habit consistency heatmaps, focus area balance charts, and AI-generated weekly insights that tell you what\'s working and what\'s not.',
-    bullets: ['Task & habit completion rates', 'Focus area radar charts', 'Weekly AI insights', 'Streak calendar heatmaps'],
-  },
-  {
-    id: 'weekly',
-    icon: 'date_range',
-    color: 'var(--color-secondary)',
-    tag: 'Weekly Cadence',
-    title: 'Weekly & Monthly Reviews',
-    description:
-      'Built-in weekly review flow that walks you through wins, open loops, upcoming priorities, and next week\'s intentions. Monthly views roll up into quarterly OKR check-ins.',
-    bullets: ['Guided weekly review flow', 'Monthly goal check-ins', 'Quarterly OKR roll-ups', 'Rolling metrics dashboard'],
-  },
-  {
-    id: 'shutdown',
-    icon: 'power_settings_new',
-    color: '#EF4444',
-    tag: 'Recovery',
-    title: 'Hard Shutdown Protocol',
-    description:
-      'Evolv enforces an end-of-day ritual to force psychological detachment. Review open tasks, log tomorrow\'s top 3, capture loose thoughts, and officially close the workday.',
-    bullets: ['Open task triaging', 'Tomorrow\'s top 3', 'Thought brain-dump', 'AI burnout risk scoring'],
+      'Beautiful, executive-level data dashboards. Monitor your completion rates, habit consistency heatmaps, focus area radar charts, and sleep/mood vs. productivity correlations.',
+    bullets: ['Life area balance wheel', 'Sleep & energy correlation', 'Momentum score gauge', 'Weekly reports summary'],
   },
   {
     id: 'ai',
     icon: 'auto_awesome',
     color: 'var(--color-primary)',
-    tag: 'AI Co-Pilot',
-    title: 'AI Assistant',
+    category: 'insight',
+    tag: 'Intelligence',
+    title: 'AI Coach & Co-Pilot',
     description:
-      'An always-available AI coach trained on your data. Ask it to create tasks, summarise your week, generate journal prompts, prioritise your backlog, or just vent about your day.',
-    bullets: ['Natural language task creation', 'Weekly summary generation', 'Burnout risk analysis', 'Context-aware coaching'],
+      'An always-available AI coach trained on your data. Ask it to create tasks, summarize your week, generate journal prompts, prioritize your backlog, or offer customized habits recommendations.',
+    bullets: ['Natural language planning', 'Automated weekly reviews', 'Burnout probability index', 'Context-aware feedback'],
   },
   {
     id: 'sharing',
     icon: 'shield',
     color: '#10B981',
-    tag: 'Accountability',
-    title: 'Accountability Sharing',
+    category: 'insight',
+    tag: 'Social Trust',
+    title: 'Secure Portal Sharing',
     description:
-      'Generate a private, read-only link to your progress dashboard and share it with a mentor, coach, or accountability partner. They see goals, habits, and focus scores — no login required.',
-    bullets: ['One-click shareable links', 'Read-only portal', 'Goals, habits & focus areas', 'Revoke access any time'],
+      'Generate secure, read-only access links to your Evolv dashboard. Share your progress on goals, habits, and focus balance with a mentor or accountability partner without exposing private data.',
+    bullets: ['Secure read-only tokens', 'Custom access duration', 'Revokable sharing keys', 'Live progress sync'],
   },
 ];
 
@@ -134,10 +179,17 @@ const steps = [
   { step: '06', icon: 'timer', title: 'Execute in Focus Mode', description: 'Hit Focus Mode, start the Pomodoro, put on some ambient audio, and do the work.' },
 ];
 
+const categories = [
+  { id: 'all', label: 'All Modules' },
+  { id: 'planning', label: 'Planning Horizon' },
+  { id: 'execution', label: 'Execution & Habits' },
+  { id: 'insight', label: 'AI & Analytics' },
+];
+
 export function FeaturesPage() {
   const { theme, toggleTheme } = useTheme();
   const [mousePos, setMousePos] = useState({ x: 50, y: 50 });
-  const [activeFeature, setActiveFeature] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<'all' | 'planning' | 'execution' | 'insight'>('all');
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -146,6 +198,10 @@ export function FeaturesPage() {
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
+
+  const filteredFeatures = features.filter(
+    (f) => selectedCategory === 'all' || f.category === selectedCategory
+  );
 
   return (
     <div className="h-full w-full overflow-y-auto overflow-x-hidden bg-[var(--color-background)] text-[var(--color-on-surface)] font-body-md scroll-smooth selection:bg-[var(--color-primary)]/30" id="features-container">
@@ -204,14 +260,14 @@ export function FeaturesPage() {
         {/* ═══ HERO ═══ */}
         <section className="w-full min-h-[70vh] flex flex-col items-center justify-center text-center px-6 pt-28 pb-20">
           <div className="anim-fade-up-1 flex flex-col items-center gap-6 max-w-4xl">
-            <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[var(--color-secondary)] px-4 py-1.5 rounded-full border border-[var(--color-secondary)]/30 bg-[var(--color-secondary)]/10">
+            <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[var(--color-secondary)] px-4 py-1.5 rounded-full border border-[var(--color-secondary)]/30 bg-[var(--color-secondary)]/10 glow-shadow-secondary">
               Everything Evolv does
             </span>
             <h1 className="text-[8vw] md:text-[5vw] leading-[0.9] font-black tracking-tighter text-gradient-hero select-none">
               YOUR PERSONAL<br />OPERATING SYSTEM
             </h1>
             <p className="text-[18px] md:text-[20px] text-[var(--color-outline)] leading-relaxed font-medium max-w-2xl">
-              12 deeply integrated modules. One coherent system for executing your life with precision.
+              14 deeply integrated modules. One coherent system for executing your life with precision.
             </p>
             <div className="flex items-center gap-4 mt-2">
               <Link to="/register" className="group relative h-12 px-8 rounded-full bg-[var(--color-on-surface)] text-[var(--color-background)] font-bold text-[12px] uppercase tracking-wider flex items-center justify-center overflow-hidden active:scale-95 transition-all duration-300">
@@ -233,78 +289,118 @@ export function FeaturesPage() {
             <h2 className="font-mono text-[11px] uppercase tracking-widest text-[var(--color-outline)]">How it works</h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {steps.map((s) => (
-              <div key={s.step} className="glass-card rounded-2xl p-6 border border-[var(--glass-border)] bg-[var(--color-surface)]/5 backdrop-blur-xl flex flex-col gap-4 group hover:border-[var(--color-primary)]/30 transition-all duration-300">
-                <div className="flex items-start justify-between">
-                  <div className="w-10 h-10 rounded-xl bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/20 flex items-center justify-center">
-                    <span className="material-symbols-outlined text-[20px] text-[var(--color-primary)]">{s.icon}</span>
+          <div className="relative flex flex-col gap-12 max-w-4xl mx-auto pl-12 md:pl-0">
+            {/* The vertical connector line */}
+            <div className="absolute left-6 md:left-1/2 top-4 bottom-4 w-0.5 bg-gradient-to-b from-[var(--color-primary)]/40 via-[var(--color-secondary)]/30 to-[var(--color-primary)]/10 -translate-x-1/2 pointer-events-none" />
+
+            {steps.map((s, idx) => {
+              const isEven = idx % 2 === 0;
+              return (
+                <div 
+                  key={s.step} 
+                  className={`relative flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-0 w-full ${
+                    isEven ? 'md:flex-row-reverse' : ''
+                  }`}
+                >
+                  {/* Step node (glowing circle on the line) */}
+                  <div className="absolute left-6 md:left-1/2 w-10 h-10 rounded-full bg-[var(--color-background)] border-2 border-[var(--color-primary)] flex items-center justify-center -translate-x-1/2 z-10 shadow-[0_0_15px_rgba(210,187,255,0.4)] transition-transform duration-500 hover:scale-110">
+                    <span className="font-mono text-[11px] font-bold text-[var(--color-primary)]">{s.step}</span>
                   </div>
-                  <span className="font-mono text-[32px] font-black text-[var(--color-outline-variant)]/30 group-hover:text-[var(--color-primary)]/20 transition-colors leading-none select-none">{s.step}</span>
+
+                  {/* Spacer for desktop alignment */}
+                  <div className="hidden md:block w-1/2" />
+
+                  {/* Content card wrapper */}
+                  <div className={`w-full md:w-1/2 ${isEven ? 'md:pr-12' : 'md:pl-12'}`}>
+                    <div className="glass-card rounded-3xl p-6 border border-[var(--glass-border)] bg-[var(--color-surface)]/5 backdrop-blur-xl flex items-start gap-5 hover:border-[var(--color-primary)]/30 hover:bg-[var(--color-surface)]/10 transition-all duration-500 group">
+                      <div className="w-12 h-12 rounded-2xl bg-[var(--color-primary)]/10 border border-[var(--color-primary)]/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300">
+                        <span className="material-symbols-outlined text-[24px] text-[var(--color-primary)]">{s.icon}</span>
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-bold text-[16px] text-white tracking-tight mb-1">{s.title}</h3>
+                        <p className="text-[13px] text-[var(--color-outline)] leading-relaxed">{s.description}</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-bold text-[16px] text-[var(--color-on-surface)] mb-2">{s.title}</h3>
-                  <p className="text-[13px] text-[var(--color-outline)] leading-relaxed">{s.description}</p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
 
         {/* ═══ FEATURES GRID ═══ */}
         <section id="features" className="w-full max-w-6xl mx-auto py-24 px-6">
-          <div className="flex items-center gap-6 mb-16">
-            <div className="w-16 h-px bg-[var(--color-outline-variant)]" />
-            <h2 className="font-mono text-[11px] uppercase tracking-widest text-[var(--color-outline)]">All Features</h2>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-16">
+            <div className="flex items-center gap-6">
+              <div className="w-16 h-px bg-[var(--color-outline-variant)]" />
+              <h2 className="font-mono text-[11px] uppercase tracking-widest text-[var(--color-outline)]">All Features</h2>
+            </div>
+            
+            {/* Category Filter Tabs */}
+            <div className="flex flex-wrap gap-2 glass-panel p-1.5 rounded-full border border-[var(--glass-border)]">
+              {categories.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedCategory(cat.id as any)}
+                  className={`px-4 py-2 rounded-full font-mono text-[9px] uppercase tracking-widest transition-all duration-300 font-bold ${
+                    selectedCategory === cat.id
+                      ? 'bg-[var(--color-primary)] text-black shadow-[0_0_12px_rgba(210,187,255,0.3)]'
+                      : 'text-[var(--color-outline)] hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {features.map((f) => {
-              const isActive = activeFeature === f.id;
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 anim-fade-up">
+            {filteredFeatures.map((f) => {
               return (
                 <div
                   key={f.id}
-                  onMouseEnter={() => setActiveFeature(f.id)}
-                  onMouseLeave={() => setActiveFeature(null)}
-                  className={`glass-card rounded-2xl p-8 border backdrop-blur-xl flex flex-col gap-5 cursor-default transition-all duration-300 ${
-                    isActive
-                      ? 'border-[var(--color-primary)]/40 bg-[var(--color-surface)]/15 shadow-[0_0_30px_rgba(108,74,176,0.1)]'
-                      : 'border-[var(--glass-border)] bg-[var(--color-surface)]/5'
-                  }`}
+                  className="glass-card glow-card card-tilt-hover rounded-3xl p-8 border border-[var(--glass-border)] bg-[var(--color-surface)]/5 backdrop-blur-xl flex flex-col gap-6 cursor-default transition-all duration-500 group hover:bg-[var(--color-surface)]/10"
+                  style={{
+                    '--card-accent-color': f.color,
+                  } as React.CSSProperties}
                 >
                   {/* Header */}
                   <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-4">
                       <div
-                        className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110"
-                        style={{ background: `${f.color}18`, border: `1px solid ${f.color}30` }}
+                        className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-all duration-500 group-hover:scale-110 group-hover:rotate-3"
+                        style={{
+                          background: `${f.color}15`,
+                          border: `1px solid ${f.color}35`,
+                          boxShadow: `0 0 15px ${f.color}15`
+                        }}
                       >
-                        <span className="material-symbols-outlined text-[22px]" style={{ color: f.color }}>{f.icon}</span>
+                        <span className="material-symbols-outlined text-[24px]" style={{ color: f.color }}>{f.icon}</span>
                       </div>
-                      <div>
-                        <span className="font-mono text-[9px] uppercase tracking-widest font-bold" style={{ color: f.color }}>
+                      <div className="flex flex-col">
+                        <span className="font-mono text-[9px] uppercase tracking-widest font-bold mb-1 opacity-70 group-hover:opacity-100 transition-opacity" style={{ color: f.color }}>
                           {f.tag}
                         </span>
-                        <h3 className="font-bold text-[18px] text-[var(--color-on-surface)] leading-tight mt-0.5">{f.title}</h3>
+                        <h3 className="font-bold text-[18px] text-[var(--color-on-surface)] leading-tight tracking-tight group-hover:text-white transition-colors">{f.title}</h3>
                       </div>
                     </div>
                   </div>
 
                   {/* Description */}
-                  <p className="text-[13px] text-[var(--color-outline)] leading-relaxed">
+                  <p className="text-[13.5px] text-[var(--color-outline)] leading-relaxed font-normal opacity-90 group-hover:opacity-100 transition-opacity">
                     {f.description}
                   </p>
 
                   {/* Bullets */}
-                  <div className="flex flex-wrap gap-2 mt-auto">
+                  <div className="flex flex-wrap gap-2 mt-auto pt-4 border-t border-[var(--color-outline-variant)]/10">
                     {f.bullets.map((b) => (
                       <span
                         key={b}
-                        className="font-mono text-[9px] uppercase tracking-wide px-2.5 py-1 rounded-md border font-bold"
+                        className="font-mono text-[9px] uppercase tracking-wide px-3 py-1.5 rounded-lg border font-bold transition-all duration-300"
                         style={{
                           color: f.color,
-                          borderColor: `${f.color}25`,
-                          background: `${f.color}0D`
+                          borderColor: `${f.color}18`,
+                          background: `${f.color}05`
                         }}
                       >
                         {b}
