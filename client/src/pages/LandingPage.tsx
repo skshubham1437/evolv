@@ -69,30 +69,74 @@ function startAudio(soundId: string): () => void {
     const right = mkOsc(210, 1);
     cleanupFns.push(() => { left.stop(); right.stop(); });
   } else if (soundId === 'forest') {
-    const src = ctx.createBufferSource();
-    src.buffer = createNoiseBuffer(ctx);
-    src.loop = true;
-    const bpf = ctx.createBiquadFilter();
-    bpf.type = 'bandpass';
-    bpf.frequency.value = 500; bpf.Q.value = 0.4;
-    const forestGain = ctx.createGain(); forestGain.gain.value = 0.06;
-    src.connect(bpf); bpf.connect(forestGain); forestGain.connect(master);
-    src.start();
+    // 1. Deep wind layer
+    const windSrc = ctx.createBufferSource();
+    windSrc.buffer = createNoiseBuffer(ctx, 4);
+    windSrc.loop = true;
+    const windLPF = ctx.createBiquadFilter();
+    windLPF.type = 'lowpass';
+    windLPF.frequency.value = 150;
+    const windGain = ctx.createGain();
+    windGain.gain.value = 0.15;
+    windSrc.connect(windLPF);
+    windLPF.connect(windGain);
+    windGain.connect(master);
+    windSrc.start();
 
-    const iv = window.setInterval(() => {
+    // 2. Leaf rustle layer
+    const leavesSrc = ctx.createBufferSource();
+    leavesSrc.buffer = createNoiseBuffer(ctx, 4);
+    leavesSrc.loop = true;
+    const leavesBPF = ctx.createBiquadFilter();
+    leavesBPF.type = 'bandpass';
+    leavesBPF.frequency.value = 900;
+    leavesBPF.Q.value = 0.25;
+    const leavesGain = ctx.createGain();
+    leavesGain.gain.value = 0.05;
+    leavesSrc.connect(leavesBPF);
+    leavesBPF.connect(leavesGain);
+    leavesGain.connect(master);
+    leavesSrc.start();
+
+    // 3. Cluster bird chirps connected to master
+    let forestTimer: number | null = null;
+    const scheduleBirdCluster = () => {
       if (ctx.state === 'closed') return;
-      const osc = ctx.createOscillator();
-      const g = ctx.createGain();
-      const f = 1200 + Math.random() * 800;
-      osc.frequency.setValueAtTime(f, ctx.currentTime);
-      osc.frequency.linearRampToValueAtTime(f * 1.3, ctx.currentTime + 0.1);
-      g.gain.setValueAtTime(0.03, ctx.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.2);
-      osc.connect(g); g.connect(ctx.destination);
-      osc.start(); osc.stop(ctx.currentTime + 0.2);
-    }, 1200 + Math.random() * 1500);
+      
+      const now = ctx.currentTime;
+      const numChirps = 2 + Math.floor(Math.random() * 3); // 2-4 chirps in a group
+      const baseFreq = 1500 + Math.random() * 800;
+      
+      for (let i = 0; i < numChirps; i++) {
+        const delay = i * 0.15; // Space chirps apart
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(baseFreq + (Math.random() * 200 - 100), now + delay);
+        // Sweep UPWARD in frequency
+        osc.frequency.exponentialRampToValueAtTime((baseFreq * 1.3), now + delay + 0.08);
+        
+        g.gain.setValueAtTime(0, now + delay);
+        g.gain.linearRampToValueAtTime(0.04, now + delay + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + delay + 0.12);
+        
+        osc.connect(g);
+        g.connect(master);
+        osc.start(now + delay);
+        osc.stop(now + delay + 0.13);
+      }
+      
+      forestTimer = window.setTimeout(scheduleBirdCluster, 3000 + Math.random() * 5000);
+    };
+    
+    forestTimer = window.setTimeout(scheduleBirdCluster, 1000);
 
-    cleanupFns.push(() => { src.stop(); window.clearInterval(iv); });
+    cleanupFns.push(() => {
+      windSrc.stop();
+      leavesSrc.stop();
+      if (forestTimer !== null) window.clearTimeout(forestTimer);
+    });
   }
 
   return () => {
@@ -153,15 +197,17 @@ export function LandingPage() {
     <div className="h-full w-full overflow-y-auto overflow-x-hidden bg-[var(--color-background)] text-[var(--color-on-surface)] font-body-md scroll-smooth selection:bg-[var(--color-primary)]/30" id="landing-container">
       
       {/* ── Dynamic Ambient Background ─────────────────────────────── */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden bg-[#050505]">
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden bg-ambient-mesh">
         {/* Cursor-following orb */}
         <div 
-          className="absolute w-[60vw] h-[60vw] rounded-full blur-[120px] transition-transform duration-1000 ease-out opacity-40 mix-blend-screen"
+          className="absolute w-[60vw] h-[60vw] rounded-full blur-[120px] transition-transform duration-1000 ease-out"
           style={{
             background: 'radial-gradient(circle, rgba(108,74,176,0.4) 0%, rgba(90,218,206,0.1) 60%, transparent 80%)',
             left: `${mousePos.x}%`,
             top: `${mousePos.y}%`,
-            transform: 'translate(-50%, -50%)'
+            transform: 'translate(-50%, -50%)',
+            mixBlendMode: theme === 'dark' ? 'screen' : 'multiply',
+            opacity: theme === 'dark' ? 0.35 : 0.15
           }}
         />
         {/* Dot-grid overlay */}
@@ -170,7 +216,7 @@ export function LandingPage() {
 
       {/* ── Minimalist Floating Header ─────────────────────────────────────── */}
       <header className="fixed top-6 inset-x-0 z-50 w-full flex justify-center px-4 pointer-events-none">
-        <div className="pointer-events-auto rounded-full glass-card border-[rgba(255,255,255,0.05)] bg-black/40 backdrop-blur-3xl px-6 py-3 flex items-center justify-between gap-8 md:gap-16 shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
+        <div className="pointer-events-auto rounded-full glass-panel px-6 py-3 flex items-center justify-between gap-8 md:gap-16 shadow-lg">
           <div 
             className="flex items-center gap-3 group cursor-pointer"
             onClick={() => document.getElementById('landing-container')?.scrollTo({ top: 0, behavior: 'smooth' })}
@@ -226,7 +272,7 @@ export function LandingPage() {
             </span>
           </div>
           
-          <h1 className="text-[12vw] leading-[0.85] font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white via-white/80 to-white/0 anim-fade-up-2 mb-10 select-none">
+          <h1 className="text-[12vw] leading-[0.85] font-black tracking-tighter text-gradient-hero anim-fade-up-2 mb-10 select-none">
             EXECUTION<br />OVER<br />ORGANIZATION
           </h1>
           
@@ -313,7 +359,7 @@ export function LandingPage() {
         {/* ═══════════════════════════════════════════════════════
             3. IMMERSIVE AUDIO ENGINE
             ═══════════════════════════════════════════════════════ */}
-        <section id="engine" className={`w-full py-32 transition-colors duration-1000 ${soundPlaying ? 'bg-[#000000]' : 'bg-transparent'}`}>
+        <section id="engine" className={`w-full py-32 transition-colors duration-1000 ${soundPlaying ? 'bg-[var(--color-surface-container)]' : 'bg-transparent'}`}>
           <div className="max-w-6xl mx-auto px-6">
             
             <div className="flex flex-col md:flex-row items-end justify-between mb-16 gap-8">
@@ -356,10 +402,10 @@ export function LandingPage() {
                 {Array.from({ length: 40 }).map((_, i) => (
                   <div 
                     key={i}
-                    className="flex-1 rounded-t-sm transition-all duration-[50ms] ease-linear bg-white mix-blend-overlay"
+                    className="flex-1 rounded-t-sm transition-all duration-[50ms] ease-linear bg-[var(--color-primary)]"
                     style={{ 
                       height: soundPlaying ? `${10 + Math.random() * 90}%` : '4px',
-                      opacity: soundPlaying ? 0.3 + Math.random() * 0.7 : 0.2
+                      opacity: soundPlaying ? 0.4 + Math.random() * 0.6 : 0.15
                     }}
                   />
                 ))}
@@ -368,7 +414,7 @@ export function LandingPage() {
               {/* Controls */}
               <div className="absolute top-8 left-8 right-8 flex justify-between items-center z-20">
                  <span className="font-mono text-[10px] uppercase tracking-widest text-[var(--color-outline)]">Select Frequency</span>
-                 <div className="flex gap-2 bg-black/40 backdrop-blur-md p-1.5 rounded-full border border-white/10">
+                 <div className="flex gap-2 glass-panel p-1.5 rounded-full">
                    {[
                      { id: 'rain', label: 'Rain LPF' },
                      { id: 'binaural', label: 'Alpha 200Hz' },

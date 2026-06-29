@@ -59,16 +59,24 @@ export function createTask(
   is_urgent?: boolean,
   is_important?: boolean,
 ): Promise<Task> {
+  let formattedDueDate = due_date;
+  if (due_date && /^\d{4}-\d{2}-\d{2}$/.test(due_date)) {
+    formattedDueDate = `${due_date}T00:00:00Z`;
+  }
   return request(`${API}/tasks`, {
     method: 'POST',
-    body: JSON.stringify({ title, priority, project_id, parent_task_id, tags, dependencies, due_date, goal_id, objective_id, is_urgent, is_important }),
+    body: JSON.stringify({ title, priority, project_id, parent_task_id, tags, dependencies, due_date: formattedDueDate, goal_id, objective_id, is_urgent, is_important }),
   });
 }
 
 export function updateTask(id: number, updates: Partial<Task>): Promise<Task> {
+  const formattedUpdates = { ...updates };
+  if (updates.due_date && /^\d{4}-\d{2}-\d{2}$/.test(updates.due_date)) {
+    formattedUpdates.due_date = `${updates.due_date}T00:00:00Z`;
+  }
   return request(`${API}/tasks/${id}`, {
     method: 'PATCH',
-    body: JSON.stringify(updates),
+    body: JSON.stringify(formattedUpdates),
   });
 }
 

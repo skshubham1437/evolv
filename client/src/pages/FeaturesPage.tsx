@@ -151,12 +151,16 @@ export function FeaturesPage() {
     <div className="h-full w-full overflow-y-auto overflow-x-hidden bg-[var(--color-background)] text-[var(--color-on-surface)] font-body-md scroll-smooth selection:bg-[var(--color-primary)]/30" id="features-container">
 
       {/* ── Dynamic Ambient Background ─── */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden bg-[#050505]">
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden bg-ambient-mesh">
         <div
-          className="absolute w-[60vw] h-[60vw] rounded-full blur-[120px] transition-transform duration-1000 ease-out opacity-30 mix-blend-screen"
+          className="absolute w-[60vw] h-[60vw] rounded-full blur-[120px] transition-transform duration-1000 ease-out"
           style={{
             background: 'radial-gradient(circle, rgba(108,74,176,0.4) 0%, rgba(90,218,206,0.1) 60%, transparent 80%)',
-            left: `${mousePos.x}%`, top: `${mousePos.y}%`, transform: 'translate(-50%, -50%)'
+            left: `${mousePos.x}%`, 
+            top: `${mousePos.y}%`, 
+            transform: 'translate(-50%, -50%)',
+            mixBlendMode: theme === 'dark' ? 'screen' : 'multiply',
+            opacity: theme === 'dark' ? 0.3 : 0.12
           }}
         />
         <div className="absolute inset-0 bg-dot-grid pointer-events-none" />
@@ -164,7 +168,7 @@ export function FeaturesPage() {
 
       {/* ── Floating Header ─── */}
       <header className="fixed top-6 inset-x-0 z-50 w-full flex justify-center px-4 pointer-events-none">
-        <div className="pointer-events-auto rounded-full glass-card border-[rgba(255,255,255,0.05)] bg-black/40 backdrop-blur-3xl px-6 py-3 flex items-center justify-between gap-8 md:gap-16 shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
+        <div className="pointer-events-auto rounded-full glass-panel px-6 py-3 flex items-center justify-between gap-8 md:gap-16 shadow-lg">
           <Link to="/" className="flex items-center gap-3 group cursor-pointer">
             <div className="w-6 h-6 rounded-full bg-[var(--color-on-surface)] text-[var(--color-background)] flex items-center justify-center font-bold text-[10px] group-hover:scale-90 transition-transform">E</div>
             <span className="font-mono text-xs font-bold tracking-widest uppercase">Evolv</span>
@@ -203,7 +207,7 @@ export function FeaturesPage() {
             <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-[var(--color-secondary)] px-4 py-1.5 rounded-full border border-[var(--color-secondary)]/30 bg-[var(--color-secondary)]/10">
               Everything Evolv does
             </span>
-            <h1 className="text-[8vw] md:text-[5vw] leading-[0.9] font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white via-white/80 to-white/30 select-none">
+            <h1 className="text-[8vw] md:text-[5vw] leading-[0.9] font-black tracking-tighter text-gradient-hero select-none">
               YOUR PERSONAL<br />OPERATING SYSTEM
             </h1>
             <p className="text-[18px] md:text-[20px] text-[var(--color-outline)] leading-relaxed font-medium max-w-2xl">

@@ -98,30 +98,75 @@ function startAudio(soundId: string): (() => void) | null {
     cleanupFns.push(() => { left.stop(); right.stop(); });
 
   } else if (soundId === 'forest') {
-    const src = ctx.createBufferSource();
-    src.buffer = createNoiseBuffer(ctx);
-    src.loop = true;
-    const bpf = ctx.createBiquadFilter();
-    bpf.type = 'bandpass';
-    bpf.frequency.value = 500; bpf.Q.value = 0.4;
-    const forestGain = ctx.createGain(); forestGain.gain.value = 0.08;
-    src.connect(bpf); bpf.connect(forestGain); forestGain.connect(master);
-    src.start();
+    // 1. Deep wind layer
+    const windSrc = ctx.createBufferSource();
+    windSrc.buffer = createNoiseBuffer(ctx, 4);
+    windSrc.loop = true;
+    const windLPF = ctx.createBiquadFilter();
+    windLPF.type = 'lowpass';
+    windLPF.frequency.value = 150;
+    const windGain = ctx.createGain();
+    windGain.gain.value = 0.15;
+    windSrc.connect(windLPF);
+    windLPF.connect(windGain);
+    windGain.connect(master);
+    windSrc.start();
 
-    const iv = window.setInterval(() => {
+    // 2. Leaf rustle layer
+    const leavesSrc = ctx.createBufferSource();
+    leavesSrc.buffer = createNoiseBuffer(ctx, 4);
+    leavesSrc.loop = true;
+    const leavesBPF = ctx.createBiquadFilter();
+    leavesBPF.type = 'bandpass';
+    leavesBPF.frequency.value = 900;
+    leavesBPF.Q.value = 0.25;
+    const leavesGain = ctx.createGain();
+    leavesGain.gain.value = 0.05;
+    leavesSrc.connect(leavesBPF);
+    leavesBPF.connect(leavesGain);
+    leavesGain.connect(master);
+    leavesSrc.start();
+
+    // 3. Cluster bird chirps connected to master
+    let forestTimer: number | null = null;
+    const scheduleBirdCluster = () => {
       if (ctx.state === 'closed') return;
-      const osc = ctx.createOscillator();
-      const g   = ctx.createGain();
-      const f   = 1100 + Math.random() * 900;
-      osc.frequency.setValueAtTime(f, ctx.currentTime);
-      osc.frequency.linearRampToValueAtTime(f * 1.35, ctx.currentTime + 0.12);
-      g.gain.setValueAtTime(0.04, ctx.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.25);
-      osc.connect(g); g.connect(ctx.destination);
-      osc.start(); osc.stop(ctx.currentTime + 0.25);
-    }, 900 + Math.random() * 1800);
+      
+      const now = ctx.currentTime;
+      const numChirps = 2 + Math.floor(Math.random() * 3); // 2-4 chirps in a group
+      const baseFreq = 1500 + Math.random() * 800;
+      
+      for (let i = 0; i < numChirps; i++) {
+        const delay = i * 0.15; // Space chirps apart
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(baseFreq + (Math.random() * 200 - 100), now + delay);
+        // Sweep UPWARD in frequency
+        osc.frequency.exponentialRampToValueAtTime((baseFreq * 1.3), now + delay + 0.08);
+        
+        g.gain.setValueAtTime(0, now + delay);
+        g.gain.linearRampToValueAtTime(0.04, now + delay + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + delay + 0.12);
+        
+        osc.connect(g);
+        g.connect(master);
+        osc.start(now + delay);
+        osc.stop(now + delay + 0.13);
+      }
+      
+      forestTimer = window.setTimeout(scheduleBirdCluster, 3000 + Math.random() * 5000);
+    };
+    
+    forestTimer = window.setTimeout(scheduleBirdCluster, 1000);
 
-    cleanupFns.push(() => { src.stop(); window.clearInterval(iv); });
+    cleanupFns.push(() => {
+      windSrc.stop();
+      leavesSrc.stop();
+      if (forestTimer !== null) window.clearTimeout(forestTimer);
+    });
+
   } else if (soundId === 'lofi') {
     master.gain.setValueAtTime(0, ctx.currentTime);
     master.gain.linearRampToValueAtTime(0.25, ctx.currentTime + 1.5);
@@ -179,61 +224,88 @@ function startAudio(soundId: string): (() => void) | null {
 
   } else if (soundId === 'cafe') {
     master.gain.setValueAtTime(0, ctx.currentTime);
-    master.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 1.5);
+    master.gain.linearRampToValueAtTime(0.25, ctx.currentTime + 1.5);
 
-    // Base murmur layer — bandpass noise
-    const src = ctx.createBufferSource();
-    src.buffer = createNoiseBuffer(ctx, 6);
-    src.loop = true;
+    // 1. Murmur noise layer 1 (low-mid frequency chatter)
+    const chatterSrc = ctx.createBufferSource();
+    chatterSrc.buffer = createNoiseBuffer(ctx, 6);
+    chatterSrc.loop = true;
     const bpf = ctx.createBiquadFilter();
     bpf.type = 'bandpass';
-    bpf.frequency.value = 400;
-    bpf.Q.value = 0.6;
+    bpf.frequency.value = 350;
+    bpf.Q.value = 0.5;
     const chatterGain = ctx.createGain();
-    chatterGain.gain.value = 0.12;
-    src.connect(bpf);
+    chatterGain.gain.value = 0.10;
+    chatterSrc.connect(bpf);
     bpf.connect(chatterGain);
     chatterGain.connect(master);
-    src.start();
+    chatterSrc.start();
 
-    // Second murmur layer — slightly different freq for richness
-    const src2 = ctx.createBufferSource();
-    src2.buffer = createNoiseBuffer(ctx, 5);
-    src2.loop = true;
+    // 2. Murmur noise layer 2 (higher-mid frequency chatter)
+    const chatterSrc2 = ctx.createBufferSource();
+    chatterSrc2.buffer = createNoiseBuffer(ctx, 5);
+    chatterSrc2.loop = true;
     const bpf2 = ctx.createBiquadFilter();
     bpf2.type = 'bandpass';
-    bpf2.frequency.value = 700;
+    bpf2.frequency.value = 850;
     bpf2.Q.value = 0.3;
-    const chatter2 = ctx.createGain();
-    chatter2.gain.value = 0.06;
-    src2.connect(bpf2);
-    bpf2.connect(chatter2);
-    chatter2.connect(master);
-    src2.start();
-    
-    // Random clink/tap sounds using recursive setTimeout for varied timing
+    const chatterGain2 = ctx.createGain();
+    chatterGain2.gain.value = 0.05;
+    chatterSrc2.connect(bpf2);
+    bpf2.connect(chatterGain2);
+    chatterGain2.connect(master);
+    chatterSrc2.start();
+
+    // 3. Modulated LFO to simulate crowd swells
+    const lfo = ctx.createOscillator();
+    lfo.type = 'sine';
+    lfo.frequency.value = 0.08;
+    const lfoGain = ctx.createGain();
+    lfoGain.gain.value = 0.02;
+    lfo.connect(lfoGain);
+    lfoGain.connect(chatterGain.gain);
+    lfo.start();
+
+    // 4. Multi-frequency metallic clinks (simulating ceramic cups/spoons)
     let cafeTimer: number | null = null;
     const scheduleClink = () => {
       if (ctx.state === 'closed') return;
+      
       const now = ctx.currentTime;
-      const osc = ctx.createOscillator();
+      const baseFreq = 2200 + Math.random() * 1200;
+      
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
       const g = ctx.createGain();
-      osc.type = 'sine';
-      const freq = 2000 + Math.random() * 3000;
-      osc.frequency.setValueAtTime(freq, now);
-      osc.frequency.exponentialRampToValueAtTime(freq * 0.7, now + 0.05);
-      g.gain.setValueAtTime(0.05, now);
-      g.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
-      osc.connect(g);
+      
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(baseFreq, now);
+      
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(baseFreq * 1.62, now); // non-harmonic metallic ring
+      
+      g.gain.setValueAtTime(0, now);
+      g.gain.linearRampToValueAtTime(0.015, now + 0.002);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + 0.06); // fast decay
+      
+      osc1.connect(g);
+      osc2.connect(g);
       g.connect(master);
-      osc.start();
-      osc.stop(now + 0.1);
-      cafeTimer = window.setTimeout(scheduleClink, 600 + Math.random() * 2500);
+      
+      osc1.start(now);
+      osc2.start(now);
+      osc1.stop(now + 0.08);
+      osc2.stop(now + 0.08);
+      
+      cafeTimer = window.setTimeout(scheduleClink, 1500 + Math.random() * 4500);
     };
-    cafeTimer = window.setTimeout(scheduleClink, 500);
     
+    cafeTimer = window.setTimeout(scheduleClink, 800);
+
     cleanupFns.push(() => {
-      src.stop(); src2.stop();
+      chatterSrc.stop();
+      chatterSrc2.stop();
+      lfo.stop();
       if (cafeTimer !== null) window.clearTimeout(cafeTimer);
     });
   }
